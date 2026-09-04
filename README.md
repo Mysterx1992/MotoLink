@@ -175,6 +175,18 @@ Se l'Assistente non dispone di informazioni sufficienti, l'utente può continuar
 
 ---
 
+### 🔋 Consiglio per il risparmio energetico
+
+Per evitare che Android limiti MotoLink durante il mirroring, è consigliato impostare il risparmio energetico dell'app su **Nessuna restrizione**.
+
+Il percorso può cambiare in base al produttore dello smartphone, ma in genere si trova in:
+
+**Impostazioni → App → MotoLink → Batteria / Risparmio energetico → Nessuna restrizione**
+
+Questa impostazione aiuta MotoLink a rimanere attiva correttamente durante le sessioni di mirroring e può ridurre interruzioni dovute alla gestione aggressiva della batteria.
+
+---
+
 ## Permessi e privacy
 
 MotoLink richiede soltanto gli accessi necessari alle funzioni utilizzate dall'utente.
@@ -182,11 +194,8 @@ MotoLink richiede soltanto gli accessi necessari alle funzioni utilizzate dall'u
 | Accesso / conferma | Quando viene usato | Perché serve |
 |---|---|---|
 | **Rete / Wi-Fi** | Durante il collegamento alla moto | Individuare e utilizzare la connessione richiesta dal display |
-| **Dispositivi nelle vicinanze** | Quando richiesto da Android per la connessione | Consentire le operazioni di rete locale previste dal sistema |
-| **Fotocamera** | Quando viene utilizzata la scansione QR | Leggere il QR mostrato dal display della moto |
 | **MediaProjection / condivisione schermo** | All'avvio del mirroring | Android richiede la conferma dell'utente prima di catturare lo schermo o una singola app |
 | **Mostra sopra altre app** | Solo per le funzioni che lo richiedono | Gestire la Modalità tasca / schermo nero secondo la configurazione dell'app |
-| **Notifiche / servizio in primo piano** | Durante le sessioni che Android richiede di mantenere attive | Mantenere visibile e gestibile l'attività di mirroring |
 
 > [!NOTE]
 > Android mantiene sotto il controllo dell'utente le conferme di condivisione dello schermo. MotoLink non può approvare silenziosamente la cattura di un'app o dell'intero display.
@@ -260,7 +269,7 @@ MotoLink/
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── README.md
----
+```
 
 
 
