@@ -1,0 +1,107 @@
+name: "🏍️ Test compatibilità moto"
+description: "Condividi un test reale di MotoLink su una moto / TFT"
+title: "[COMPATIBILITÀ] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Usa questo modulo per condividere un test realmente effettuato con MotoLink.
+
+        **Inserisci solo risultati verificati direttamente.** Non pubblicare password Wi-Fi, QR completi, token, chiavi API, MAC address, UUID o altri dati riservati.
+
+  - type: input
+    id: motorcycle
+    attributes:
+      label: Moto
+      description: "Marca, modello e anno"
+      placeholder: "Esempio: Voge Valico 900 - 2026"
+    validations:
+      required: true
+
+  - type: input
+    id: display
+    attributes:
+      label: TFT / sistema di mirroring
+      description: "Indica, se conosciuto, il tipo di display o sistema."
+      placeholder: "Esempio: TFT EasyConn"
+    validations:
+      required: true
+
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware TFT (se noto)
+      placeholder: "Versione o identificativo firmware"
+
+  - type: input
+    id: phone
+    attributes:
+      label: Smartphone
+      placeholder: "Marca e modello"
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Versione Android
+      placeholder: "Esempio: Android 15"
+    validations:
+      required: true
+
+  - type: input
+    id: motolink_version
+    attributes:
+      label: Versione MotoLink
+      placeholder: "1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Collegamento
+      options:
+        - "Funzionante"
+        - "Parzialmente funzionante"
+        - "Non funzionante"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mirroring
+    attributes:
+      label: Mirroring video
+      options:
+        - "Funzionante"
+        - "Funzionante con problemi"
+        - "Non funzionante"
+        - "Non testato"
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Risultato del test
+      description: "Descrivi cosa hai verificato e cosa funziona o non funziona."
+      placeholder: "Collegamento, avvio mirroring, stabilità, eventuali anomalie..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Note aggiuntive
+      placeholder: "Eventuali dettagli utili, senza dati sensibili."
+
+  - type: checkboxes
+    id: real_test
+    attributes:
+      label: Conferma test
+      options:
+        - label: "Confermo di aver effettuato personalmente questo test sulla configurazione indicata."
+          required: true
+        - label: "Ho controllato la segnalazione e non contiene password, QR completi, token, chiavi API o altri dati riservati."
+          required: true
