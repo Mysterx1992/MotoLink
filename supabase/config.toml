@@ -1,0 +1,7 @@
+project_id = "motolink"
+
+[auth]
+enable_anonymous_sign_ins = true
+
+[functions.motolink-assistant]
+verify_jwt = true

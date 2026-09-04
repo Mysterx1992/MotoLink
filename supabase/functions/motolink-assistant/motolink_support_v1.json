@@ -1,0 +1,102 @@
+[
+  {
+    "id": "connection_basic",
+    "keywords": [
+      "non si connette",
+      "connessione",
+      "easyconn",
+      "ricerca",
+      "wifi moto",
+      "wi-fi moto"
+    ],
+    "title": "Connessione alla moto",
+    "answer": "Verifica che il Wi-Fi/collegamento della moto sia attivo e che MotoLink abbia i permessi di rete vicina richiesti da Android. Chiudi eventuali altre app Carbit/EasyConn che potrebbero occupare le porte, poi premi STOP e riprova con START. Se la rete moto resta presente ma il video sparisce, MotoLink tenta automaticamente il ripristino EasyConn senza interrompere subito la sessione."
+  },
+  {
+    "id": "qr_pairing",
+    "keywords": [
+      "qr",
+      "codice qr",
+      "pairing",
+      "profilo senza qr",
+      "aggiungi moto"
+    ],
+    "title": "QR e profilo moto",
+    "answer": "Usa Aggiungi con QR quando il display della moto mostra un QR compatibile. Per modelli che non forniscono QR puoi creare Profilo senza QR: il profilo serve a identificare la moto, mentre la connessione EasyConn continua a essere rilevata normalmente. Se Android nega il permesso Wi-Fi nelle vicinanze, concedilo prima di riprovare."
+  },
+  {
+    "id": "ports_busy",
+    "keywords": [
+      "eaddrinuse",
+      "porta occupata",
+      "carbit",
+      "moto-hub",
+      "easyconn occupata"
+    ],
+    "title": "Porte EasyConn occupate",
+    "answer": "EADDRINUSE o una porta EasyConn occupata indica spesso che un'altra app compatibile sta usando lo stesso servizio. Chiudi completamente Carbit, CarbitLink, Carbit Ride, MOTO-HUB o app simili, quindi torna in MotoLink e ripeti START."
+  },
+  {
+    "id": "video_recovery",
+    "keywords": [
+      "video",
+      "h264",
+      "schermo",
+      "first frame",
+      "riconnessione",
+      "video in attesa"
+    ],
+    "title": "Video e riconnessione",
+    "answer": "Se MotoLink indica Riconnessione o Video in attesa ma la rete della moto è ancora attiva, attendi qualche secondo: la sessione mantiene il collegamento e riprova EasyConn periodicamente. Una vera perdita della rete moto porta invece allo stato Connessione persa. Evita di premere START ripetutamente durante il recovery."
+  },
+  {
+    "id": "pocket_proximity",
+    "keywords": [
+      "modalità tasca",
+      "tasca",
+      "prossimità",
+      "sensore",
+      "schermo nero",
+      "volume giù"
+    ],
+    "title": "Modalità tasca e schermo nero",
+    "answer": "La Modalità tasca usa il sensore di prossimità per proteggere lo schermo e ridurre i tocchi accidentali. Se resta uno schermo nero, usa la procedura di sblocco prevista dall'app e verifica il permesso Mostra sopra altre app. Il mirroring deve continuare a funzionare indipendentemente dall'Assistente IA."
+  },
+  {
+    "id": "clock_tft",
+    "keywords": [
+      "orologio",
+      "ora",
+      "clock",
+      "tft",
+      "00:00",
+      "1970"
+    ],
+    "title": "Orologio TFT",
+    "answer": "Per i modelli Voge compatibili MotoLink sincronizza l'orario nel flusso EasyConn/PXC usando l'ora locale del telefono. Se il TFT torna a 00:00 o 1970, ferma la sessione e riconnetti la moto; se il problema persiste, condividi il Log perché l'ordine dei messaggi di handshake è utile alla diagnosi."
+  },
+  {
+    "id": "profiles_photos_background",
+    "keywords": [
+      "profilo",
+      "foto personale",
+      "sfondo",
+      "modello moto",
+      "garage"
+    ],
+    "title": "Profili, foto e sfondo",
+    "answer": "Il nome e la descrizione del profilo non cambiano il modello moto selezionato. Una foto personale ha priorità sull'artwork del modello finché non scegli Rimuovi foto personale. Con Sfondo ON, dopo il collegamento reale tutte le pagine usano l'immagine del profilo/moto attiva; con Sfondo OFF resta sempre lo sfondo standard."
+  },
+  {
+    "id": "logs_support",
+    "keywords": [
+      "log",
+      "diagnostica",
+      "supporto",
+      "errore",
+      "condividi"
+    ],
+    "title": "Log e diagnostica",
+    "answer": "Il Log tecnico di MotoLink resta locale. Per inviarlo all'Assistente vai in Supporto > Log > Condividi > Assistente: MotoLink prepara sul telefono un estratto tecnico, rimuove identificativi e secret e lo invia solo per quella richiesta. Con Condividi > Esterno resta disponibile la normale condivisione Android. Durante una chat normale il Log non viene letto né inviato automaticamente."
+  }
+]
