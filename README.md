@@ -78,7 +78,7 @@ La compatibilità reale può dipendere da:
 - versione Android dello smartphone;
 - implementazione EasyConn / Carbit presente sul display.
 
-Per evitare di dichiarare compatibilità non verificate, nella tabella seguente vanno inserite **solo le moto effettivamente provate**.
+Moto sul quale l'app è stata testata.
 
 | Marca | Modello | Anno / versione | Display / sistema | Stato | Note |
 |---|---|---|---|---|---|
@@ -136,9 +136,13 @@ Le regolazioni vengono mantenute per il relativo profilo moto.
 
 ### 📱 Modalità tasca
 
-La Modalità tasca aiuta a proteggere lo smartphone durante il mirroring e a ridurre i tocchi accidentali.
+Durante il mirroring, MotoLink mette a disposizione due sistemi per gestire lo schermo dello smartphone senza interrompere la sessione.
 
-Durante una sessione è inoltre disponibile la funzione di **schermo nero con blocco tocchi**, gestita dai comandi previsti dall'app.
+- **Doppio tocco su Volume Giù**: spegne lo schermo tramite la funzione MotoLink e blocca i tocchi accidentali. (controllare sempre di avere il volume, senza volume non funziona)
+- **Nuovo doppio tocco su Volume Giù**: riattiva lo schermo e ripristina l'utilizzo normale del telefono.
+- **Sensore di prossimità**: quando lo smartphone viene coperto o riposto in tasca, il display può spegnersi automaticamente; quando il sensore torna libero, lo schermo si riattiva.
+
+In questo modo il telefono può rimanere in tasca o al riparo durante il mirroring, riducendo illuminazione e tocchi indesiderati senza interrompere la connessione con il display della moto.
 
 ### 🧰 Log MotoLink
 
