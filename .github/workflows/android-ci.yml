@@ -40,13 +40,7 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload debug APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MotoLink-debug
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 7
-
-# Questo workflow compila solo una build DEBUG di controllo.
-# Non contiene né utilizza keystore, password o credenziali di firma release.
+# Questo workflow verifica che MotoLink compili correttamente.
+# Usa un runner standard ubuntu-latest su repository pubblico.
+# Non carica artefatti e non contiene né utilizza keystore, password
+# o credenziali di firma release.
