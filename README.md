@@ -193,16 +193,20 @@ Questa impostazione aiuta MotoLink a rimanere attiva correttamente durante le se
 
 ## Permessi e privacy
 
-MotoLink richiede soltanto gli accessi necessari alle funzioni utilizzate dall'utente.
+MotoLink è stata progettata per ridurre al minimo le autorizzazioni richieste e **non utilizza servizi di Accessibilità**.
+
+L'app non richiede accesso diretto a fotocamera, microfono, contatti, SMS o file personali. La scansione QR utilizza l'interfaccia fornita dai servizi Google senza concedere a MotoLink il permesso Fotocamera.
+
+Per le funzioni tecniche possono comparire soltanto le seguenti autorizzazioni o conferme di sistema:
 
 | Accesso / conferma | Quando viene usato | Perché serve |
 |---|---|---|
-| **Rete / Wi-Fi** | Durante il collegamento alla moto | Individuare e utilizzare la connessione richiesta dal display |
-| **MediaProjection / condivisione schermo** | All'avvio del mirroring | Android richiede la conferma dell'utente prima di catturare lo schermo o una singola app |
-| **Mostra sopra altre app** | Solo per le funzioni che lo richiedono | Gestire la Modalità tasca / schermo nero secondo la configurazione dell'app |
+| **Connessione moto / Wi-Fi** | Durante il collegamento alla moto | Android può richiedere l'autorizzazione per collegarsi al TFT tramite Wi-Fi / Wi-Fi Direct. Su Android 13+ viene usato il permesso per dispositivi Wi-Fi nelle vicinanze; su versioni precedenti Android può richiedere il permesso posizione legacy previsto dalle API Wi-Fi. MotoLink non lo utilizza per tracciare la posizione dell'utente. |
+| **MediaProjection / condivisione schermo** | All'avvio del mirroring | È una conferma mostrata direttamente da Android per autorizzare la cattura dello schermo o di una singola app. Non è un servizio di Accessibilità e non è un permesso permanente. |
+| **Mostra sopra altre app** | Quando richiesto dalle funzioni previste | Serve alla Modalità tasca / schermo nero con blocco tocchi e agli strumenti di adattamento che utilizzano un pannello sovrapposto. |
 
 > [!NOTE]
-> Android mantiene sotto il controllo dell'utente le conferme di condivisione dello schermo. MotoLink non può approvare silenziosamente la cattura di un'app o dell'intero display.
+> MotoLink non richiede permessi di Accessibilità e non utilizza autorizzazioni a fotocamera, microfono, contatti o messaggi. Le richieste sopra indicate sono legate esclusivamente alla connessione con il display moto, al mirroring e alle funzioni grafiche dell'app.
 
 ### Dati e Assistente
 
@@ -262,7 +266,10 @@ MotoLink continua a essere verificata su combinazioni differenti di smartphone, 
 
 ## Codice sorgente
 
-Il codice sorgente di MotoLink è pubblico in questa repository.
+Il codice sorgente di MotoLink è **pubblico e consultabile** in questa repository per finalità di studio, trasparenza e verifica.
+
+> [!IMPORTANT]
+> **MotoLink non è distribuito con una licenza open source.** Il software è protetto da copyright e tutti i diritti sono riservati. La disponibilità pubblica del sorgente non autorizza automaticamente copia, modifica, ridistribuzione o creazione di opere derivate. Consulta [`LICENSE`](LICENSE) per i termini completi.
 
 ```text
 MotoLink/
@@ -274,8 +281,6 @@ MotoLink/
 ├── settings.gradle.kts
 └── README.md
 ```
-
-
 
 ---
 
