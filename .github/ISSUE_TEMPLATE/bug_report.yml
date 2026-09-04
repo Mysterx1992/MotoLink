@@ -1,0 +1,106 @@
+name: "🐞 Segnala un problema"
+description: "Segnala un problema tecnico riscontrato con MotoLink"
+title: "[BUG] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. Compila più campi possibile: ci aiuta a capire il problema senza doverti chiedere subito altre informazioni.
+
+        **Non pubblicare password Wi-Fi, QR completi, token, chiavi API, MAC address, UUID o altri dati riservati.**
+
+  - type: input
+    id: motolink_version
+    attributes:
+      label: Versione MotoLink
+      description: "Esempio: 1.0"
+      placeholder: "1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: motorcycle
+    attributes:
+      label: Moto
+      description: "Marca, modello e anno"
+      placeholder: "Esempio: Voge Valico 900 - 2026"
+    validations:
+      required: true
+
+  - type: input
+    id: display
+    attributes:
+      label: TFT / sistema di mirroring
+      description: "Se lo conosci, indica il tipo di display o sistema (es. EasyConn / Carbit)."
+      placeholder: "Esempio: TFT EasyConn"
+
+  - type: input
+    id: phone
+    attributes:
+      label: Smartphone
+      placeholder: "Marca e modello"
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Versione Android
+      placeholder: "Esempio: Android 15"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Descrizione del problema
+      description: "Spiega cosa succede e in quale momento."
+      placeholder: "Descrivi il problema in modo semplice e preciso."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passaggi per riprodurlo
+      description: "Indica, se possibile, i passaggi che portano al problema."
+      placeholder: |
+        1. Apro MotoLink
+        2. Seleziono...
+        3. Premo START
+        4. Succede...
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento atteso
+      placeholder: "Cosa ti aspettavi che succedesse?"
+
+  - type: dropdown
+    id: repeatable
+    attributes:
+      label: Il problema si ripete?
+      options:
+        - "Sempre"
+        - "Spesso"
+        - "Solo alcune volte"
+        - "È successo una sola volta"
+        - "Non so"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log MotoLink (facoltativo)
+      description: "Se utile, incolla solo un estratto già controllato. Non pubblicare dati sensibili o identificativi."
+      render: text
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Conferma privacy
+      options:
+        - label: "Ho controllato la segnalazione e non contiene password, QR completi, token, chiavi API o altri dati riservati."
+          required: true
