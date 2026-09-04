@@ -2,153 +2,299 @@
   <img src="docs/images/banner-motolink.png" alt="MotoLink" width="100%">
 </p>
 
-# MotoLink
-
-**Mirroring dello smartphone sui display moto compatibili, con profili, app preferite, adattamento display e supporto tecnico integrato.**
-
-<p>
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/latest"><strong>⬇️ Scarica MotoLink APK</strong></a>
-  &nbsp;•&nbsp;
-  <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4"><strong>💬 Gruppo MotoLink Mirroring</strong></a>
+<p align="center">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/latest/download/MotoLink_V1.0.apk">
+    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20APK-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink APK">
+  </a>
+  &nbsp;
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
+    <img src="https://img.shields.io/badge/RELEASE-Ultima%20versione-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="Ultima release MotoLink">
+  </a>
+  &nbsp;
+  <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
+    <img src="https://img.shields.io/badge/WHATSAPP-MotoLink%20Mirroring-25D366?style=for-the-badge&logo=whatsapp&logoColor=ffffff" alt="MotoLink Mirroring WhatsApp">
+  </a>
 </p>
 
-> L'APK ufficiale è pubblicato direttamente nella pagina **Releases**:  
-> **https://github.com/Mysterx1992/MotoLink/releases/latest**
+# MotoLink
 
-MotoLink è un'app Android pensata per portare il mirroring dello smartphone sul display di una moto compatibile. L'interfaccia riunisce connessione, profili moto, applicazioni preferite, strumenti di adattamento e supporto tecnico in un unico ambiente.
+**Porta il mirroring del tuo smartphone sul display della moto compatibile, con profili dedicati, app preferite, adattamento del display e strumenti di supporto integrati.**
 
-## Funzioni principali
+MotoLink è un'app Android progettata per gestire in un unico ambiente il collegamento con il display della moto, il mirroring dello smartphone e le principali funzioni di configurazione e assistenza.
 
-- **Mirroring** verso display moto compatibili con il flusso supportato da MotoLink.
-- **Garage** con profili moto e configurazione tramite QR o profilo locale quando previsto.
-- **App preferite**: fino a quattro applicazioni richiamabili rapidamente dalla Home.
-- **Adattamento display** con regolazioni manuali persistenti per profilo moto.
-- **Modalità tasca** e schermo nero con blocco tocchi durante il mirroring.
-- **Log MotoLink** locale e persistente fino al comando esplicito **Pulisci**.
-- **Assistente MotoLink** per supporto tecnico sull'app.
-- Invio volontario del **Log filtrato** all'Assistente tramite **Supporto → Log → Condividi → Assistente**.
-- Collegamento diretto al gruppo **MotoLink Mirroring** per il supporto della community.
+L'interfaccia è pensata per essere semplice e immediata: prepari la sessione a veicolo fermo, selezioni la moto e le app che utilizzi più spesso, quindi avvii il mirroring dalla Home.
+
+> [!IMPORTANT]
+> Configura MotoLink, i profili, le applicazioni e le regolazioni **a veicolo fermo**.  
+> Non utilizzare lo smartphone o MotoLink in modo da compromettere l'attenzione durante la guida.
+
+---
+
+## Download MotoLink
+
+### APK ufficiale
+
+<a href="https://github.com/Mysterx1992/MotoLink/releases/latest/download/MotoLink_V1.0.apk">
+  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.0.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink">
+</a>
+
+**Pagina dell'ultima release:**  
+https://github.com/Mysterx1992/MotoLink/releases/latest
+
+> [!NOTE]
+> Nella pagina della Release scarica il file che termina in `.apk`.  
+> I file **Source code (zip)** e **Source code (tar.gz)** generati automaticamente da GitHub contengono il codice sorgente e **non sono applicazioni installabili**.
+
+Android può richiedere l'autorizzazione per installare app provenienti da questa fonte. È il normale controllo di sicurezza previsto per APK installati al di fuori di Google Play.
+
+---
 
 ## MotoLink in azione
 
 <table>
 <tr>
-<td width="50%"><img src="docs/images/home-motolink.png" alt="MotoLink Home"></td>
-<td width="50%"><img src="docs/images/supporto-motolink.png" alt="MotoLink Supporto"></td>
+<td width="50%" align="center"><img src="docs/images/home-motolink.png" alt="MotoLink Home"></td>
+<td width="50%" align="center"><img src="docs/images/supporto-motolink.png" alt="MotoLink Supporto"></td>
 </tr>
 <tr>
-<td width="50%"><img src="docs/images/preferite-motolink.png" alt="MotoLink App preferite"></td>
-<td width="50%"><img src="docs/images/crediti-motolink.png" alt="MotoLink Crediti"></td>
+<td width="50%" align="center"><img src="docs/images/preferite-motolink.png" alt="MotoLink App preferite"></td>
+<td width="50%" align="center"><img src="docs/images/crediti-motolink.png" alt="MotoLink Crediti"></td>
 </tr>
 </table>
 
-Gli screenshot originali, senza composizione grafica, sono disponibili in [`docs/screenshots`](docs/screenshots).
+Gli screenshot originali dell'app sono disponibili in [`docs/screenshots`](docs/screenshots).
 
-## Download APK
+---
 
-La pagina ufficiale per scaricare l'ultima build pubblicata è:
+## Compatibilità moto
 
-### **[➡️ Apri Releases e scarica MotoLink APK](https://github.com/Mysterx1992/MotoLink/releases/latest)**
+MotoLink è progettata per lavorare con display moto compatibili con il flusso di mirroring supportato dall'app.
 
-Per la release `v1.0`, se l'asset viene pubblicato con il nome `MotoLink_V1.0.apk`, il collegamento diretto al file sarà:
+La compatibilità reale può dipendere da:
 
-`https://github.com/Mysterx1992/MotoLink/releases/download/v1.0/MotoLink_V1.0.apk`
+- modello della moto;
+- display / T-Box installato;
+- versione firmware;
+- versione Android dello smartphone;
+- implementazione EasyConn / Carbit presente sul display.
 
-Scarica l'APK soltanto dalla repository ufficiale e, quando disponibile, confronta l'hash SHA-256 indicato nella Release.
+Per evitare di dichiarare compatibilità non verificate, nella tabella seguente vanno inserite **solo le moto effettivamente provate**.
 
-## Requisiti Android
+| Marca | Modello | Anno / versione | Display / sistema | Stato | Note |
+|---|---|---|---|---|---|
+| _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
+| _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento qrCode_ |
+| _CfMoto_ | _None_ | _None_ | _None_ | No Testata | _App ancora da testare su CfMoto_ |
 
-- Android **10 / API 29** o superiore.
-- `compileSdk 36`
-- `targetSdk 36`
-- Java / JVM **17**
+<!--
+ESEMPIO DI RIGA DA COPIARE:
+| Voge | MODELLO | 2026 | TFT / EasyConn | ✅ Testata | Mirroring verificato |
 
-Alcune funzioni dipendono dalla versione Android, dai permessi concessi e dal comportamento del display moto. La compatibilità può variare tra modelli e firmware.
+Aggiungi solo moto realmente testate.
+-->
 
-## Struttura del progetto
+### Legenda
 
-```text
-MotoLink/
-├── app/                         # Applicazione Android
-├── gradle/                      # Gradle Wrapper
-├── supabase/
-│   ├── functions/              # Backend Assistente MotoLink
-│   └── migrations/             # Quota server-side
-├── docs/                        # Immagini, screenshot e documentazione
-├── build.gradle.kts
-├── settings.gradle.kts
-└── README.md
-```
+| Stato | Significato |
+|---|---|
+| ✅ **Testata** | Collegamento e mirroring verificati direttamente |
+| 🧪 **In test** | Compatibilità in fase di verifica |
+| ⚠️ **Parziale** | Collegamento presente ma una o più funzioni richiedono ancora verifica |
 
-## Build Android
+> [!WARNING]
+> Un display simile o appartenente allo stesso marchio **non garantisce automaticamente la compatibilità**. Modello e firmware devono essere verificati separatamente.
 
-1. Clona la repository.
-2. Apri la cartella del progetto con Android Studio.
-3. Attendi la sincronizzazione Gradle.
-4. Compila con **Build → Build APK(s)** oppure tramite Gradle Wrapper.
+---
 
-Il progetto usa il package Android:
+## Cosa fa MotoLink
 
-`it.motolink.app`
+### 🏍️ Connessione e mirroring
 
-La configurazione Supabase presente nell'app contiene soltanto **URL del progetto e publishable key**, valori pubblici destinati al client. Le chiavi private non devono essere inserite nel repository.
+MotoLink gestisce il collegamento con il display moto compatibile e permette di avviare il mirroring direttamente dalla Home.
 
-## Assistente MotoLink
+Lo stato della sessione rimane visibile nell'interfaccia e le funzioni di connessione restano separate dagli strumenti online di supporto.
 
-L'Assistente è dedicato al supporto tecnico MotoLink.
+### 🏠 Garage e profili moto
 
-Una normale conversazione **non legge automaticamente il Log**. Per allegare volontariamente la diagnostica:
+Il Garage permette di salvare e gestire i profili delle moto.
+
+Ogni profilo può mantenere le proprie impostazioni e regolazioni, così da non dover riconfigurare l'app ogni volta che si passa da una moto a un'altra.
+
+Quando previsto dal display, MotoLink può utilizzare il QR per la configurazione; in alternativa è disponibile il profilo locale secondo le funzioni presenti nell'app.
+
+### ⭐ App preferite
+
+Puoi selezionare fino a **quattro applicazioni preferite**.
+
+Le app selezionate diventano rapidamente disponibili dalla Home, rendendo più semplice avviare gli strumenti utilizzati più spesso durante il mirroring.
+
+### 📐 Adattamento display
+
+MotoLink include strumenti per adattare manualmente l'immagine alle dimensioni e alla geometria del display della moto.
+
+Le regolazioni vengono mantenute per il relativo profilo moto.
+
+### 📱 Modalità tasca
+
+La Modalità tasca aiuta a proteggere lo smartphone durante il mirroring e a ridurre i tocchi accidentali.
+
+Durante una sessione è inoltre disponibile la funzione di **schermo nero con blocco tocchi**, gestita dai comandi previsti dall'app.
+
+### 🧰 Log MotoLink
+
+La sezione **Supporto → Log** mostra le informazioni tecniche utili alla diagnosi.
+
+Il Log:
+
+- resta locale sul dispositivo;
+- non viene cancellato automaticamente;
+- rimane disponibile fino al comando esplicito **Pulisci**;
+- può essere condiviso dall'utente quando serve assistenza.
+
+### 🤖 Assistente MotoLink
+
+L'Assistente è dedicato esclusivamente al supporto tecnico MotoLink.
+
+Può aiutare a:
+
+- comprendere le funzioni dell'app;
+- individuare possibili problemi di connessione;
+- interpretare comportamenti anomali;
+- analizzare volontariamente un estratto del Log;
+- suggerire controlli da effettuare.
+
+Una normale conversazione **non legge automaticamente il Log**.
+
+Per allegare volontariamente la diagnostica:
 
 **Supporto → Log → Condividi → Assistente**
 
-MotoLink applica un filtro locale alla diagnostica; il backend esegue inoltre un secondo filtro prima dell'elaborazione.
+MotoLink applica un filtro alle informazioni tecniche prima dell'elaborazione.
 
-Il backend è disponibile nella cartella [`supabase/functions/motolink-assistant`](supabase/functions/motolink-assistant).
+Se l'Assistente non dispone di informazioni sufficienti, l'utente può continuare il supporto con la community **MotoLink Mirroring**.
 
-### Secret server richiesti
+---
 
-I valori seguenti devono essere configurati nei **Secrets** della propria installazione Supabase e non devono mai essere committati:
+## Permessi e privacy
 
-- `AI_PROVIDER_API_KEY`
-- `AI_PROVIDER_MODEL` *(opzionale)*
+MotoLink richiede soltanto gli accessi necessari alle funzioni utilizzate dall'utente.
 
-Il codice utilizza inoltre le variabili server fornite dall'ambiente Supabase per le operazioni interne.
+| Accesso / conferma | Quando viene usato | Perché serve |
+|---|---|---|
+| **Rete / Wi-Fi** | Durante il collegamento alla moto | Individuare e utilizzare la connessione richiesta dal display |
+| **Dispositivi nelle vicinanze** | Quando richiesto da Android per la connessione | Consentire le operazioni di rete locale previste dal sistema |
+| **Fotocamera** | Quando viene utilizzata la scansione QR | Leggere il QR mostrato dal display della moto |
+| **MediaProjection / condivisione schermo** | All'avvio del mirroring | Android richiede la conferma dell'utente prima di catturare lo schermo o una singola app |
+| **Mostra sopra altre app** | Solo per le funzioni che lo richiedono | Gestire la Modalità tasca / schermo nero secondo la configurazione dell'app |
+| **Notifiche / servizio in primo piano** | Durante le sessioni che Android richiede di mantenere attive | Mantenere visibile e gestibile l'attività di mirroring |
 
-## Privacy
+> [!NOTE]
+> Android mantiene sotto il controllo dell'utente le conferme di condivisione dello schermo. MotoLink non può approvare silenziosamente la cattura di un'app o dell'intero display.
 
-- Profili, preferenze e Log tecnico vengono gestiti localmente dall'app secondo le funzioni previste.
-- Il Log non viene inviato automaticamente durante la chat.
-- Il database MotoLink non conserva la cronologia delle domande, delle risposte o il contenuto dei Log inviati all'Assistente.
-- Il backend mantiene un contatore aggregato **giorno + numero di chiamate provider IA** per applicare il limite configurato.
+### Dati e Assistente
 
-Consulta [`PRIVACY.md`](PRIVACY.md) per maggiori dettagli.
+- Profili e preferenze vengono gestiti localmente dall'app.
+- Il Log tecnico rimane locale finché l'utente non sceglie di condividerlo.
+- Durante una chat normale il Log non viene inviato automaticamente.
+- L'invio della diagnostica richiede un'azione esplicita.
+- Le informazioni tecniche vengono filtrate prima dell'elaborazione.
+- Il database dell'Assistente non viene utilizzato come archivio permanente delle conversazioni o dei Log inviati.
 
-## Sicurezza
+Per maggiori informazioni consulta [`PRIVACY.md`](PRIVACY.md).
 
-**Non pubblicare mai** nel repository o nelle Issue:
+---
 
-- API key private;
-- chiave server privata key;
-- keystore e password di firma;
-- token o credenziali;
-- QR completi o dati personali sensibili.
+## Supporto e community
 
-Consulta [`SECURITY.md`](SECURITY.md).
+### Assistente integrato
 
-## Supporto
+Apri:
 
-- Assistente integrato: **Supporto → Assistente**
-- Log tecnico: **Supporto → Log**
-- Community: **[MotoLink Mirroring su WhatsApp](https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4)**
+**Supporto → Assistente**
 
-Consulta anche [`SUPPORT.md`](SUPPORT.md).
+### Log tecnico
 
-## Sicurezza durante la guida
+Apri:
 
-Configura profili, applicazioni, permessi e regolazioni a veicolo fermo. Non utilizzare lo smartphone o MotoLink in modo da distrarti durante la guida.
+**Supporto → Log**
 
-## Progetto
+### MotoLink Mirroring su WhatsApp
 
-MotoLink è un progetto indipendente. I nomi e i marchi di produttori, sistemi operativi e servizi citati appartengono ai rispettivi proprietari.
+<a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
+  <img src="https://img.shields.io/badge/WHATSAPP-Entra%20nel%20gruppo%20MotoLink%20Mirroring-25D366?style=for-the-badge&logo=whatsapp&logoColor=ffffff" alt="MotoLink Mirroring WhatsApp">
+</a>
 
-Il codice sorgente è pubblico in questa repository. **La licenza del progetto non è definita in questo pacchetto**: prima di dichiarare formalmente una licenza open source, aggiungi il file `LICENSE` con la licenza che vuoi adottare.
+La community contribuisce con test su moto e display differenti, feedback e supporto agli utenti.
+
+---
+
+## Stato del progetto
+
+| Voce | Stato |
+|---|---|
+| Applicazione Android | ✅ Disponibile |
+| Release pubblica | ✅ `v1.0` |
+| Mirroring | ✅ Implementato |
+| Garage / profili moto | ✅ Implementato |
+| App preferite | ✅ Implementato |
+| Adattamento display | ✅ Implementato |
+| Modalità tasca | ✅ Implementata |
+| Log tecnico | ✅ Implementato |
+| Assistente MotoLink | ✅ Implementato |
+| Compatibilità moto | 🔄 In aggiornamento con i test reali |
+
+MotoLink continua a essere verificata su combinazioni differenti di smartphone, display e firmware.
+
+---
+
+## Codice sorgente
+
+Il codice sorgente di MotoLink è pubblico in questa repository.
+
+```text
+MotoLink/
+├── app/                 # Applicazione Android
+├── gradle/              # Gradle Wrapper
+├── supabase/            # Componenti backend pubblicabili / configurazione di riferimento
+├── docs/                # Immagini, screenshot e documentazione
+├── build.gradle.kts
+├── settings.gradle.kts
+└── README.md
+---
+
+
+
+---
+
+## Avvertenza durante la guida
+
+MotoLink è uno strumento di mirroring e supporto.
+
+**Non deve essere utilizzata come unica fonte di informazioni critiche durante la guida.**
+
+Configura destinazioni, applicazioni, profili e regolazioni prima di partire e utilizza sempre i sistemi della moto nel rispetto delle norme di sicurezza e del Codice della Strada applicabile.
+
+---
+
+## Progetto e marchi
+
+MotoLink è un progetto indipendente.
+
+I nomi, i marchi, i loghi, i sistemi operativi e i servizi di terze parti eventualmente citati appartengono ai rispettivi proprietari.
+
+MotoLink non implica affiliazione o approvazione da parte dei produttori di moto, display o servizi citati.
+
+---
+
+## Licenza
+
+Il codice sorgente è pubblico, ma **non è ancora stata definita una licenza software specifica**.
+
+Fino all'aggiunta di un file `LICENSE`, la disponibilità pubblica del codice non concede automaticamente i diritti previsti da una licenza open source.
+
+---
+
+<p align="center">
+  <strong>MotoLink</strong><br>
+  Mirroring • Connessione • Supporto
+</p>
