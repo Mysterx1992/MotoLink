@@ -1,0 +1,55 @@
+# Android / Gradle build
+.gradle/
+**/build/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local machine configuration
+local.properties
+
+# Secrets / environment
+.env
+.env.*
+secrets.properties
+keystore.properties
+*.secret
+*.secrets
+
+# Signing keys / certificates
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+
+# Service credentials
+google-services.json
+service-account*.json
+
+# Logs / temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated release artifacts
+*.apk
+*.aab
+*.apks
