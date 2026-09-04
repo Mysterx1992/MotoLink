@@ -57,7 +57,6 @@ Supabase, provider IA, Android/Google e altri servizi coinvolti possono elaborar
 In base alla funzione utilizzata MotoLink può richiedere autorizzazioni relative a:
 
 - Internet e stato della rete;
-- dispositivi Wi-Fi nelle vicinanze;
 - posizione su versioni Android precedenti quando richiesta dalle API Wi-Fi legacy;
 - MediaProjection;
 - servizio in primo piano;
