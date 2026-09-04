@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Public Supabase project values. These are intentionally safe to ship in the APK. -->
+    <string name="motolink_ai_supabase_url">https://YOUR_PROJECT_REF.supabase.co</string>
+    <string name="motolink_ai_supabase_publishable_key">sb_publishable_REPLACE_ME</string>
+</resources>

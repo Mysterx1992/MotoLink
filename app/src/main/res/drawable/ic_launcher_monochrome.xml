@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simplified road mark for Android 13+ themed icons. -->
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M23,82 C31,68 36,53 47,27 L52,27 C44,47 41,63 38,82 Z" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M70,82 C67,63 64,47 56,27 L61,27 C72,53 77,68 85,82 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M52,35 L56,35 L56,44 L52,44 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M51,50 L57,50 L57,61 L51,61 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M50,68 L58,68 L58,82 L50,82 Z" />
+</vector>
