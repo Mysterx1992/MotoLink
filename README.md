@@ -295,11 +295,17 @@ MotoLink non implica affiliazione o approvazione da parte dei produttori di moto
 
 ---
 
-## Licenza
+## Licenza e copyright
 
-Il codice sorgente è pubblico, ma **non è ancora stata definita una licenza software specifica**.
+**Copyright © 2026 Emanuele. Tutti i diritti riservati.**
 
-Fino all'aggiunta di un file `LICENSE`, la disponibilità pubblica del codice non concede automaticamente i diritti previsti da una licenza open source.
+Il codice sorgente di MotoLink è pubblicamente consultabile per finalità di studio, trasparenza e verifica.
+
+Non è concessa alcuna autorizzazione a copiare, modificare, distribuire, sublicenziare, vendere, ripubblicare o creare opere derivate dal software, in tutto o in parte, senza previa autorizzazione scritta del titolare del copyright.
+
+Il nome **MotoLink**, il branding, la grafica, la documentazione e gli asset associati sono anch'essi protetti.
+
+Per i termini completi consulta il file [`LICENSE`](LICENSE).
 
 ---
 
