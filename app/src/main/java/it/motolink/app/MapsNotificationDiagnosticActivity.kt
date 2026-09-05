@@ -142,7 +142,13 @@ class MapsNotificationDiagnosticActivity : Activity() {
             setPadding(0, dp(18), 0, 0)
         }, lpMatchWrap())
 
-        scroll.addView(content, ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        scroll.addView(
+            content,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        )
         return scroll
     }
 
