@@ -103,7 +103,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.HOME,
             title = "HOME · START / STOP",
-            body = "START avvia la ricerca e il mirroring verso la moto.\n\nIl colore del pulsante aiuta a riconoscere la fase corrente: pronto, ricerca o riconnessione, collegato.\n\nSTOP termina la sessione e interrompe il collegamento gestito da MotoLink.",
+            body = "START avvia la ricerca e il mirroring verso la moto.\n\nPRIMO COLLEGAMENTO\nSe non esiste ancora un profilo, dopo la scelta della Modalità tasca MotoLink chiede HOTSPOT oppure QR CODE. HOTSPOT richiede il nome della moto, salva il profilo nel Garage e continua con il collegamento normale. QR CODE apre lo scanner, salva il profilo dopo che hai assegnato un nome alla moto e continua automaticamente.\n\nDagli START successivi, finché il profilo resta salvato, questa scelta non viene più richiesta.\n\nIl colore del pulsante aiuta a riconoscere la fase corrente: pronto, ricerca o riconnessione, collegato.\n\nSTOP termina la sessione e interrompe il collegamento gestito da MotoLink.",
             target = GuideTarget(50f, 495f, 840f, 285f)
         ),
         GuideStep(
@@ -121,7 +121,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.GARAGE,
             title = "GARAGE · Aggiungi moto",
-            body = "Usa Aggiungi con QR quando la moto mostra un codice QR compatibile.\n\nSe il modello non utilizza il QR, puoi creare un profilo locale con la procedura prevista da MotoLink.\n\nPrima del salvataggio assegna sempre un nome alla moto. L’immagine del profilo dipende dal modello selezionato, non dal nome personalizzato.",
+            body = "Usa Aggiungi con QR quando la moto mostra un codice QR compatibile.\n\nSe non hai ancora nessun profilo, anche il primo START può crearne uno: scegli QR CODE per scansionare il codice oppure HOTSPOT per salvare un profilo locale e usare il collegamento normale. In entrambi i casi devi assegnare un nome alla moto e, dopo il salvataggio, MotoLink continua automaticamente.\n\nPuoi sempre gestire, rinominare o eliminare i profili dal GARAGE. L’immagine del profilo dipende dal modello selezionato, non dal nome personalizzato.",
             target = GuideTarget(50f, 820f, 840f, 240f)
         ),
         GuideStep(
@@ -171,7 +171,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Adattamento",
-            body = "ATTIVAZIONE\nADATTAMENTO è disattivato al primo utilizzo. Quando lo attivi, rimane attivo finché non lo disattivi.\n\nREGOLAZIONE DEI BORDI\n↑ regola il bordo superiore.\n↓ regola il bordo inferiore.\n← regola il bordo sinistro.\n→ regola il bordo destro.\nOgni pressione modifica il bordo di 5 px.\n\nDIMENSIONE\n+ allarga l’area visibile.\n− restringe l’area visibile.\n\nPANNELLO ADATTAMENTO\nTrascina il titolo per spostare il pannello.\nⓘ apre le istruzioni.\n× chiude il pannello e disattiva ADATTAMENTO.\n\nPROFILI MOTO\nOgni moto conserva le proprie regolazioni. Un profilo mai regolato utilizza la base automatica predefinita.",
+            body = "ATTIVAZIONE\nADATTAMENTO è disattivato al primo utilizzo. Quando lo attivi, rimane attivo finché non lo disattivi dalle IMPOSTAZIONI.\n\nREGOLAZIONE DEI BORDI\n↑ regola il bordo superiore.\n↓ regola il bordo inferiore.\n← regola il bordo sinistro.\n→ regola il bordo destro.\nOgni pressione modifica il bordo di 5 px.\n\nDIMENSIONE\n+ allarga l’area visibile.\n− restringe l’area visibile.\n\nPANNELLO ADATTAMENTO\nTrascina il titolo per spostare il pannello.\nⓘ apre le istruzioni.\n× chiude soltanto il pannello: la regolazione personalizzata resta salvata e continua a essere applicata.\n↺ Ripristina torna ai valori iniziali dell’app solo per l’orientamento che stai modificando e richiede due conferme prima di eseguire il ripristino.\n\nPROFILI MOTO\nOgni moto conserva le proprie regolazioni. Anche quando ADATTAMENTO è OFF i valori personali restano salvati; riattivandolo tornano disponibili. Un profilo mai regolato utilizza la base automatica predefinita.",
             target = GuideTarget(58f, 995f, 824f, 175f)
         ),
         GuideStep(
