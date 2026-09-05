@@ -135,6 +135,9 @@ class MirrorService : Service() {
     private var adaptationReverseMode = false
     // UI-only state: closing the editor must never disable or discard the saved calibration.
     private var adaptationPanelDismissed = false
+    @Volatile private var rendererCommittedWidth = 0
+    @Volatile private var rendererCommittedHeight = 0
+    private var geometryWatchdogRunnable: Runnable? = null
     private val manualVolumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_VOLUME_CHANGED || projection == null) return
@@ -1082,8 +1085,26 @@ class MirrorService : Service() {
                                     // never leak into PORTRAIT (and vice versa) on the visible TFT frame.
                                     applyAdaptationRuntime("orientation switch ${settledW}x${settledH}")
                                     renderer.notifyProducerResized(settledW, settledH)
+                                    geometryWatchdogRunnable?.let { geometryHandler.removeCallbacks(it) }
+                                    val expectedW = settledW
+                                    val expectedH = settledH
+                                    val watchdogGeneration = generation
+                                    val watchdog = Runnable {
+                                        if (watchdogGeneration != geometryGeneration) return@Runnable
+                                        if (rendererCommittedWidth == expectedW && rendererCommittedHeight == expectedH) return@Runnable
+                                        // Do not restart the same resize sequence: the original V15 path is
+                                        // deliberately left intact so SurfaceTexture keeps draining frames.
+                                        // If this fires, keep the diagnostic visible for support instead of
+                                        // creating another HOLD cycle that can prolong a freeze.
+                                        AppLog.add(
+                                            "ROTATION ATOMIC V1.1 WATCHDOG: commit ancora assente per ${expectedW}x${expectedH}; " +
+                                                "nessun retry ricorsivo"
+                                        )
+                                    }
+                                    geometryWatchdogRunnable = watchdog
+                                    geometryHandler.postDelayed(watchdog, 1800L)
                                     AppLog.add(
-                                        "ROTATION ATOMIC V15: VirtualDisplay SOURCE=${settledW}x${settledH}; " +
+                                        "ROTATION ATOMIC V1.1: VirtualDisplay SOURCE=${settledW}x${settledH}; " +
                                             "encoder TFT resta ${targetWidth}x${targetHeight}; attendo frame stabili"
                                     )
                                 }
@@ -1153,11 +1174,16 @@ class MirrorService : Service() {
                     initialMarginBottom = 0,
                     onGeometryCommitted = { committedW, committedH ->
                         geometryHandler.post {
+                            rendererCommittedWidth = committedW
+                            rendererCommittedHeight = committedH
+                            geometryWatchdogRunnable?.let { geometryHandler.removeCallbacks(it) }
+                            geometryWatchdogRunnable = null
+                            clampAdaptationOverlayToScreen("rotation commit")
                             AppLog.add(
-                                "ROTATION ATOMIC V15: COMMIT SOURCE ${committedW}x${committedH}; " +
+                                "ROTATION ATOMIC V1.1: COMMIT SOURCE ${committedW}x${committedH}; " +
                                     "profilo=${if (committedW >= committedH) "LANDSCAPE" else "PORTRAIT"}; richiedo IDR"
                             )
-                            requestImmediateSyncFrame("rotation atomic V15 commit")
+                            requestImmediateSyncFrame("rotation atomic V1.1 commit")
                         }
                     }
                 )
@@ -1170,6 +1196,8 @@ class MirrorService : Service() {
             }.getOrNull()
 
             coverRenderer = renderer?.first
+            rendererCommittedWidth = sourceWidth
+            rendererCommittedHeight = sourceHeight
             projectionInputSurface = renderer?.second ?: inputSurface
 
             // Critical source-native rule: VirtualDisplay uses the SOURCE/phone geometry, never the T-Box
@@ -1222,11 +1250,15 @@ class MirrorService : Service() {
             bottom = config.bottomPx,
             enabled = config.enabled
         )
-        if (config.enabled && projection != null && !adaptationPanelDismissed) {
+        val editorAllowedForOrientation = profile == MirrorAdaptationConfig.Profile.LANDSCAPE
+        if (config.enabled && editorAllowedForOrientation && projection != null && !adaptationPanelDismissed) {
             showAdaptationOverlay()
         } else {
-            hideAdaptationOverlay(reason)
+            hideAdaptationOverlay(
+                if (config.enabled && !editorAllowedForOrientation) "portrait: editor solo orizzontale" else reason
+            )
         }
+        clampAdaptationOverlayToScreen("runtime $reason")
 
         val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && config.enabled) {
             MirrorAdaptationConfig.landscapeAutoFrameFor(targetWidth, targetHeight)
@@ -1288,7 +1320,10 @@ class MirrorService : Service() {
     }
 
     private fun showAdaptationOverlay() {
-        if (adaptationOverlayView != null) return
+        if (adaptationOverlayView != null) {
+            clampAdaptationOverlayToScreen("show esistente")
+            return
+        }
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
             AppLog.add("ADATTAMENTO V15 PANEL: permesso 'Mostra sopra altre app' assente; pannello non mostrato")
             return
@@ -1356,8 +1391,16 @@ class MirrorService : Service() {
         header.addView(close, LinearLayout.LayoutParams(dp(36), dp(32)))
         root.addView(header, LinearLayout.LayoutParams(dp(232), dp(34)))
 
+        // Controls and help are mutually exclusive. The header never disappears, so ⓘ and ×
+        // are always reachable even on short landscape phone displays.
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+        }
+        root.addView(controls, LinearLayout.LayoutParams(dp(232), LinearLayout.LayoutParams.WRAP_CONTENT))
+
         val up = key("↑")
-        root.addView(up, LinearLayout.LayoutParams(dp(48), dp(44)).apply { topMargin = dp(4) })
+        controls.addView(up, LinearLayout.LayoutParams(dp(48), dp(44)).apply { topMargin = dp(4) })
 
         val middle = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -1371,13 +1414,11 @@ class MirrorService : Service() {
             marginStart = dp(3); marginEnd = dp(3)
         })
         middle.addView(right, LinearLayout.LayoutParams(dp(48), dp(44)))
-        root.addView(middle, LinearLayout.LayoutParams(dp(150), dp(44)))
+        controls.addView(middle, LinearLayout.LayoutParams(dp(150), dp(44)))
 
         val down = key("↓")
-        root.addView(down, LinearLayout.LayoutParams(dp(48), dp(44)))
+        controls.addView(down, LinearLayout.LayoutParams(dp(48), dp(44)))
 
-        // Reset is intentionally separate from the arrow cluster. It affects only the
-        // orientation currently being edited and requires two explicit confirmations.
         val reset = TextView(this).apply {
             text = "↺ Ripristina"
             setTextColor(Color.WHITE)
@@ -1387,7 +1428,7 @@ class MirrorService : Service() {
             setPadding(dp(6), dp(2), dp(6), dp(2))
             contentDescription = "Ripristina orientamento corrente"
         }
-        root.addView(reset, LinearLayout.LayoutParams(dp(150), dp(34)).apply {
+        controls.addView(reset, LinearLayout.LayoutParams(dp(150), dp(34)).apply {
             topMargin = dp(5)
         })
 
@@ -1420,6 +1461,9 @@ class MirrorService : Service() {
             gravity = Gravity.START
             setPadding(dp(12), dp(10), dp(12), dp(12))
         }
+        val helpHeight = (resources.displayMetrics.heightPixels - dp(88))
+            .coerceAtLeast(dp(120))
+            .coerceAtMost(dp(230))
         val infoCard = ScrollView(this).apply {
             background = bg(0xF20D140D.toInt(), 0xFF5BFF2D.toInt())
             isFillViewport = false
@@ -1433,9 +1477,7 @@ class MirrorService : Service() {
         }
         root.addView(
             infoCard,
-            LinearLayout.LayoutParams(dp(232), dp(190)).apply {
-                topMargin = dp(7)
-            }
+            LinearLayout.LayoutParams(dp(232), helpHeight).apply { topMargin = dp(7) }
         )
 
         up.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("TOP") }
@@ -1458,8 +1500,11 @@ class MirrorService : Service() {
         info.setOnClickListener {
             cancelResetConfirmation()
             val opening = infoCard.visibility != View.VISIBLE
+            controls.visibility = if (opening) View.GONE else View.VISIBLE
             infoCard.visibility = if (opening) View.VISIBLE else View.GONE
-            AppLog.add("ADATTAMENTO V19 PANEL INFO: ${if (opening) "aperta/scroll" else "chiusa"}")
+            info.contentDescription = if (opening) "Chiudi informazioni Adattamento" else "Informazioni Adattamento"
+            root.post { clampAdaptationOverlayToScreen("toggle info") }
+            AppLog.add("ADATTAMENTO V1.1 PANEL INFO: ${if (opening) "aperta; header/X sempre visibili" else "chiusa; comandi visibili"}")
         }
         reset.setOnClickListener {
             when (resetConfirmStage) {
@@ -1490,7 +1535,7 @@ class MirrorService : Service() {
             cancelResetConfirmation()
             adaptationPanelDismissed = true
             AppLog.add(
-                "ADATTAMENTO V1 FIX: X premuta -> pannello chiuso; " +
+                "ADATTAMENTO V1.1: X premuta -> pannello chiuso; " +
                     "Adattamento resta attivo e calibrazione salvata continua applicata"
             )
             hideAdaptationOverlay("X pannello")
@@ -1500,14 +1545,26 @@ class MirrorService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = config.panelX
             y = config.panelY
         }
+
+        fun clampForCurrentSize() {
+            root.measure(
+                View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.heightPixels, View.MeasureSpec.AT_MOST)
+            )
+            val margin = dp(6)
+            val maxX = (resources.displayMetrics.widthPixels - root.measuredWidth - margin).coerceAtLeast(margin)
+            val maxY = (resources.displayMetrics.heightPixels - root.measuredHeight - margin).coerceAtLeast(margin)
+            params.x = params.x.coerceIn(margin, maxX)
+            params.y = params.y.coerceIn(margin, maxY)
+        }
+        clampForCurrentSize()
 
         var downRawX = 0f
         var downRawY = 0f
@@ -1525,12 +1582,15 @@ class MirrorService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     params.x = startX + (event.rawX - downRawX).toInt()
                     params.y = startY + (event.rawY - downRawY).toInt()
+                    clampForCurrentSize()
                     runCatching { wm.updateViewLayout(root, params) }
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    clampForCurrentSize()
+                    runCatching { wm.updateViewLayout(root, params) }
                     MirrorAdaptationConfig.savePanelPosition(this, params.x, params.y)
-                    AppLog.add("ADATTAMENTO V15 PANEL: posizione salvata x=${params.x} y=${params.y}")
+                    AppLog.add("ADATTAMENTO V1.1 PANEL: posizione salvata/clamp x=${params.x} y=${params.y}")
                     true
                 }
                 else -> false
@@ -1542,15 +1602,39 @@ class MirrorService : Service() {
                 adaptationOverlayView = root
                 adaptationOverlayWindowManager = wm
                 adaptationOverlayParams = params
+                root.post { clampAdaptationOverlayToScreen("prima visualizzazione") }
                 AppLog.add(
-                    "ADATTAMENTO V1 FIX PANEL: mostrato; titolo=Adattamento; info=ⓘ scrollabile; " +
+                    "ADATTAMENTO V1.1 PANEL: mostrato; header sempre visibile; info sostituisce comandi; " +
                         "close=X chiude solo editor; reset=orientamento corrente con doppia conferma; " +
                         "frecce=${MirrorAdaptationConfig.STEP_PX}px; centro OFF=ALLARGA / ON=RESTRINGI"
                 )
             }
             .onFailure {
-                AppLog.add("ADATTAMENTO V15 PANEL: errore addView ${it.javaClass.simpleName}: ${it.message ?: "-"}")
+                AppLog.add("ADATTAMENTO V1.1 PANEL: impossibile mostrare overlay (${it.javaClass.simpleName})")
             }
+    }
+
+    private fun clampAdaptationOverlayToScreen(reason: String) {
+        val view = adaptationOverlayView ?: return
+        val wm = adaptationOverlayWindowManager ?: return
+        val params = adaptationOverlayParams ?: return
+        if (view.parent == null) return
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.heightPixels, View.MeasureSpec.AT_MOST)
+        )
+        val margin = dp(6)
+        val maxX = (resources.displayMetrics.widthPixels - view.measuredWidth - margin).coerceAtLeast(margin)
+        val maxY = (resources.displayMetrics.heightPixels - view.measuredHeight - margin).coerceAtLeast(margin)
+        val oldX = params.x
+        val oldY = params.y
+        params.x = params.x.coerceIn(margin, maxX)
+        params.y = params.y.coerceIn(margin, maxY)
+        if (oldX != params.x || oldY != params.y) {
+            runCatching { wm.updateViewLayout(view, params) }
+            MirrorAdaptationConfig.savePanelPosition(this, params.x, params.y)
+            AppLog.add("ADATTAMENTO V1.1 PANEL CLAMP [$reason]: $oldX,$oldY -> ${params.x},${params.y}")
+        }
     }
 
     private fun hideAdaptationOverlay(reason: String) {
@@ -1803,6 +1887,8 @@ class MirrorService : Service() {
         projectionStartPending = false
         geometrySettleRunnable?.let { geometryHandler.removeCallbacks(it) }
         geometrySettleRunnable = null
+        geometryWatchdogRunnable?.let { geometryHandler.removeCallbacks(it) }
+        geometryWatchdogRunnable = null
         pendingGeometryWidth = 0
         pendingGeometryHeight = 0
         // MediaProjection.stop() can invoke MediaProjection.Callback.onStop().
@@ -1821,6 +1907,8 @@ class MirrorService : Service() {
             display = null
             try { coverRenderer?.release() } catch (_: Throwable) {}
             coverRenderer = null
+            rendererCommittedWidth = 0
+            rendererCommittedHeight = 0
             try { autoActiveAreaCoverRenderer?.release() } catch (_: Throwable) {}
             autoActiveAreaCoverRenderer = null
             projectionInputSurface = null

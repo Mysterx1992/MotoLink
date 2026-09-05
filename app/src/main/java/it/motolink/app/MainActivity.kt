@@ -200,7 +200,7 @@ class MainActivity : Activity() {
         dashboard.updateGuideEnabled(uiPrefs.getBoolean(PREF_GUIDE_NEXT_LAUNCH, true))
         dashboard.updateDynamicBackgroundEnabled(uiPrefs.getBoolean(PREF_DYNAMIC_BACKGROUND_ENABLED, true))
         MirrorAdaptationConfig.load(this).also { dashboard.updateAdaptation(it.enabled, MirrorAdaptationConfig.dashboardLabel(this)) }
-        dashboard.replaceSupportLogs(AppLog.recentLines())
+        dashboard.replaceSupportLogs(AppLog.recentLines(AppLog.UI_VISIBLE_LINE_LIMIT))
 
         AppLog.subscribe(logListener)
         registerNetworkDiagnostics()
@@ -223,7 +223,7 @@ class MainActivity : Activity() {
             C_GREEN,
             "LAN"
         )
-        AppLog.add("MotoLink V1.0 GUI pronta; guida iniziale attiva; geometria display validata invariata")
+        AppLog.add("MotoLink V1.1 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -952,19 +952,38 @@ class MainActivity : Activity() {
         val dialog = NeonDialogs.showCustom(
             activity = this,
             title = "Prima connessione",
-            message = "Non hai ancora un profilo moto salvato.\n\nScegli come colleghi questa moto. In entrambi i casi MotoLink salva il profilo nel Garage, così ai prossimi START non te lo chiederà più.",
+            message = "Non hai ancora un profilo moto salvato.\n\nScegli come collegare la moto. In entrambi i casi completerai il normale profilo del Garage prima che START continui.",
             contentView = null,
             positiveText = "QR CODE",
             negativeText = "HOTSPOT",
             onPositive = {
                 handled = true
-                AppLog.add("PRIMO START: scelta QR CODE; apro lo scanner e attendo il salvataggio del profilo")
+                AppLog.add("PRIMO START V1.1: scelta QR CODE; apro scanner, poi profilo completo Garage")
                 startQrCameraScan()
             },
             onNegative = {
                 handled = true
-                AppLog.add("PRIMO START: scelta HOTSPOT; richiedo il nome moto prima di continuare")
-                showFirstStartHotspotProfileDialog()
+                AppLog.add("PRIMO START V1.1: scelta HOTSPOT; apro profilo completo Garage")
+                val base = BikeProfile(
+                    displayName = "",
+                    format = "HOTSPOT",
+                    rawPayload = "HOTSPOT:${System.currentTimeMillis()}"
+                )
+                showBikeProfileCreationDialog(
+                    baseProfile = base,
+                    title = "Nuovo profilo moto",
+                    message = "Completa il profilo della moto. Dopo il salvataggio MotoLink continuerà automaticamente con il normale collegamento Hotspot / EasyConn.",
+                    onSaved = { profile ->
+                        firstStartProfileSetupPending = false
+                        lastResolved = null
+                        refreshBikeProfiles()
+                        setHeaderStatus("Avvio", profile.displayName, C_AMBER)
+                        setState("Profilo salvato", "Continuo con il collegamento", C_AMBER, "LAN")
+                        AppLog.add("PRIMO START V1.1: profilo HOTSPOT completo salvato; continuo automaticamente")
+                        continueStartAfterProfileReady()
+                    },
+                    onCancel = { showFirstStartConnectionChoice() }
+                )
             }
         )
         dialog.setOnDismissListener {
@@ -978,75 +997,6 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun showFirstStartHotspotProfileDialog() {
-        if (runSelection != RunSelection.START) return
-        firstStartProfileSetupPending = true
-        val requiredName = EditText(this).apply {
-            hint = "Nome moto obbligatorio"
-            setTextColor(Color.WHITE)
-            setHintTextColor(color(C_MUTED))
-            isSingleLine = true
-            background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
-            setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
-        }
-        var handled = false
-        val dialog = NeonDialogs.showCustom(
-            activity = this,
-            title = "Profilo Hotspot",
-            message = "Dai un nome alla moto. MotoLink salverà un profilo locale nel Garage e continuerà automaticamente con il normale collegamento Hotspot / EasyConn.",
-            contentView = requiredName,
-            positiveText = "SALVA E CONTINUA",
-            negativeText = "INDIETRO",
-            onPositive = {
-                handled = true
-                val chosenName = requiredName.text.toString().trim()
-                if (chosenName.isEmpty()) {
-                    NeonDialogs.showInfo(
-                        activity = this,
-                        title = "Nome moto richiesto",
-                        message = "Inserisci un nome per la moto prima di continuare.",
-                        onPositive = { showFirstStartHotspotProfileDialog() }
-                    )
-                    return@showCustom
-                }
-                val profile = BikeProfile(
-                    displayName = chosenName,
-                    format = "HOTSPOT",
-                    rawPayload = "HOTSPOT:${System.currentTimeMillis()}"
-                )
-                if (BikeProfileStore.save(this, profile)) {
-                    firstStartProfileSetupPending = false
-                    lastResolved = null
-                    refreshBikeProfiles()
-                    setHeaderStatus("Avvio", profile.displayName, C_AMBER)
-                    setState("Profilo salvato", "Continuo con il collegamento Hotspot", C_AMBER, "LAN")
-                    AppLog.add("PRIMO START: profilo HOTSPOT salvato localmente; continuo automaticamente")
-                    continueStartAfterProfileReady()
-                } else {
-                    NeonDialogs.showInfo(
-                        activity = this,
-                        title = "Profilo non salvato",
-                        message = "MotoLink non è riuscita a salvare il profilo. Riprova oppure scegli QR CODE.",
-                        onPositive = { showFirstStartConnectionChoice() }
-                    )
-                }
-            },
-            onNegative = {
-                handled = true
-                showFirstStartConnectionChoice()
-            }
-        )
-        dialog.setOnDismissListener {
-            mainHandler.post {
-                if (!handled && firstStartProfileSetupPending &&
-                    BikeProfileStore.load(this) == null && runSelection == RunSelection.START
-                ) {
-                    abortFirstStartProfileSetup("profilo Hotspot chiuso")
-                }
-            }
-        }
-    }
-
     private fun abortFirstStartProfileSetup(reason: String) {
         firstStartProfileSetupPending = false
         pendingFavoriteLaunchComponent = null
@@ -1054,7 +1004,7 @@ class MainActivity : Activity() {
         setRunSelection(RunSelection.NONE)
         setHeaderStatus("Pronto", "", C_GREEN)
         setState("Avvio annullato", "Premi START per riprovare", C_MUTED, "LAN")
-        AppLog.add("PRIMO START annullato: $reason")
+        AppLog.add("PRIMO START V1.1 annullato: $reason")
     }
 
     private fun ensureBackgroundGatePermissionThenProjection() {
@@ -1933,178 +1883,181 @@ class MainActivity : Activity() {
     }
 
     private fun handleQrPayload(raw: String) {
-        val profile = try {
+        val parsed = try {
             QrPairing.parse(raw)
         } catch (_: Throwable) {
             showQrErrorForCurrentFlow("Il QR è vuoto o non valido.")
             return
         }
         // Never log the payload, SSID password or proprietary token.
-        AppLog.add("QR PAIRING: formato=${profile.format}; brand=${profile.brand ?: "-"}; endpoint=${profile.endpointLabel() != null}; ssid=${profile.ssid != null}; topology=${profile.topology ?: "-"}")
+        AppLog.add("QR PAIRING: formato=${parsed.format}; brand=${parsed.brand ?: "-"}; endpoint=${parsed.endpointLabel() != null}; ssid=${parsed.ssid != null}; topology=${parsed.topology ?: "-"}")
 
         val details = buildString {
-            append("Nome: ${profile.displayName}\n")
-            append("Formato: ${profile.format}\n")
-            profile.brand?.let { append("Marca/ecosistema: $it\n") }
-            profile.ssid?.let { append("Rete Wi-Fi: $it\n") }
-            profile.topology?.let { append("Topologia: $it\n") }
-            profile.endpointLabel()?.let { append("EasyConn: $it\n") }
-            profile.serviceName?.let { append("Servizio: $it\n") }
-            if (profile.format == "CARBIT_TOKEN") {
-                append("\nToken di pairing riconosciuto, ma questo QR non contiene le credenziali Wi-Fi. Se il TFT mostra anche SSID/password, usa il QR di pairing Wi-Fi o l'inserimento manuale.")
-            } else if (profile.format == "OPAQUE") {
-                append("\nFormato proprietario non ancora mappato. Il payload verrà conservato cifrato sul telefono per poter aggiungere il parser corretto in seguito.")
-            } else if (profile.hasWifiIdentity()) {
-                append("\nSTART proverà prima a portare MotoLink sulla rete del TFT, poi cercherà EasyConn. Se mDNS non risponde, verrà verificato anche il gateway :10930 e infine resterà attivo il percorso EasyConn standard.")
-            } else if (profile.endpointLabel() != null) {
-                append("\nSTART proverà l'endpoint EasyConn salvato e, se non risponde, tornerà automaticamente alla discovery mDNS.")
-            }
-            append("\n\nPassword/token e payload QR non vengono scritti nei Log.")
+            append("QR riconosciuto: ${parsed.format}.\n")
+            parsed.brand?.let { append("Marca/ecosistema: $it\n") }
+            parsed.ssid?.let { append("Rete Wi-Fi rilevata.\n") }
+            parsed.topology?.let { append("Topologia: $it\n") }
+            parsed.endpointLabel()?.let { append("Endpoint EasyConn rilevato.\n") }
+            append("\nCompleta ora il normale profilo del Garage. Password, token e payload QR non vengono scritti nei Log.")
         }
-        val requiredName = EditText(this).apply {
-            hint = "Nome moto obbligatorio"
+
+        showBikeProfileCreationDialog(
+            baseProfile = parsed.copy(displayName = ""),
+            title = "Nuovo profilo moto",
+            message = details,
+            onSaved = { profile ->
+                lastResolved = null
+                refreshBikeProfiles()
+                AppLog.add("QR PAIRING V1.1: profilo completo salvato localmente; payload non scritto nel Log")
+                if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                    firstStartProfileSetupPending = false
+                    setHeaderStatus("Avvio", profile.displayName, C_AMBER)
+                    setState("Profilo QR salvato", "Continuo automaticamente con la connessione", C_AMBER, "QR")
+                    AppLog.add("PRIMO START V1.1: profilo QR completo salvato; continuo automaticamente")
+                    continueStartAfterProfileReady()
+                } else {
+                    setHeaderStatus("Pronto", profile.displayName, C_GREEN)
+                    setState("Moto configurata", "Da ora basta premere START", C_GREEN, "QR")
+                }
+            },
+            onCancel = {
+                if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                    showFirstStartConnectionChoice()
+                }
+            }
+        )
+    }
+
+    private fun bikeCatalogOptions(): List<String> = listOf(
+        "Voge Trofeo 500",
+        "Voge Valico 525DSX",
+        "Voge Valico 625DSX",
+        "Voge Valico 900DSX",
+        "CFMoto 450MT",
+        "CFMoto 700MT",
+        "CFMoto 800MT",
+        "CFMoto 800MT Explore",
+        "CFMoto 800MT-X",
+        "Altro modello"
+    )
+
+    private fun showBikeProfileCreationDialog(
+        baseProfile: BikeProfile,
+        title: String,
+        message: String,
+        onSaved: (BikeProfile) -> Unit,
+        onCancel: (() -> Unit)? = null
+    ) {
+        if (BikeProfileStore.loadAll(this).size >= BikeProfileStore.MAX_PROFILES) {
+            NeonDialogs.showInfo(
+                this,
+                "Garage pieno",
+                "Puoi salvare al massimo 3 profili moto. Elimina o modifica un profilo esistente.",
+                onPositive = { onCancel?.invoke() }
+            )
+            return
+        }
+
+        val name = EditText(this).apply {
+            hint = "Nome moto (es. La mia Trofeo)"
             setTextColor(Color.WHITE)
             setHintTextColor(color(C_MUTED))
             isSingleLine = true
             background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
             setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
         }
-        var qrProfileDialogHandled = false
-        val qrProfileDialog = NeonDialogs.showCustom(
-            activity = this,
-            title = "QR moto rilevato",
-            message = details + "\n\nDai un nome a questa moto: è obbligatorio per salvarla nel Garage e per mantenere associate le sue regolazioni di Adattamento.",
-            contentView = requiredName,
-            positiveText = "SALVA MOTO",
-            negativeText = "ANNULLA",
-            onPositive = {
-                qrProfileDialogHandled = true
-                val chosenName = requiredName.text.toString().trim()
-                if (chosenName.isEmpty()) {
-                    if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
-                        NeonDialogs.showInfo(
-                            activity = this,
-                            title = "Nome moto richiesto",
-                            message = "Inserisci un nome per la moto prima di continuare.",
-                            onPositive = { handleQrPayload(raw) }
-                        )
-                    } else {
-                        showQrError("Inserisci un nome per la moto. Il nome è obbligatorio per salvare il profilo.")
-                    }
-                    return@showCustom
-                }
-                val namedProfile = profile.copy(displayName = chosenName)
-                if (BikeProfileStore.save(this, namedProfile)) {
-                    lastResolved = null
-                    AppLog.add("QR PAIRING: profilo moto salvato localmente con nome utente; payload non scritto nel Log")
-                    refreshBikeProfiles()
-                    if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
-                        firstStartProfileSetupPending = false
-                        setHeaderStatus("Avvio", namedProfile.displayName, C_AMBER)
-                        setState("Profilo QR salvato", "Continuo automaticamente con la connessione", C_AMBER, "QR")
-                        AppLog.add("PRIMO START: profilo QR salvato; continuo automaticamente")
-                        continueStartAfterProfileReady()
-                    } else {
-                        setHeaderStatus("Pronto", namedProfile.displayName, C_GREEN)
-                        setState("Moto configurata", "Da ora basta premere START", C_GREEN, "QR")
-                    }
-                } else {
-                    if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
-                        NeonDialogs.showInfo(
-                            activity = this,
-                            title = "Profilo non salvato",
-                            message = "Garage pieno oppure profilo non salvabile. Libera un profilo o scegli HOTSPOT.",
-                            onPositive = { showFirstStartConnectionChoice() }
-                        )
-                    } else {
-                        showQrError("Garage pieno (massimo 3 profili) oppure profilo non salvabile. Elimina una moto e riprova.")
-                    }
-                }
-            },
-            onNegative = {
-                qrProfileDialogHandled = true
-                if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
-                    showFirstStartConnectionChoice()
-                }
-            }
-        )
-        qrProfileDialog.setOnDismissListener {
-            mainHandler.post {
-                if (!qrProfileDialogHandled && firstStartProfileSetupPending &&
-                    BikeProfileStore.load(this) == null && runSelection == RunSelection.START
-                ) {
-                    showFirstStartConnectionChoice()
-                }
-            }
-        }
-    }
-
-    private fun showLocalBikeProfileDialog() {
-        if (BikeProfileStore.loadAll(this).size >= BikeProfileStore.MAX_PROFILES) {
-            NeonDialogs.showInfo(this, "Garage pieno", "Puoi salvare al massimo 3 profili moto. Elimina o modifica un profilo esistente.")
-            return
-        }
-        val name = EditText(this).apply {
-            hint = "Nome moto (es. La mia Trofeo)"
-            setTextColor(Color.WHITE); setHintTextColor(color(C_MUTED)); isSingleLine = true
-            background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
-            setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
-        }
         val description = EditText(this).apply {
             hint = "Descrizione (facoltativa)"
-            setTextColor(Color.WHITE); setHintTextColor(color(C_MUTED)); isSingleLine = true
+            setTextColor(Color.WHITE)
+            setHintTextColor(color(C_MUTED))
+            isSingleLine = true
             background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
             setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
         }
-        val catalogOptions = listOf(
-            "Voge Trofeo 500",
-            "Voge Valico 525DSX",
-            "Voge Valico 625DSX",
-            "Voge Valico 900DSX",
-            "CFMoto 450MT",
-            "CFMoto 700MT",
-            "CFMoto 800MT",
-            "CFMoto 800MT Explore",
-            "CFMoto 800MT-X",
-            "Altro modello"
-        )
-        val catalog = Spinner(this).apply { adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions) }
+        val catalogOptions = bikeCatalogOptions()
+        val catalog = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions)
+            val currentLabel = baseProfile.catalogLabel?.trim()
+            if (!currentLabel.isNullOrEmpty()) {
+                val idx = catalogOptions.indexOfFirst { it.equals(currentLabel, true) }
+                if (idx >= 0) setSelection(idx)
+            }
+        }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(name, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() })
             addView(description, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() })
             addView(catalog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()))
         }
-        NeonDialogs.showCustom(
+
+        var handled = false
+        val dialog = NeonDialogs.showCustom(
             activity = this,
-            title = "Nuovo profilo moto",
-            message = "Per moto senza QR, come Trofeo, crea un profilo locale. Il nome della moto è obbligatorio e identifica il profilo nel Garage. START continuerà a usare la discovery EasyConn standard.",
+            title = title,
+            message = message,
             contentView = box,
             positiveText = "SALVA",
             negativeText = "ANNULLA",
             onPositive = {
-                val chosen = catalogOptions[catalog.selectedItemPosition]
+                handled = true
                 val display = name.text.toString().trim()
                 if (display.isEmpty()) {
-                    showQrError("Inserisci un nome per la moto. Il nome è obbligatorio per salvare il profilo.")
+                    NeonDialogs.showInfo(
+                        activity = this,
+                        title = "Nome moto richiesto",
+                        message = "Inserisci un nome per la moto prima di salvare.",
+                        onPositive = {
+                            showBikeProfileCreationDialog(baseProfile, title, message, onSaved, onCancel)
+                        }
+                    )
                     return@showCustom
                 }
-                val profile = BikeProfile(
+                val chosen = catalogOptions[catalog.selectedItemPosition]
+                val completed = baseProfile.copy(
                     displayName = display,
-                    format = "LOCAL",
-                    rawPayload = "LOCAL:${System.currentTimeMillis()}",
                     description = description.text.toString().trim().takeIf { it.isNotBlank() },
                     catalogLabel = chosen
                 )
-                if (BikeProfileStore.save(this, profile)) {
-                    lastResolved = null
-                    refreshBikeProfiles()
-                    setHeaderStatus("Pronto", profile.displayName, C_GREEN)
-                    setState("Profilo selezionato", "Premi START per connettere", C_GREEN, "GARAGE")
-                    AppLog.add("GARAGE: profilo locale creato; nessun dato personale inserito nel Log")
+                if (BikeProfileStore.save(this, completed)) {
+                    handled = true
+                    onSaved(completed)
                 } else {
-                    showQrError("Impossibile salvare il profilo sul dispositivo.")
+                    NeonDialogs.showInfo(
+                        activity = this,
+                        title = "Profilo non salvato",
+                        message = "MotoLink non è riuscita a salvare il profilo sul dispositivo.",
+                        onPositive = { onCancel?.invoke() }
+                    )
                 }
+            },
+            onNegative = {
+                handled = true
+                onCancel?.invoke()
+            }
+        )
+        dialog.setOnDismissListener {
+            mainHandler.post {
+                if (!handled) onCancel?.invoke()
+            }
+        }
+    }
+
+    private fun showLocalBikeProfileDialog() {
+        val base = BikeProfile(
+            displayName = "",
+            format = "LOCAL",
+            rawPayload = "LOCAL:${System.currentTimeMillis()}"
+        )
+        showBikeProfileCreationDialog(
+            baseProfile = base,
+            title = "Nuovo profilo moto",
+            message = "Crea un profilo locale per la moto. Il nome è obbligatorio; descrizione e modello servono a riconoscerla nel Garage. START continuerà a usare la discovery EasyConn standard.",
+            onSaved = { profile ->
+                lastResolved = null
+                refreshBikeProfiles()
+                setHeaderStatus("Pronto", profile.displayName, C_GREEN)
+                setState("Profilo selezionato", "Premi START per connettere", C_GREEN, "GARAGE")
+                AppLog.add("GARAGE V1.1: profilo locale completo creato; nessun dato personale inserito nel Log")
             }
         )
     }
@@ -2545,7 +2498,7 @@ class MainActivity : Activity() {
 
     private fun clearLocalLog() {
         AppLog.clearLogs()
-        dashboard.replaceSupportLogs(AppLog.recentLines())
+        dashboard.replaceSupportLogs(AppLog.recentLines(AppLog.UI_VISIBLE_LINE_LIMIT))
     }
 
     private fun toggleIntroSetting() {
