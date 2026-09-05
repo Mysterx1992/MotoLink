@@ -133,6 +133,8 @@ class MirrorService : Service() {
     private var adaptationOverlayWindowManager: WindowManager? = null
     private var adaptationOverlayParams: WindowManager.LayoutParams? = null
     private var adaptationReverseMode = false
+    // UI-only state: closing the editor must never disable or discard the saved calibration.
+    private var adaptationPanelDismissed = false
     private val manualVolumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != ACTION_VOLUME_CHANGED || projection == null) return
@@ -274,7 +276,12 @@ class MirrorService : Service() {
                 logProximityPowerPath(stage)
                 scheduleProximityPowerPathSnapshots(stage)
             }
-            ACTION_ZOOM_UPDATE, ACTION_ADAPTATION_UPDATE -> {
+            ACTION_ZOOM_UPDATE -> {
+                applyAdaptationRuntime("impostazioni")
+            }
+            ACTION_ADAPTATION_UPDATE -> {
+                // A deliberate change from Settings re-opens the editor when adaptation is ON.
+                adaptationPanelDismissed = false
                 applyAdaptationRuntime("impostazioni")
             }
         }
@@ -872,6 +879,7 @@ class MirrorService : Service() {
     private fun startProjection(intent: Intent) {
         if (projection != null || projectionStartPending) return
         projectionStartPending = true
+        adaptationPanelDismissed = false
 
         val notification = android.app.Notification.Builder(this, CHANNEL_ID)
             .setContentTitle("MotoLink")
@@ -1214,7 +1222,7 @@ class MirrorService : Service() {
             bottom = config.bottomPx,
             enabled = config.enabled
         )
-        if (config.enabled && projection != null) {
+        if (config.enabled && projection != null && !adaptationPanelDismissed) {
             showAdaptationOverlay()
         } else {
             hideAdaptationOverlay(reason)
@@ -1338,7 +1346,7 @@ class MirrorService : Service() {
             contentDescription = "Trascina pannello Adattamento"
         }
         val close = headerKey("×", 0xFFFF6A5C.toInt()).apply {
-            contentDescription = "Chiudi e disattiva Adattamento"
+            contentDescription = "Chiudi pannello Adattamento"
         }
         header.addView(info, LinearLayout.LayoutParams(dp(36), dp(32)))
         header.addView(handle, LinearLayout.LayoutParams(0, dp(32), 1f).apply {
@@ -1368,6 +1376,43 @@ class MirrorService : Service() {
         val down = key("↓")
         root.addView(down, LinearLayout.LayoutParams(dp(48), dp(44)))
 
+        // Reset is intentionally separate from the arrow cluster. It affects only the
+        // orientation currently being edited and requires two explicit confirmations.
+        val reset = TextView(this).apply {
+            text = "↺ Ripristina"
+            setTextColor(Color.WHITE)
+            textSize = 12.5f
+            gravity = Gravity.CENTER
+            background = bg(0xE61A211A.toInt(), 0xFFFFB24D.toInt())
+            setPadding(dp(6), dp(2), dp(6), dp(2))
+            contentDescription = "Ripristina orientamento corrente"
+        }
+        root.addView(reset, LinearLayout.LayoutParams(dp(150), dp(34)).apply {
+            topMargin = dp(5)
+        })
+
+        var resetConfirmStage = 0
+        fun updateResetConfirmation(stage: Int) {
+            resetConfirmStage = stage
+            when (stage) {
+                0 -> {
+                    reset.text = "↺ Ripristina"
+                    reset.background = bg(0xE61A211A.toInt(), 0xFFFFB24D.toInt())
+                }
+                1 -> {
+                    reset.text = "CONFERMA 1/2"
+                    reset.background = bg(0xE64A351A.toInt(), 0xFFFFB24D.toInt())
+                }
+                else -> {
+                    reset.text = "CONFERMA 2/2"
+                    reset.background = bg(0xE64A1A1A.toInt(), 0xFFFF6A5C.toInt())
+                }
+            }
+        }
+        fun cancelResetConfirmation() {
+            if (resetConfirmStage != 0) updateResetConfirmation(0)
+        }
+
         val infoText = TextView(this).apply {
             text = MirrorAdaptationConfig.USER_HELP_TEXT
             setTextColor(0xFFF1F6F1.toInt())
@@ -1393,11 +1438,12 @@ class MirrorService : Service() {
             }
         )
 
-        up.setOnClickListener { adjustAdaptationEdge("TOP") }
-        down.setOnClickListener { adjustAdaptationEdge("BOTTOM") }
-        left.setOnClickListener { adjustAdaptationEdge("LEFT") }
-        right.setOnClickListener { adjustAdaptationEdge("RIGHT") }
+        up.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("TOP") }
+        down.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("BOTTOM") }
+        left.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("LEFT") }
+        right.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("RIGHT") }
         center.setOnClickListener {
+            cancelResetConfirmation()
             adaptationReverseMode = !adaptationReverseMode
             center.text = if (adaptationReverseMode) "−" else "+"
             center.background = if (adaptationReverseMode) {
@@ -1410,14 +1456,44 @@ class MirrorService : Service() {
             )
         }
         info.setOnClickListener {
+            cancelResetConfirmation()
             val opening = infoCard.visibility != View.VISIBLE
             infoCard.visibility = if (opening) View.VISIBLE else View.GONE
             AppLog.add("ADATTAMENTO V19 PANEL INFO: ${if (opening) "aperta/scroll" else "chiusa"}")
         }
+        reset.setOnClickListener {
+            when (resetConfirmStage) {
+                0 -> {
+                    updateResetConfirmation(1)
+                    AppLog.add("ADATTAMENTO RESET: richiesta; conferma sicurezza 1/2")
+                }
+                1 -> {
+                    updateResetConfirmation(2)
+                    AppLog.add("ADATTAMENTO RESET: conferma sicurezza 1/2 ricevuta; attendo 2/2")
+                }
+                else -> {
+                    val profile = activeAdaptationProfile()
+                    MirrorAdaptationConfig.resetEdges(this, profile)
+                    adaptationReverseMode = false
+                    center.text = "+"
+                    center.background = bg(0xE61A211A.toInt(), 0xFF5BFF2D.toInt())
+                    updateResetConfirmation(0)
+                    AppLog.add(
+                        "ADATTAMENTO RESET: doppia conferma completata; orientamento=$profile " +
+                            "ripristinato ai valori iniziali dell'app; altro orientamento invariato"
+                    )
+                    applyAdaptationRuntime("ripristino $profile")
+                }
+            }
+        }
         close.setOnClickListener {
-            MirrorAdaptationConfig.setEnabled(this, false)
-            AppLog.add("ADATTAMENTO V19 PANEL: X premuta -> Adattamento disattivato nelle Impostazioni")
-            applyAdaptationRuntime("X pannello")
+            cancelResetConfirmation()
+            adaptationPanelDismissed = true
+            AppLog.add(
+                "ADATTAMENTO V1 FIX: X premuta -> pannello chiuso; " +
+                    "Adattamento resta attivo e calibrazione salvata continua applicata"
+            )
+            hideAdaptationOverlay("X pannello")
         }
 
         val params = WindowManager.LayoutParams(
@@ -1467,7 +1543,8 @@ class MirrorService : Service() {
                 adaptationOverlayWindowManager = wm
                 adaptationOverlayParams = params
                 AppLog.add(
-                    "ADATTAMENTO V19 PANEL: mostrato; titolo=Adattamento; info=ⓘ scrollabile; close=X disabilita; " +
+                    "ADATTAMENTO V1 FIX PANEL: mostrato; titolo=Adattamento; info=ⓘ scrollabile; " +
+                        "close=X chiude solo editor; reset=orientamento corrente con doppia conferma; " +
                         "frecce=${MirrorAdaptationConfig.STEP_PX}px; centro OFF=ALLARGA / ON=RESTRINGI"
                 )
             }

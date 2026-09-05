@@ -79,9 +79,10 @@ object MirrorAdaptationConfig {
 
             COMANDI
             ⓘ apre o chiude queste istruzioni.
-            × chiude il pannello e disattiva Adattamento.
+            × chiude solo il pannello: le regolazioni salvate restano attive.
+            ↺ Ripristina riporta solo l'orientamento che stai modificando ai valori iniziali dell'app e richiede due conferme.
 
-            Adattamento è OFF al primo accesso. Se lo attivi, resta ON finché non lo disattivi.
+            Adattamento è OFF al primo accesso. Se lo attivi, resta ON finché non lo disattivi dalle Impostazioni.
         """.trimIndent()
 
     const val STEP_PX = 5
