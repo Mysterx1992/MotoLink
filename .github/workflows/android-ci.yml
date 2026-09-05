@@ -40,7 +40,13 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-# Questo workflow verifica che MotoLink compili correttamente.
-# Usa un runner standard ubuntu-latest su repository pubblico.
-# Non carica artefatti e non contiene né utilizza keystore, password
-# o credenziali di firma release.
+      - name: Upload debug APK temporarily
+        uses: actions/upload-artifact@v4
+        with:
+          name: motolink-adaptation-fix-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 1
+
+# Upload temporaneo di 1 giorno richiesto per consegnare l'APK di test della correzione Adattamento.
+# Nessun keystore, password o credenziale di firma release viene utilizzato.
