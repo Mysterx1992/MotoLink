@@ -71,14 +71,15 @@ object MirrorAdaptationConfig {
             + allarga l’area dell’immagine
             − restringe l’area dell’immagine
 
-            SPOSTA IL PANNELLO
-            Trascina la scritta “Adattamento”.
+            PANNELLO
+            L’editor compare solo quando il telefono è in orizzontale. In verticale Adattamento resta attivo ma il pannello è nascosto.
+            Trascina la scritta “Adattamento” per spostarlo.
 
             SALVATAGGIO
             Le regolazioni si salvano automaticamente e restano separate per ogni profilo moto e per orientamento verticale/orizzontale. Se una moto non è mai stata regolata, MotoLink usa la base automatica predefinita. Rinominare la moto non fa perdere le sue regolazioni.
 
             COMANDI
-            ⓘ apre o chiude queste istruzioni.
+            ⓘ apre o chiude queste istruzioni. Quando le istruzioni sono aperte, i comandi vengono nascosti e la barra superiore con × resta sempre visibile.
             × chiude solo il pannello: le regolazioni salvate restano attive.
             ↺ Ripristina riporta solo l'orientamento che stai modificando ai valori iniziali dell'app e richiede due conferme.
 

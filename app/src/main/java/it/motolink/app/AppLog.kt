@@ -23,10 +23,17 @@ object AppLog {
     private const val SHARE_DIR = "shared_logs"
     private const val SESSION_MARKER = "mirror_session_open.marker"
 
+    // UI-only cap: the persisted .txt log remains complete.
+    const val UI_VISIBLE_LINE_LIMIT = 50
+
     private val listeners = CopyOnWriteArrayList<(String) -> Unit>()
     private var appContext: Context? = null
     private var crashHandlerInstalled = false
     private val mirrorSessionOpen = AtomicBoolean(false)
+
+    // UI de-duplication only. The persisted .txt keeps every technical sample.
+    private var uiVideoAliveAnnounced = false
+    private var uiConnectionAliveAnnounced = false
 
     @Synchronized
     fun install(context: Context) {
@@ -58,7 +65,30 @@ object AppLog {
         }
         val line = "$ts  $presented"
         appendLine(line, now)
-        listeners.forEach { it(line) }
+        if (shouldNotifyUi(message)) listeners.forEach { it(line) }
+    }
+
+    /**
+     * High-frequency health samples stay complete in the local .txt, but the rider-facing
+     * Supporto > Log feed shows each generic "video alive" / "connection alive" status only
+     * once per mirror session. This prevents needless UI rebuilds without weakening diagnostics.
+     */
+    private fun shouldNotifyUi(message: String): Boolean {
+        val videoAlive = message.startsWith("Encoder vivo") || message.startsWith("H264 stream vivo")
+        if (videoAlive) {
+            if (uiVideoAliveAnnounced) return false
+            uiVideoAliveAnnounced = true
+            return true
+        }
+
+        val connectionAlive = message.startsWith("PXC#", ignoreCase = true) &&
+            message.contains("HEARTBEAT", ignoreCase = true)
+        if (connectionAlive) {
+            if (uiConnectionAliveAnnounced) return false
+            uiConnectionAliveAnnounced = true
+            return true
+        }
+        return true
     }
 
     /**
@@ -157,6 +187,8 @@ object AppLog {
     fun markMirrorSessionStarted() {
         // One logical session = one START marker, even if UI callbacks are duplicated.
         if (!mirrorSessionOpen.compareAndSet(false, true)) return
+        uiVideoAliveAnnounced = false
+        uiConnectionAliveAnnounced = false
         markerFile()?.apply {
             parentFile?.mkdirs()
             writeText(System.currentTimeMillis().toString())
@@ -211,10 +243,10 @@ object AppLog {
 
 
     private fun appVersionName(): String {
-        val ctx = appContext ?: return "V1.0"
+        val ctx = appContext ?: return "V1.1"
         return runCatching {
-            ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "V1.0"
-        }.getOrDefault("V1.0")
+            ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "V1.1"
+        }.getOrDefault("V1.1")
     }
 
     @Synchronized

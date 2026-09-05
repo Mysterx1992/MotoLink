@@ -32,7 +32,7 @@ import kotlin.math.sin
 import java.util.ArrayDeque
 
 /**
- * MotoLink V1.0-test Beta5.9.
+ * MotoLink V1.1.
  *
  * CODE-NATIVE GUI rebuild.
  *
@@ -103,7 +103,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.HOME,
             title = "HOME · START / STOP",
-            body = "START avvia la ricerca e il mirroring verso la moto.\n\nPRIMO COLLEGAMENTO\nSe non esiste ancora un profilo, dopo la scelta della Modalità tasca MotoLink chiede HOTSPOT oppure QR CODE. HOTSPOT richiede il nome della moto, salva il profilo nel Garage e continua con il collegamento normale. QR CODE apre lo scanner, salva il profilo dopo che hai assegnato un nome alla moto e continua automaticamente.\n\nDagli START successivi, finché il profilo resta salvato, questa scelta non viene più richiesta.\n\nIl colore del pulsante aiuta a riconoscere la fase corrente: pronto, ricerca o riconnessione, collegato.\n\nSTOP termina la sessione e interrompe il collegamento gestito da MotoLink.",
+            body = "START avvia la ricerca e il mirroring verso la moto.\n\nPRIMO COLLEGAMENTO\nSe non esiste ancora un profilo, dopo la scelta della Modalità tasca MotoLink chiede HOTSPOT oppure QR CODE. In entrambi i casi si apre il normale pannello Nuovo profilo moto: assegna un nome, una descrizione facoltativa e scegli il modello. Con QR CODE lo scanner viene eseguito prima e i dati di collegamento rilevati restano associati al profilo. Dopo SALVA, START continua automaticamente.\n\nDagli START successivi, finché esiste un profilo salvato, questa scelta non viene più richiesta.\n\nIl colore del pulsante aiuta a riconoscere la fase corrente: pronto, ricerca o riconnessione, collegato.\n\nSTOP termina la sessione e interrompe il collegamento gestito da MotoLink.",
             target = GuideTarget(50f, 495f, 840f, 285f)
         ),
         GuideStep(
@@ -121,7 +121,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.GARAGE,
             title = "GARAGE · Aggiungi moto",
-            body = "Usa Aggiungi con QR quando la moto mostra un codice QR compatibile.\n\nSe non hai ancora nessun profilo, anche il primo START può crearne uno: scegli QR CODE per scansionare il codice oppure HOTSPOT per salvare un profilo locale e usare il collegamento normale. In entrambi i casi devi assegnare un nome alla moto e, dopo il salvataggio, MotoLink continua automaticamente.\n\nPuoi sempre gestire, rinominare o eliminare i profili dal GARAGE. L’immagine del profilo dipende dal modello selezionato, non dal nome personalizzato.",
+            body = "Usa Aggiungi con QR quando la moto mostra un codice QR compatibile. Dopo la scansione completi lo stesso normale profilo del Garage con nome, descrizione facoltativa e modello.\n\nSe il modello non utilizza il QR, puoi creare un profilo locale con la stessa schermata.\n\nAl primo START senza profili, MotoLink propone HOTSPOT oppure QR CODE e poi apre questo stesso pannello; dopo il salvataggio la connessione continua automaticamente.\n\nL’immagine del profilo dipende dal modello selezionato, non dal nome personalizzato.",
             target = GuideTarget(50f, 820f, 840f, 240f)
         ),
         GuideStep(
@@ -134,7 +134,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.SUPPORT,
             SupportTab.LOG,
             title = "SUPPORTO · Log",
-            body = "Il Log registra localmente gli eventi tecnici utili alla diagnosi e rimane disponibile finché non scegli Pulisci.\n\nCon Condividi puoi scegliere:\n\nESTERNO\nInvia il Log tramite le normali funzioni di condivisione Android.\n\nASSISTENTE\nInvia all’Assistente MotoLink una copia filtrata per quella singola richiesta. Il Log originale resta sul telefono.",
+            body = "Il Log registra localmente gli eventi tecnici utili alla diagnosi e rimane disponibile finché non scegli Pulisci. Per mantenere MotoLink leggera, questa schermata mostra solo le ultime 50 righe; il file .txt locale e quello condiviso conservano invece il Log completo.\n\nCon Condividi puoi scegliere:\n\nESTERNO\nInvia il Log tramite le normali funzioni di condivisione Android.\n\nASSISTENTE\nInvia all’Assistente MotoLink una copia filtrata per quella singola richiesta. Il Log originale resta sul telefono.",
             target = GuideTarget(90f, 185f, 760f, 1135f)
         ),
         GuideStep(
@@ -171,7 +171,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Adattamento",
-            body = "ATTIVAZIONE\nADATTAMENTO è disattivato al primo utilizzo. Quando lo attivi, rimane attivo finché non lo disattivi dalle IMPOSTAZIONI.\n\nREGOLAZIONE DEI BORDI\n↑ regola il bordo superiore.\n↓ regola il bordo inferiore.\n← regola il bordo sinistro.\n→ regola il bordo destro.\nOgni pressione modifica il bordo di 5 px.\n\nDIMENSIONE\n+ allarga l’area visibile.\n− restringe l’area visibile.\n\nPANNELLO ADATTAMENTO\nTrascina il titolo per spostare il pannello.\nⓘ apre le istruzioni.\n× chiude soltanto il pannello: la regolazione personalizzata resta salvata e continua a essere applicata.\n↺ Ripristina torna ai valori iniziali dell’app solo per l’orientamento che stai modificando e richiede due conferme prima di eseguire il ripristino.\n\nPROFILI MOTO\nOgni moto conserva le proprie regolazioni. Anche quando ADATTAMENTO è OFF i valori personali restano salvati; riattivandolo tornano disponibili. Un profilo mai regolato utilizza la base automatica predefinita.",
+            body = "ATTIVAZIONE\nADATTAMENTO è disattivato al primo utilizzo. Quando lo attivi, rimane attivo finché non lo disattivi dalle IMPOSTAZIONI.\n\nREGOLAZIONE DEI BORDI\n↑ regola il bordo superiore.\n↓ regola il bordo inferiore.\n← regola il bordo sinistro.\n→ regola il bordo destro.\nOgni pressione modifica il bordo di 5 px.\n\nDIMENSIONE\n+ allarga l’area visibile.\n− restringe l’area visibile.\n\nPANNELLO ADATTAMENTO\nIl pannello di regolazione compare solo quando il telefono è in orizzontale. In verticale Adattamento può restare ON ma l’editor rimane nascosto.\nTrascina il titolo per spostare il pannello. Il pannello viene mantenuto dentro lo schermo.\nⓘ mostra le istruzioni al posto dei comandi, lasciando sempre visibili la barra superiore e la ×. Tocca di nuovo ⓘ per tornare ai comandi.\n× chiude soltanto il pannello: la regolazione personalizzata resta salvata e continua a essere applicata.\n↺ Ripristina torna ai valori iniziali dell’app solo per l’orientamento che stai modificando e richiede due conferme.\n\nPROFILI MOTO\nOgni moto conserva le proprie regolazioni. Anche quando ADATTAMENTO è OFF i valori personali restano salvati; riattivandolo tornano disponibili. Un profilo mai regolato utilizza la base automatica predefinita.",
             target = GuideTarget(58f, 995f, 824f, 175f)
         ),
         GuideStep(
@@ -322,12 +322,13 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
 
     fun appendSupportLog(line: String) {
         supportLogs.addLast(line)
+        while (supportLogs.size > AppLog.UI_VISIBLE_LINE_LIMIT) supportLogs.removeFirst()
         if (page == Page.SUPPORT && supportTab == SupportTab.LOG) rebuild()
     }
 
     fun replaceSupportLogs(lines: List<String>) {
         supportLogs.clear()
-        lines.forEach { supportLogs.addLast(it) }
+        lines.takeLast(AppLog.UI_VISIBLE_LINE_LIMIT).forEach { supportLogs.addLast(it) }
         if (page == Page.SUPPORT && supportTab == SupportTab.LOG) rebuild()
     }
 

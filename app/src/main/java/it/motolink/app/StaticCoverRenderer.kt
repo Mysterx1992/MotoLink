@@ -352,12 +352,14 @@ class StaticCoverRenderer(
         val st = surfaceTexture ?: return
         try {
             if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) return
+
+            // V15 rotation invariant: always drain SurfaceTexture first, even while HOLD is active.
+            // Not consuming a signalled texture can fill the producer queue during a rotation and
+            // leave MediaProjection/VirtualDisplay unable to deliver the frames needed to commit
+            // the new geometry.
             st.updateTexImage()
             st.getTransformMatrix(texMatrix)
 
-            // During an orientation transition we keep consuming SurfaceTexture frames so the
-            // producer cannot block, but we do not swap the encoder EGL surface. The TFT therefore
-            // keeps the last valid H264 frame instead of seeing a portrait/landscape matrix race.
             if (geometryHold) {
                 heldFrameCount += 1
                 if (!producerResizeReady) return
