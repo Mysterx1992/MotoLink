@@ -18,6 +18,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Research branch only: install beside the official MotoLink V1.0 instead of
+            // replacing it or conflicting with its release signature.
+            applicationIdSuffix = ".mapsdiag"
+            versionNameSuffix = "-mapsdiag"
+        }
         release {
             isMinifyEnabled = false
         }
