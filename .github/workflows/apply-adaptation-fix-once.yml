@@ -1,0 +1,125 @@
+name: Apply adaptation persistence fix once
+
+on:
+  push:
+    branches:
+      - fix/adaptation-persistence-reset-v1
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/adaptation-persistence-reset-v1
+          fetch-depth: 0
+
+      - name: Apply deterministic source changes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected exactly 1 match, found {count}")
+              return text.replace(old, new, 1)
+
+          service_path = Path("app/src/main/java/it/motolink/app/MirrorService.kt")
+          s = service_path.read_text(encoding="utf-8")
+
+          s = replace_once(
+              s,
+              "    private var adaptationReverseMode = false\n",
+              "    private var adaptationReverseMode = false\n    // UI-only state: closing the editor must never disable or discard the saved calibration.\n    private var adaptationPanelDismissed = false\n",
+              "panel dismissed state",
+          )
+
+          s = replace_once(
+              s,
+              '''            ACTION_ZOOM_UPDATE, ACTION_ADAPTATION_UPDATE -> {\n                applyAdaptationRuntime("impostazioni")\n            }''',
+              '''            ACTION_ZOOM_UPDATE -> {\n                applyAdaptationRuntime("impostazioni")\n            }\n            ACTION_ADAPTATION_UPDATE -> {\n                // A deliberate change from Settings re-opens the editor when adaptation is ON.\n                adaptationPanelDismissed = false\n                applyAdaptationRuntime("impostazioni")\n            }''',
+              "adaptation action split",
+          )
+
+          s = replace_once(
+              s,
+              '''        if (projection != null || projectionStartPending) return\n        projectionStartPending = true\n''',
+              '''        if (projection != null || projectionStartPending) return\n        projectionStartPending = true\n        adaptationPanelDismissed = false\n''',
+              "new session panel state",
+          )
+
+          s = replace_once(
+              s,
+              '''        if (config.enabled && projection != null) {\n            showAdaptationOverlay()\n        } else {\n            hideAdaptationOverlay(reason)\n        }''',
+              '''        if (config.enabled && projection != null && !adaptationPanelDismissed) {\n            showAdaptationOverlay()\n        } else {\n            hideAdaptationOverlay(reason)\n        }''',
+              "overlay visibility separation",
+          )
+
+          s = replace_once(
+              s,
+              '''        val close = headerKey("×", 0xFFFF6A5C.toInt()).apply {\n            contentDescription = "Chiudi e disattiva Adattamento"\n        }''',
+              '''        val close = headerKey("×", 0xFFFF6A5C.toInt()).apply {\n            contentDescription = "Chiudi pannello Adattamento"\n        }''',
+              "close accessibility label",
+          )
+
+          s = replace_once(
+              s,
+              '''        val down = key("↓")\n        root.addView(down, LinearLayout.LayoutParams(dp(48), dp(44)))\n\n        val infoText = TextView(this).apply {''',
+              '''        val down = key("↓")\n        root.addView(down, LinearLayout.LayoutParams(dp(48), dp(44)))\n\n        // Reset is intentionally separate from the arrow cluster. It affects only the\n        // orientation currently being edited and requires two explicit confirmations.\n        val reset = TextView(this).apply {\n            text = "↺ Ripristina"\n            setTextColor(Color.WHITE)\n            textSize = 12.5f\n            gravity = Gravity.CENTER\n            background = bg(0xE61A211A.toInt(), 0xFFFFB24D.toInt())\n            setPadding(dp(6), dp(2), dp(6), dp(2))\n            contentDescription = "Ripristina orientamento corrente"\n        }\n        root.addView(reset, LinearLayout.LayoutParams(dp(150), dp(34)).apply {\n            topMargin = dp(5)\n        })\n\n        var resetConfirmStage = 0\n        fun updateResetConfirmation(stage: Int) {\n            resetConfirmStage = stage\n            when (stage) {\n                0 -> {\n                    reset.text = "↺ Ripristina"\n                    reset.background = bg(0xE61A211A.toInt(), 0xFFFFB24D.toInt())\n                }\n                1 -> {\n                    reset.text = "CONFERMA 1/2"\n                    reset.background = bg(0xE64A351A.toInt(), 0xFFFFB24D.toInt())\n                }\n                else -> {\n                    reset.text = "CONFERMA 2/2"\n                    reset.background = bg(0xE64A1A1A.toInt(), 0xFFFF6A5C.toInt())\n                }\n            }\n        }\n        fun cancelResetConfirmation() {\n            if (resetConfirmStage != 0) updateResetConfirmation(0)\n        }\n\n        val infoText = TextView(this).apply {''',
+              "reset control insertion",
+          )
+
+          s = replace_once(
+              s,
+              '''        up.setOnClickListener { adjustAdaptationEdge("TOP") }\n        down.setOnClickListener { adjustAdaptationEdge("BOTTOM") }\n        left.setOnClickListener { adjustAdaptationEdge("LEFT") }\n        right.setOnClickListener { adjustAdaptationEdge("RIGHT") }\n        center.setOnClickListener {\n            adaptationReverseMode = !adaptationReverseMode''',
+              '''        up.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("TOP") }\n        down.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("BOTTOM") }\n        left.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("LEFT") }\n        right.setOnClickListener { cancelResetConfirmation(); adjustAdaptationEdge("RIGHT") }\n        center.setOnClickListener {\n            cancelResetConfirmation()\n            adaptationReverseMode = !adaptationReverseMode''',
+              "reset cancellation on edit controls",
+          )
+
+          s = replace_once(
+              s,
+              '''        info.setOnClickListener {\n            val opening = infoCard.visibility != View.VISIBLE\n            infoCard.visibility = if (opening) View.VISIBLE else View.GONE\n            AppLog.add("ADATTAMENTO V19 PANEL INFO: ${if (opening) "aperta/scroll" else "chiusa"}")\n        }\n        close.setOnClickListener {\n            MirrorAdaptationConfig.setEnabled(this, false)\n            AppLog.add("ADATTAMENTO V19 PANEL: X premuta -> Adattamento disattivato nelle Impostazioni")\n            applyAdaptationRuntime("X pannello")\n        }''',
+              '''        info.setOnClickListener {\n            cancelResetConfirmation()\n            val opening = infoCard.visibility != View.VISIBLE\n            infoCard.visibility = if (opening) View.VISIBLE else View.GONE\n            AppLog.add("ADATTAMENTO V19 PANEL INFO: ${if (opening) "aperta/scroll" else "chiusa"}")\n        }\n        reset.setOnClickListener {\n            when (resetConfirmStage) {\n                0 -> {\n                    updateResetConfirmation(1)\n                    AppLog.add("ADATTAMENTO RESET: richiesta; conferma sicurezza 1/2")\n                }\n                1 -> {\n                    updateResetConfirmation(2)\n                    AppLog.add("ADATTAMENTO RESET: conferma sicurezza 1/2 ricevuta; attendo 2/2")\n                }\n                else -> {\n                    val profile = activeAdaptationProfile()\n                    MirrorAdaptationConfig.resetEdges(this, profile)\n                    adaptationReverseMode = false\n                    center.text = "+"\n                    center.background = bg(0xE61A211A.toInt(), 0xFF5BFF2D.toInt())\n                    updateResetConfirmation(0)\n                    AppLog.add(\n                        "ADATTAMENTO RESET: doppia conferma completata; orientamento=$profile " +\n                            "ripristinato ai valori iniziali dell'app; altro orientamento invariato"\n                    )\n                    applyAdaptationRuntime("ripristino $profile")\n                }\n            }\n        }\n        close.setOnClickListener {\n            cancelResetConfirmation()\n            adaptationPanelDismissed = true\n            AppLog.add(\n                "ADATTAMENTO V1 FIX: X premuta -> pannello chiuso; " +\n                    "Adattamento resta attivo e calibrazione salvata continua applicata"\n            )\n            hideAdaptationOverlay("X pannello")\n        }''',
+              "reset listener and close behavior",
+          )
+
+          s = replace_once(
+              s,
+              '''                    "ADATTAMENTO V19 PANEL: mostrato; titolo=Adattamento; info=ⓘ scrollabile; close=X disabilita; " +\n                        "frecce=${MirrorAdaptationConfig.STEP_PX}px; centro OFF=ALLARGA / ON=RESTRINGI"''',
+              '''                    "ADATTAMENTO V1 FIX PANEL: mostrato; titolo=Adattamento; info=ⓘ scrollabile; " +\n                        "close=X chiude solo editor; reset=orientamento corrente con doppia conferma; " +\n                        "frecce=${MirrorAdaptationConfig.STEP_PX}px; centro OFF=ALLARGA / ON=RESTRINGI"''',
+              "panel log",
+          )
+
+          service_path.write_text(s, encoding="utf-8")
+
+          config_path = Path("app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt")
+          c = config_path.read_text(encoding="utf-8")
+          c = replace_once(
+              c,
+              '''            COMANDI\n            ⓘ apre o chiude queste istruzioni.\n            × chiude il pannello e disattiva Adattamento.\n\n            Adattamento è OFF al primo accesso. Se lo attivi, resta ON finché non lo disattivi.''',
+              '''            COMANDI\n            ⓘ apre o chiude queste istruzioni.\n            × chiude solo il pannello: le regolazioni salvate restano attive.\n            ↺ Ripristina riporta solo l'orientamento che stai modificando ai valori iniziali dell'app e richiede due conferme.\n\n            Adattamento è OFF al primo accesso. Se lo attivi, resta ON finché non lo disattivi dalle Impostazioni.''',
+              "help text",
+          )
+          config_path.write_text(c, encoding="utf-8")
+          PY
+
+          rm -f .github/workflows/apply-adaptation-fix-once.yml
+
+      - name: Commit fixed sources
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/java/it/motolink/app/MirrorService.kt \
+                  app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt \
+                  .github/workflows/apply-adaptation-fix-once.yml
+          git diff --cached --check
+          git commit -m "Fix adaptation persistence and add safe reset"
+          git push origin HEAD:fix/adaptation-persistence-reset-v1
