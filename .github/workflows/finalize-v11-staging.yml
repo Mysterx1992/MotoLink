@@ -18,12 +18,19 @@ jobs:
           ref: release/v1.1
           fetch-depth: 0
 
-      - name: Reconstruct staged V1.1 payload
+      - name: Reconstruct exact staged V1.1 payload
         shell: bash
         run: |
           set -euo pipefail
-          cat .v11sync/chunk_* > /tmp/motolink_v11.b64
+          : > /tmp/motolink_v11.b64
+          for n in 00 01 02 03 04 05 06 07 08; do
+            head -c 12000 ".v11sync/chunk_${n}" >> /tmp/motolink_v11.b64
+          done
+          head -c 10772 .v11sync/chunk_09 >> /tmp/motolink_v11.b64
+          test "$(wc -c < /tmp/motolink_v11.b64)" -eq 118772
+          test "$(sha256sum /tmp/motolink_v11.b64 | awk '{print $1}')" = "e30aa8b2886672a8644b1d0a243b9b29c955776fd9e005cef442a2ee94ac4b9f"
           base64 --decode /tmp/motolink_v11.b64 > /tmp/motolink_v11.tar.gz
+          test "$(sha256sum /tmp/motolink_v11.tar.gz | awk '{print $1}')" = "a0dea59fc9cf808b9ed1b9efcb7296604579f4eb4351b721bf9f6c4ea6719abc"
           gzip -t /tmp/motolink_v11.tar.gz
           tar -tzf /tmp/motolink_v11.tar.gz
           tar -xzf /tmp/motolink_v11.tar.gz
