@@ -18,15 +18,41 @@ jobs:
           ref: release/v1.1
           fetch-depth: 0
 
-      - name: Reconstruct exact staged V1.1 payload
+      - name: Repair exact chunk 02 and reconstruct V1.1 payload
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p = Path('.v11sync/chunk_02')
+          b = p.read_bytes()
+          target_git = '7756259023005220923f7d220b5c5ff50021cf6f'
+          def git_blob_sha(data):
+              return hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+          if git_blob_sha(b) != target_git:
+              if len(b) != 12001:
+                  raise SystemExit(f'chunk_02 unexpected size={len(b)} sha={git_blob_sha(b)}')
+              matches = []
+              for i in range(len(b)):
+                  candidate = b[:i] + b[i+1:]
+                  if git_blob_sha(candidate) == target_git:
+                      matches.append((i, candidate))
+              if len(matches) != 1:
+                  raise SystemExit(f'chunk_02 repair matches={len(matches)}')
+              idx, fixed = matches[0]
+              print(f'chunk_02 repaired by removing byte index {idx}: 0x{b[idx]:02x}')
+              p.write_bytes(fixed)
+          assert p.stat().st_size == 12000
+          assert git_blob_sha(p.read_bytes()) == target_git
+          PY
           : > /tmp/motolink_v11.b64
           for n in 00 01 02 03 04 05 06 07 08; do
-            head -c 12000 ".v11sync/chunk_${n}" >> /tmp/motolink_v11.b64
+            test "$(wc -c < ".v11sync/chunk_${n}")" -eq 12000
+            cat ".v11sync/chunk_${n}" >> /tmp/motolink_v11.b64
           done
-          head -c 10772 .v11sync/chunk_09 >> /tmp/motolink_v11.b64
+          test "$(wc -c < .v11sync/chunk_09)" -eq 10772
+          cat .v11sync/chunk_09 >> /tmp/motolink_v11.b64
           test "$(wc -c < /tmp/motolink_v11.b64)" -eq 118772
           test "$(sha256sum /tmp/motolink_v11.b64 | awk '{print $1}')" = "e30aa8b2886672a8644b1d0a243b9b29c955776fd9e005cef442a2ee94ac4b9f"
           base64 --decode /tmp/motolink_v11.b64 > /tmp/motolink_v11.tar.gz
