@@ -84,6 +84,7 @@ Moto sul quale l'app è stata testata.
 |---|---|---|---|---|---|
 | _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
 | _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento qrCode_ |
+| _Voge_ | _Sr1 Adv_ | _2024_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante_ |
 | _CfMoto_ | _None_ | _None_ | _None_ | No Testata | _App ancora da testare su CfMoto_ |
 
 <!--
