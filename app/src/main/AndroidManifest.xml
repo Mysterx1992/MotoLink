@@ -7,6 +7,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Diagnostic branch: allow explicit launch of Google Maps without broad package visibility. -->
+        <package android:name="com.google.android.apps.maps" />
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -53,6 +55,19 @@
             </intent-filter>
         </activity>
 
+        <!-- Research-only launcher kept separate from the production MotoLink UI. -->
+        <activity
+            android:name=".MapsNotificationDiagnosticActivity"
+            android:exported="true"
+            android:label="MotoLink Maps Test"
+            android:screenOrientation="unspecified"
+            android:resizeableActivity="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="false"
@@ -76,6 +91,17 @@
             android:name=".MirrorService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+
+        <!-- User must explicitly grant Notification access in Android Settings. -->
+        <service
+            android:name=".MapsNotificationListenerService"
+            android:exported="true"
+            android:label="MotoLink Maps Test"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name=".LogShareProvider"
