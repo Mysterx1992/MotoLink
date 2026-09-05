@@ -112,6 +112,7 @@ class MainActivity : Activity() {
     private var lockPlaceholderActive = false
     private var lockRestartPending = false
     private var pendingProfileEditIndex = -1
+    private var firstStartProfileSetupPending = false
 
     private val logListener: (String) -> Unit = { line ->
         runOnUiThread {
@@ -296,6 +297,7 @@ class MainActivity : Activity() {
         waitingForOverlayPermission = false
         pendingBikeWifiPermission = false
         qrTransportFallbackAttempted = false
+        firstStartProfileSetupPending = false
         setRunSelection(RunSelection.START)
         setHeaderStatus("Avvio", "", C_AMBER)
         setState("Avvio…", "Preparazione della sessione", C_AMBER, "…")
@@ -430,6 +432,7 @@ class MainActivity : Activity() {
         invalidateRecovery()
         waitingForOverlayPermission = false
         pocketModeForPendingStart = false
+        firstStartProfileSetupPending = false
         setRunSelection(RunSelection.STOP)
         setHeaderStatus("Fermato", "", C_MUTED)
         setState("Fermato", "Chiusura completa della sessione", C_MUTED, "—")
@@ -921,11 +924,137 @@ class MainActivity : Activity() {
     }
 
     private fun continueStartAfterPocketModeChoice() {
+        if (BikeProfileStore.load(this) == null) {
+            showFirstStartConnectionChoice()
+            return
+        }
+        continueStartAfterProfileReady()
+    }
+
+    private fun continueStartAfterProfileReady() {
         if (pocketModeForPendingStart) {
             ensureBackgroundGatePermissionThenProjection()
         } else {
             prepareBikeNetworkThenProjection()
         }
+    }
+
+    private fun showFirstStartConnectionChoice() {
+        if (runSelection != RunSelection.START) return
+        if (BikeProfileStore.load(this) != null) {
+            firstStartProfileSetupPending = false
+            continueStartAfterProfileReady()
+            return
+        }
+
+        firstStartProfileSetupPending = true
+        var handled = false
+        val dialog = NeonDialogs.showCustom(
+            activity = this,
+            title = "Prima connessione",
+            message = "Non hai ancora un profilo moto salvato.\n\nScegli come colleghi questa moto. In entrambi i casi MotoLink salva il profilo nel Garage, così ai prossimi START non te lo chiederà più.",
+            contentView = null,
+            positiveText = "QR CODE",
+            negativeText = "HOTSPOT",
+            onPositive = {
+                handled = true
+                AppLog.add("PRIMO START: scelta QR CODE; apro lo scanner e attendo il salvataggio del profilo")
+                startQrCameraScan()
+            },
+            onNegative = {
+                handled = true
+                AppLog.add("PRIMO START: scelta HOTSPOT; richiedo il nome moto prima di continuare")
+                showFirstStartHotspotProfileDialog()
+            }
+        )
+        dialog.setOnDismissListener {
+            mainHandler.post {
+                if (!handled && firstStartProfileSetupPending &&
+                    BikeProfileStore.load(this) == null && runSelection == RunSelection.START
+                ) {
+                    abortFirstStartProfileSetup("scelta Hotspot/QR chiusa")
+                }
+            }
+        }
+    }
+
+    private fun showFirstStartHotspotProfileDialog() {
+        if (runSelection != RunSelection.START) return
+        firstStartProfileSetupPending = true
+        val requiredName = EditText(this).apply {
+            hint = "Nome moto obbligatorio"
+            setTextColor(Color.WHITE)
+            setHintTextColor(color(C_MUTED))
+            isSingleLine = true
+            background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
+            setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
+        }
+        var handled = false
+        val dialog = NeonDialogs.showCustom(
+            activity = this,
+            title = "Profilo Hotspot",
+            message = "Dai un nome alla moto. MotoLink salverà un profilo locale nel Garage e continuerà automaticamente con il normale collegamento Hotspot / EasyConn.",
+            contentView = requiredName,
+            positiveText = "SALVA E CONTINUA",
+            negativeText = "INDIETRO",
+            onPositive = {
+                handled = true
+                val chosenName = requiredName.text.toString().trim()
+                if (chosenName.isEmpty()) {
+                    NeonDialogs.showInfo(
+                        activity = this,
+                        title = "Nome moto richiesto",
+                        message = "Inserisci un nome per la moto prima di continuare.",
+                        onPositive = { showFirstStartHotspotProfileDialog() }
+                    )
+                    return@showCustom
+                }
+                val profile = BikeProfile(
+                    displayName = chosenName,
+                    format = "HOTSPOT",
+                    rawPayload = "HOTSPOT:${System.currentTimeMillis()}"
+                )
+                if (BikeProfileStore.save(this, profile)) {
+                    firstStartProfileSetupPending = false
+                    lastResolved = null
+                    refreshBikeProfiles()
+                    setHeaderStatus("Avvio", profile.displayName, C_AMBER)
+                    setState("Profilo salvato", "Continuo con il collegamento Hotspot", C_AMBER, "LAN")
+                    AppLog.add("PRIMO START: profilo HOTSPOT salvato localmente; continuo automaticamente")
+                    continueStartAfterProfileReady()
+                } else {
+                    NeonDialogs.showInfo(
+                        activity = this,
+                        title = "Profilo non salvato",
+                        message = "MotoLink non è riuscita a salvare il profilo. Riprova oppure scegli QR CODE.",
+                        onPositive = { showFirstStartConnectionChoice() }
+                    )
+                }
+            },
+            onNegative = {
+                handled = true
+                showFirstStartConnectionChoice()
+            }
+        )
+        dialog.setOnDismissListener {
+            mainHandler.post {
+                if (!handled && firstStartProfileSetupPending &&
+                    BikeProfileStore.load(this) == null && runSelection == RunSelection.START
+                ) {
+                    abortFirstStartProfileSetup("profilo Hotspot chiuso")
+                }
+            }
+        }
+    }
+
+    private fun abortFirstStartProfileSetup(reason: String) {
+        firstStartProfileSetupPending = false
+        pendingFavoriteLaunchComponent = null
+        startInProgress = false
+        setRunSelection(RunSelection.NONE)
+        setHeaderStatus("Pronto", "", C_GREEN)
+        setState("Avvio annullato", "Premi START per riprovare", C_MUTED, "LAN")
+        AppLog.add("PRIMO START annullato: $reason")
     }
 
     private fun ensureBackgroundGatePermissionThenProjection() {
@@ -1739,16 +1868,34 @@ class MainActivity : Activity() {
             .addOnSuccessListener { barcode ->
                 val raw = barcode.rawValue
                 if (raw.isNullOrBlank()) {
-                    showQrError("Il QR non contiene dati leggibili.")
+                    showQrErrorForCurrentFlow("Il QR non contiene dati leggibili.")
                 } else {
                     handleQrPayload(raw)
                 }
             }
-            .addOnCanceledListener { AppLog.add("QR PAIRING: scansione annullata dall'utente") }
+            .addOnCanceledListener {
+                AppLog.add("QR PAIRING: scansione annullata dall'utente")
+                if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                    showFirstStartConnectionChoice()
+                }
+            }
             .addOnFailureListener { e ->
                 AppLog.add("QR PAIRING scanner fallito: ${e.javaClass.simpleName}")
-                showQrError("Scanner QR non disponibile. Puoi usare “Importa QR da immagine”.")
+                showQrErrorForCurrentFlow("Scanner QR non disponibile. Puoi riprovare oppure scegliere HOTSPOT.")
             }
+    }
+
+    private fun showQrErrorForCurrentFlow(message: String) {
+        if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+            NeonDialogs.showInfo(
+                activity = this,
+                title = "Pairing QR",
+                message = message,
+                onPositive = { showFirstStartConnectionChoice() }
+            )
+        } else {
+            showQrError(message)
+        }
     }
 
     private fun startQrImagePicker() {
@@ -1789,7 +1936,7 @@ class MainActivity : Activity() {
         val profile = try {
             QrPairing.parse(raw)
         } catch (_: Throwable) {
-            showQrError("Il QR è vuoto o non valido.")
+            showQrErrorForCurrentFlow("Il QR è vuoto o non valido.")
             return
         }
         // Never log the payload, SSID password or proprietary token.
@@ -1822,7 +1969,8 @@ class MainActivity : Activity() {
             background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
             setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
         }
-        NeonDialogs.showCustom(
+        var qrProfileDialogHandled = false
+        val qrProfileDialog = NeonDialogs.showCustom(
             activity = this,
             title = "QR moto rilevato",
             message = details + "\n\nDai un nome a questa moto: è obbligatorio per salvarla nel Garage e per mantenere associate le sue regolazioni di Adattamento.",
@@ -1830,23 +1978,65 @@ class MainActivity : Activity() {
             positiveText = "SALVA MOTO",
             negativeText = "ANNULLA",
             onPositive = {
+                qrProfileDialogHandled = true
                 val chosenName = requiredName.text.toString().trim()
                 if (chosenName.isEmpty()) {
-                    showQrError("Inserisci un nome per la moto. Il nome è obbligatorio per salvare il profilo.")
+                    if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                        NeonDialogs.showInfo(
+                            activity = this,
+                            title = "Nome moto richiesto",
+                            message = "Inserisci un nome per la moto prima di continuare.",
+                            onPositive = { handleQrPayload(raw) }
+                        )
+                    } else {
+                        showQrError("Inserisci un nome per la moto. Il nome è obbligatorio per salvare il profilo.")
+                    }
                     return@showCustom
                 }
                 val namedProfile = profile.copy(displayName = chosenName)
                 if (BikeProfileStore.save(this, namedProfile)) {
                     lastResolved = null
-                    setHeaderStatus("Pronto", namedProfile.displayName, C_GREEN)
-                    setState("Moto configurata", "Da ora basta premere START", C_GREEN, "QR")
                     AppLog.add("QR PAIRING: profilo moto salvato localmente con nome utente; payload non scritto nel Log")
                     refreshBikeProfiles()
+                    if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                        firstStartProfileSetupPending = false
+                        setHeaderStatus("Avvio", namedProfile.displayName, C_AMBER)
+                        setState("Profilo QR salvato", "Continuo automaticamente con la connessione", C_AMBER, "QR")
+                        AppLog.add("PRIMO START: profilo QR salvato; continuo automaticamente")
+                        continueStartAfterProfileReady()
+                    } else {
+                        setHeaderStatus("Pronto", namedProfile.displayName, C_GREEN)
+                        setState("Moto configurata", "Da ora basta premere START", C_GREEN, "QR")
+                    }
                 } else {
-                    showQrError("Garage pieno (massimo 3 profili) oppure profilo non salvabile. Elimina una moto e riprova.")
+                    if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                        NeonDialogs.showInfo(
+                            activity = this,
+                            title = "Profilo non salvato",
+                            message = "Garage pieno oppure profilo non salvabile. Libera un profilo o scegli HOTSPOT.",
+                            onPositive = { showFirstStartConnectionChoice() }
+                        )
+                    } else {
+                        showQrError("Garage pieno (massimo 3 profili) oppure profilo non salvabile. Elimina una moto e riprova.")
+                    }
+                }
+            },
+            onNegative = {
+                qrProfileDialogHandled = true
+                if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                    showFirstStartConnectionChoice()
                 }
             }
         )
+        qrProfileDialog.setOnDismissListener {
+            mainHandler.post {
+                if (!qrProfileDialogHandled && firstStartProfileSetupPending &&
+                    BikeProfileStore.load(this) == null && runSelection == RunSelection.START
+                ) {
+                    showFirstStartConnectionChoice()
+                }
+            }
+        }
     }
 
     private fun showLocalBikeProfileDialog() {
