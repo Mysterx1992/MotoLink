@@ -25,6 +25,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- V1.2: requested only if Google Code Scanner fails and MotoLink falls back to its internal scanner. -->
+    <uses-permission android:name="android.permission.CAMERA" />
 
 
     <application
@@ -52,6 +54,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".InternalQrScannerActivity"
+            android:exported="false"
+            android:screenOrientation="unspecified"
+            android:resizeableActivity="true" />
 
         <activity
             android:name=".MainActivity"

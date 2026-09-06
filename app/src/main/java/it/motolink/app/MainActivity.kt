@@ -47,6 +47,8 @@ class MainActivity : Activity() {
         private const val REQ_BIKE_WIFI_PERMISSION = 7003
         private const val REQ_PROFILE_PHOTO = 7004
         private const val REQ_PROFILE_CAMERA = 7005
+        private const val REQ_QR_INTERNAL = 7006
+        private const val REQ_QR_CAMERA_PERMISSION = 7007
         private const val PREF_INTRO_ENABLED = "v1_intro_enabled"
         private const val PREF_DYNAMIC_BACKGROUND_ENABLED = "v1_dynamic_background_enabled"
         private const val QR_MDNS_FALLBACK_MS = 6_000L
@@ -65,6 +67,7 @@ class MainActivity : Activity() {
         private const val PREF_ONBOARDING_COMPLETE = "onboarding_v6_0_2_complete"
         private const val PREF_GUIDE_NEXT_LAUNCH = "v1_guide_next_launch"
         private const val PREF_SAFETY_NOTICE_SUPPRESSED = "safety_notice_suppressed"
+        private const val PREF_QR_CAMERA_PERMISSION_REQUESTED = "v12_qr_camera_permission_requested"
         private val RECOVERY_BACKOFF_MS = longArrayOf(1_000L, 3_000L, 5_000L)
     }
 
@@ -223,7 +226,7 @@ class MainActivity : Activity() {
             C_GREEN,
             "LAN"
         )
-        AppLog.add("MotoLink V1.1 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
+        AppLog.add("MotoLink V1.2 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -1147,7 +1150,27 @@ class MainActivity : Activity() {
     private fun prepareBikeNetworkThenProjection() {
         if (runSelection != RunSelection.START) return
         val profile = BikeProfileStore.load(this)
-        if (profile == null || !profile.hasWifiIdentity()) {
+        if (profile == null) {
+            requestProjectionChoice()
+            return
+        }
+        if (!profile.hasWifiIdentity()) {
+            // Generic HOTSPOT profiles rely on the rider already being on the motorcycle Wi-Fi.
+            // Never continue on cellular: that produces a valid encoder session with no possible
+            // EasyConn peer, as seen on the CFMOTO compatibility report.
+            if (profile.format.equals("HOTSPOT", ignoreCase = true) && !isDefaultNetworkWifi()) {
+                startInProgress = false
+                setRunSelection(RunSelection.NONE)
+                setHeaderStatus("Rete moto", profile.displayName, C_DANGER)
+                setState("Collega il Wi-Fi della moto", "Il telefono è su rete mobile", C_DANGER, "!")
+                AppLog.add("HOTSPOT GUARD V1.2: profilo senza SSID e rete corrente non Wi-Fi; START interrotto prima di MediaProjection")
+                NeonDialogs.showInfo(
+                    activity = this,
+                    title = "Collega prima la moto",
+                    message = "Questo profilo Hotspot non contiene SSID/password. Collega prima il telefono alla rete Wi-Fi della moto, poi torna in MotoLink e premi START. Per CFMOTO usa preferibilmente QR CODE: MotoLink proverà automaticamente WLAN Direct/P2P e il fallback Wi-Fi/EasyConn."
+                )
+                return
+            }
             requestProjectionChoice()
             return
         }
@@ -1235,6 +1258,16 @@ class MainActivity : Activity() {
         )
     }
 
+    private fun isDefaultNetworkWifi(): Boolean {
+        return try {
+            val cm = getSystemService(ConnectivityManager::class.java)
+            val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+            caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     private fun hasBikeWifiPermission(): Boolean {
         val permission = if (Build.VERSION.SDK_INT >= 33) {
             Manifest.permission.NEARBY_WIFI_DEVICES
@@ -1273,6 +1306,19 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_QR_CAMERA_PERMISSION) {
+            val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (granted) {
+                AppLog.add("QR PAIRING V1.2: permesso CAMERA fallback concesso")
+                launchInternalQrScanner()
+            } else {
+                AppLog.add("QR PAIRING V1.2: permesso CAMERA fallback non concesso; non verrà richiesto di nuovo automaticamente")
+                showQrErrorForCurrentFlow(
+                    "Accesso alla fotocamera non concesso. MotoLink non lo richiederà di nuovo automaticamente: puoi usare QR da immagine oppure abilitarlo dalle impostazioni Android."
+                )
+            }
+            return
+        }
         if (requestCode != REQ_BIKE_WIFI_PERMISSION) return
         if (!pendingBikeWifiPermission) return
         pendingBikeWifiPermission = false
@@ -1387,6 +1433,23 @@ class MainActivity : Activity() {
                     BikeProfileStore.updateMetadata(this, index, photoUri = out.toURI().toString())
                     refreshBikeProfiles()
                     AppLog.add("GARAGE: foto profilo acquisita localmente; immagine non inserita nel Log")
+                }
+            }
+            return
+        }
+        if (requestCode == REQ_QR_INTERNAL) {
+            if (resultCode == RESULT_OK) {
+                val raw = data?.getStringExtra(InternalQrScannerActivity.EXTRA_QR_RAW)
+                if (raw.isNullOrBlank()) {
+                    showQrErrorForCurrentFlow("La fotocamera non ha restituito un QR leggibile.")
+                } else {
+                    AppLog.add("QR PAIRING V1.2: QR letto dallo scanner interno; payload non scritto nel Log")
+                    handleQrPayload(raw)
+                }
+            } else {
+                AppLog.add("QR PAIRING V1.2: scanner interno chiuso senza QR")
+                if (firstStartProfileSetupPending && runSelection == RunSelection.START) {
+                    showFirstStartConnectionChoice()
                 }
             }
             return
@@ -1830,9 +1893,38 @@ class MainActivity : Activity() {
                 }
             }
             .addOnFailureListener { e ->
-                AppLog.add("QR PAIRING scanner fallito: ${e.javaClass.simpleName}")
-                showQrErrorForCurrentFlow("Scanner QR non disponibile. Puoi riprovare oppure scegliere HOTSPOT.")
+                AppLog.add("QR PAIRING scanner Google fallito: ${e.javaClass.simpleName}")
+                startInternalQrFallback(e.javaClass.simpleName)
             }
+    }
+
+    private fun startInternalQrFallback(reason: String) {
+        AppLog.add("QR PAIRING V1.2: Google Code Scanner non disponibile ($reason); preparo fallback fotocamera interna")
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            launchInternalQrScanner()
+            return
+        }
+
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val alreadyRequested = prefs.getBoolean(PREF_QR_CAMERA_PERMISSION_REQUESTED, false)
+        if (!alreadyRequested) {
+            // Persist before calling Android: even a denial/cancel must not cause a permission loop.
+            prefs.edit().putBoolean(PREF_QR_CAMERA_PERMISSION_REQUESTED, true).apply()
+            AppLog.add("QR PAIRING V1.2: richiesta permesso CAMERA fallback una tantum")
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), REQ_QR_CAMERA_PERMISSION)
+            return
+        }
+
+        AppLog.add("QR PAIRING V1.2: CAMERA già richiesta in precedenza; nessuna nuova richiesta automatica")
+        showQrErrorForCurrentFlow(
+            "Google Scanner non è disponibile su questo telefono e l'accesso alla fotocamera di MotoLink non è autorizzato. Puoi usare QR da immagine oppure abilitare Fotocamera dalle impostazioni Android."
+        )
+    }
+
+    private fun launchInternalQrScanner() {
+        AppLog.add("QR PAIRING V1.2: apro scanner interno CameraX + ML Kit")
+        @Suppress("DEPRECATION")
+        startActivityForResult(Intent(this, InternalQrScannerActivity::class.java), REQ_QR_INTERNAL)
     }
 
     private fun showQrErrorForCurrentFlow(message: String) {
