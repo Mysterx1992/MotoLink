@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.1/MotoLink_V1.1.apk">
-    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.1-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.1">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.4/MotoLink_V1.4.apk">
+    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.4-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.4">
   </a>
   &nbsp;
   <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
@@ -27,35 +27,35 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.1
+## 🆕 MotoLink V1.4
 
-La V1.1 è un aggiornamento consigliato per gli utenti V1.0 e introduce correzioni di stabilità e miglioramenti all'esperienza d'uso.
+La V1.4 è la release pubblica successiva alla V1.2. La V1.3 non è stata pubblicata come release GitHub.
 
 ### Novità principali
 
-- **Rotazione del mirroring più stabile** tra verticale e orizzontale.
-- **Adattamento display corretto**: il pannello di regolazione compare durante il mirroring in orizzontale e resta associato al profilo moto.
-- **Pannello Adattamento più sicuro**: intestazione e tasto `×` restano raggiungibili; le informazioni non bloccano più la chiusura.
-- **Primo START migliorato**: se non esiste ancora un profilo, HOTSPOT e QR CODE aprono la creazione completa del profilo moto; dopo il salvataggio START continua automaticamente.
-- **Log più leggero nell'interfaccia**: Supporto → Log mantiene al massimo le ultime **50 righe visibili**. Il file `.txt` locale continua a conservare il Log tecnico completo.
-- Gli stati periodici generici di video/connessione non vengono ripetuti continuamente nella schermata Log, mentre i dettagli tecnici restano disponibili nel file `.txt`.
-- Ripristinata la voce ufficiale locale **“MotoLink Connect”** nell'animazione iniziale.
+- **Compatibilità CFMOTO migliorata** con percorso WLAN Direct dedicato e fallback di rete basato sul profilo QR.
+- **HOTSPOT Trofeo/Valico corretto** anche quando Android mantiene la rete mobile come rete predefinita: MotoLink può usare la rete Wi-Fi locale della moto senza richiedere che diventi la rete Internet principale del telefono.
+- **Rotazione e adattamento CFMOTO migliorati** per i display con area video differente dalla geometria di riferimento.
+- **Recovery del video migliorato** quando il display moto esce e rientra nella modalità mirroring.
+- **Riaggancio della UI** a una sessione di mirroring già attiva, evitando di creare una seconda sessione quando non serve.
+- **Adattamento persistente**: dopo la regolazione, la personalizzazione resta salvata e applicata alle sessioni successive finché l'utente non decide di modificarla o ripristinarla.
+- EasyConn wire-level, H264FrameBus e geometria V15 di riferimento restano invariati rispetto alla base validata.
 
-### Aggiornamento dalla V1.0
+### Aggiornamento dalla V1.2
 
-Chi utilizza già MotoLink V1.0 può installare `MotoLink_V1.1.apk` **direttamente sopra la V1.0**. Non è necessario disinstallare l'app e, con un normale aggiornamento Android, profili e impostazioni dell'app vengono mantenuti.
+Chi utilizza già la **V1.2 ufficiale GitHub** può installare `MotoLink_V1.4.apk` direttamente sopra la V1.2. V1.2 e V1.4 utilizzano la stessa identità di firma permanente MotoLink.
 
 > [!NOTE]
-> Come per ogni aggiornamento Android manuale, l'APK V1.1 deve essere la release MotoLink corretta e firmata in modo compatibile con la versione installata.
+> Se sul telefono è installata una vecchia build MotoLink firmata con una firma differente, Android può richiedere una disinstallazione una tantum prima dell'installazione della release ufficiale.
 
 ---
 
-## Download MotoLink
+## Scarica MotoLink
 
-### APK ufficiale V1.1
+### APK ufficiale V1.4
 
-<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.1/MotoLink_V1.1.apk">
-  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.1.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.1">
+<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.4/MotoLink_V1.4.apk">
+  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.4.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.4">
 </a>
 
 **Pagina dell'ultima release:**  
@@ -99,8 +99,8 @@ Moto sulle quali l'app è stata testata:
 | Marca | Modello | Anno / versione | Display / sistema | Stato | Note |
 |---|---|---|---|---|---|
 | _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
-| _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento qrCode_ |
-| _CfMoto_ | _None_ | _None_ | _None_ | No Testata | _App ancora da testare su CfMoto_ |
+| _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento QR Code_ |
+| _CFMOTO_ | _In verifica su TFT compatibile_ | _—_ | _TFT / EasyConn_ | 🔄 Test fisici in corso | _Collegamento e mirroring ottenuti; ottimizzazioni display/recovery introdotte in V1.4_ |
 
 > [!WARNING]
 > Un display simile o appartenente allo stesso marchio **non garantisce automaticamente la compatibilità**. Modello e firmware devono essere verificati separatamente.
@@ -159,13 +159,14 @@ MotoLink applica un filtro alle informazioni tecniche prima dell'elaborazione.
 
 MotoLink è stata progettata per ridurre al minimo le autorizzazioni richieste e **non utilizza servizi di Accessibilità**.
 
-L'app non richiede accesso diretto a fotocamera, microfono, contatti, SMS o file personali. La scansione QR utilizza l'interfaccia fornita dai servizi Google.
+La scansione QR può utilizzare Google Code Scanner oppure il fallback interno quando necessario.
 
 Le funzioni tecniche possono richiedere:
 
 | Accesso / conferma | Quando viene usato | Perché serve |
 |---|---|---|
 | **Connessione moto / Wi-Fi** | Collegamento alla moto | Comunicazione con il TFT tramite Wi-Fi / Wi-Fi Direct. |
+| **Fotocamera** | Solo quando serve il fallback scanner QR interno | Lettura del QR della moto. |
 | **MediaProjection / condivisione schermo** | Avvio mirroring | Autorizzazione Android alla cattura dello schermo o di una singola app. |
 | **Mostra sopra altre app** | Quando richiesto | Modalità tasca / schermo nero e pannello di Adattamento. |
 
@@ -188,7 +189,7 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Release pubblica | ✅ `v1.1` |
+| Release pubblica | ✅ `v1.4` |
 | Mirroring | ✅ Implementato |
 | Garage / profili moto | ✅ Implementato |
 | App preferite | ✅ Implementato |
@@ -232,6 +233,6 @@ Per i termini completi consulta [`LICENSE`](LICENSE).
 ---
 
 <p align="center">
-  <strong>MotoLink V1.1</strong><br>
+  <strong>MotoLink V1.4</strong><br>
   Mirroring • Connessione • Supporto
 </p>
