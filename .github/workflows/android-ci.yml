@@ -68,8 +68,9 @@ jobs:
           grep -q 'SESSION REATTACH V1.4' app/src/main/java/it/motolink/app/MainActivity.kt
           grep -q 'HOTSPOT V1.4' app/src/main/java/it/motolink/app/BikeNetworkConnector.kt
           grep -q 'calibrationActive' app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
-          grep -q 'EDITOR OFF automatico' app/src/main/java/it/motolink/app/MirrorService.kt
-          grep -q 'PERSONALIZZAZIONE ATTIVA' app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
+          grep -q 'editor OFF automatico' app/src/main/java/it/motolink/app/MirrorService.kt
+          grep -q 'calibrazioneAttiva' app/src/main/java/it/motolink/app/MirrorService.kt
+          grep -q 'OFF • PERSONALIZZAZIONE' app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
 
       - name: Stage unsigned APK
         run: cp app/build/outputs/apk/release/app-release-unsigned.apk MotoLink_V1.4_UNSIGNED_R8.apk
