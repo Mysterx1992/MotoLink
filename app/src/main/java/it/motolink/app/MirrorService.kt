@@ -30,6 +30,8 @@ import android.view.Surface
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.content.res.Configuration
+import android.util.DisplayMetrics
 import android.media.AudioManager
 import android.os.SystemClock
 import android.provider.Settings
@@ -67,11 +69,13 @@ class MirrorService : Service() {
         const val ACTION_PROX_SNAPSHOT = "it.motolink.app.PROX_SNAPSHOT"
         const val ACTION_ZOOM_UPDATE = "it.motolink.app.ZOOM_UPDATE" // legacy alias, no zoom UI; legacy alias only
         const val ACTION_ADAPTATION_UPDATE = "it.motolink.app.ADAPTATION_UPDATE"
+        const val ACTION_ADAPTATION_EDITOR_STATE_CHANGED = "it.motolink.app.ADAPTATION_EDITOR_STATE_CHANGED"
         const val EXTRA_PROX_STAGE = "proxStage"
         const val EXTRA_PROX_GATE_ALLOWED = "proxGateAllowed"
         const val EXTRA_RESULT_CODE = "resultCode"
         const val EXTRA_RESULT_DATA = "resultData"
         const val EXTRA_VALICO_SOFT_H264 = "valicoSoftH264"
+        const val EXTRA_CFMOTO_COMPAT = "cfmotoCompat"
         private const val CHANNEL_ID = "voge_mirror"
         private const val NOTIFICATION_ID = 1001
         private const val FALLBACK_WIDTH = 800
@@ -229,6 +233,8 @@ class MirrorService : Service() {
     }
     private val shuttingDown = AtomicBoolean(false)
     @Volatile private var valicoSoftH264 = false
+    @Volatile private var cfmotoCompat = false
+    private var cfmotoGeometryWatchRunnable: Runnable? = null
     @Volatile private var lockPlaceholderActive = false
     @Volatile private var capturedContentVisible = true
     @Volatile private var resumeNeedsKeyFrame = false
@@ -283,9 +289,9 @@ class MirrorService : Service() {
                 applyAdaptationRuntime("impostazioni")
             }
             ACTION_ADAPTATION_UPDATE -> {
-                // A deliberate change from Settings re-opens the editor when adaptation is ON.
-                adaptationPanelDismissed = false
-                applyAdaptationRuntime("impostazioni")
+                val cfg = MirrorAdaptationConfig.load(this)
+                adaptationPanelDismissed = !cfg.enabled
+                applyAdaptationRuntime("impostazioni/editor")
             }
         }
         return START_NOT_STICKY
@@ -882,7 +888,7 @@ class MirrorService : Service() {
     private fun startProjection(intent: Intent) {
         if (projection != null || projectionStartPending) return
         projectionStartPending = true
-        adaptationPanelDismissed = false
+        adaptationPanelDismissed = !MirrorAdaptationConfig.load(this).enabled
 
         val notification = android.app.Notification.Builder(this, CHANNEL_ID)
             .setContentTitle("MotoLink")
@@ -904,6 +910,10 @@ class MirrorService : Service() {
         val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
         lockPlaceholderActive = false
         valicoSoftH264 = intent.getBooleanExtra(EXTRA_VALICO_SOFT_H264, false)
+        cfmotoCompat = intent.getBooleanExtra(EXTRA_CFMOTO_COMPAT, false)
+        if (cfmotoCompat) {
+            AppLog.add("CFMOTO VIDEO V1.4: compatibilità source dinamica attiva; pre-Android14 orientation watcher abilitato")
+        }
         AppLog.add(
             if (valicoSoftH264)
                 "VIDEO MODE V15: VALICO SOFTWARE H264 + SOURCE-NATIVE + UNIVERSAL AUTO-BASE + ADAPTATION"
@@ -928,9 +938,9 @@ class MirrorService : Service() {
             )
         }
 
-        // Clean-room implementation of the useful MOTO-HUB architecture: let the dashboard
+        // Clean-room implementation of the useful external mirroring reference architecture: let the dashboard
         // handshake tell us the video canvas BEFORE creating MediaCodec/VirtualDisplay. No source
-        // code from MOTO-HUB is included or copied here.
+        // code from external mirroring reference is included or copied here.
         AppLog.add(
             "SOURCE NATIVE V15: attendo MEDIA_INIT/view-area live prima di creare encoder/VirtualDisplay " +
                 "(timeout=${TBOX_GEOMETRY_WAIT_MS}ms)"
@@ -1214,6 +1224,7 @@ class MirrorService : Service() {
             )
 
             applyAdaptationRuntime("projection ready")
+            startCfmotoPre34GeometryWatcher()
             startDrain()
             AppLog.add(
                 if (valicoSoftH264)
@@ -1235,6 +1246,114 @@ class MirrorService : Service() {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (cfmotoCompat && Build.VERSION.SDK_INT < 34 && projection != null) {
+            val (w, h) = currentPhysicalSourceGeometry()
+            queueCfmotoSourceResize(w, h, "configurationChanged")
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun currentPhysicalSourceGeometry(): Pair<Int, Int> {
+        return try {
+            val wm = getSystemService(WindowManager::class.java)
+            val physical = wm.defaultDisplay
+            val metrics = DisplayMetrics()
+            physical.getRealMetrics(metrics)
+            Pair(metrics.widthPixels.coerceAtLeast(16), metrics.heightPixels.coerceAtLeast(16))
+        } catch (_: Throwable) {
+            val dm = resources.displayMetrics
+            Pair(dm.widthPixels.coerceAtLeast(16), dm.heightPixels.coerceAtLeast(16))
+        }
+    }
+
+    /** Android 13 and lower do not expose MediaProjection content-resize callbacks. */
+    private fun startCfmotoPre34GeometryWatcher() {
+        if (!cfmotoCompat || Build.VERSION.SDK_INT >= 34 || projection == null) return
+        cfmotoGeometryWatchRunnable?.let { geometryHandler.removeCallbacks(it) }
+        val tick = object : Runnable {
+            override fun run() {
+                if (!cfmotoCompat || Build.VERSION.SDK_INT >= 34 || projection == null || shuttingDown.get()) return
+                val (w, h) = currentPhysicalSourceGeometry()
+                if (w != sourceWidth || h != sourceHeight) queueCfmotoSourceResize(w, h, "displayPoll")
+                geometryHandler.postDelayed(this, 500L)
+            }
+        }
+        cfmotoGeometryWatchRunnable = tick
+        geometryHandler.postDelayed(tick, 350L)
+        AppLog.add("CFMOTO ROTATION V1.4: watcher source pre-Android14 armato")
+    }
+
+    private fun queueCfmotoSourceResize(width: Int, height: Int, reason: String) {
+        if (!cfmotoCompat || Build.VERSION.SDK_INT >= 34 || projection == null) return
+        if (width < 16 || height < 16) return
+        if (width == sourceWidth && height == sourceHeight && pendingGeometryWidth == 0) return
+
+        pendingGeometryWidth = width
+        pendingGeometryHeight = height
+        geometryGeneration += 1L
+        val generation = geometryGeneration
+        coverRenderer?.enterGeometryHold(width, height)
+        geometrySettleRunnable?.let { geometryHandler.removeCallbacks(it) }
+        val settle = Runnable {
+            if (generation != geometryGeneration || projection == null) return@Runnable
+            val settledW = pendingGeometryWidth
+            val settledH = pendingGeometryHeight
+            if (settledW < 16 || settledH < 16) return@Runnable
+            if (settledW == sourceWidth && settledH == sourceHeight) {
+                pendingGeometryWidth = 0
+                pendingGeometryHeight = 0
+                coverRenderer?.cancelGeometryTransition("CFMOTO geometria invariata")
+                return@Runnable
+            }
+
+            val renderer = coverRenderer
+            if (renderer == null) {
+                runCatching { display?.resize(settledW, settledH, captureDpi) }
+                    .onSuccess {
+                        sourceWidth = settledW
+                        sourceHeight = settledH
+                        pendingGeometryWidth = 0
+                        pendingGeometryHeight = 0
+                        requestImmediateSyncFrame("CFMOTO rotation direct-surface")
+                        AppLog.add("CFMOTO ROTATION V1.4: COMMIT SOURCE ${settledW}x${settledH} [$reason]")
+                    }
+                    .onFailure { AppLog.add("CFMOTO ROTATION V1.4: resize direct fallito: ${it.javaClass.simpleName}") }
+                return@Runnable
+            }
+
+            renderer.prepareSourceResize(settledW, settledH) {
+                geometryHandler.post {
+                    if (generation != geometryGeneration || projection == null) return@post
+                    runCatching { display?.resize(settledW, settledH, captureDpi) }
+                        .onSuccess {
+                            sourceWidth = settledW
+                            sourceHeight = settledH
+                            pendingGeometryWidth = 0
+                            pendingGeometryHeight = 0
+                            applyAdaptationRuntime("CFMOTO orientation ${settledW}x${settledH}")
+                            renderer.notifyProducerResized(settledW, settledH)
+                            AppLog.add(
+                                "CFMOTO ROTATION V1.4: VirtualDisplay SOURCE=${settledW}x${settledH}; " +
+                                    "TFT=${targetWidth}x${targetHeight}; reason=$reason"
+                            )
+                        }
+                        .onFailure {
+                            renderer.cancelGeometryTransition("CFMOTO VirtualDisplay.resize fallito")
+                            AppLog.add("CFMOTO ROTATION V1.4: VirtualDisplay resize fallito: ${it.javaClass.simpleName}")
+                        }
+                }
+            }
+        }
+        geometrySettleRunnable = settle
+        geometryHandler.postDelayed(settle, 180L)
+        AppLog.add(
+            "CFMOTO ROTATION V1.4: candidato SOURCE=${width}x${height}; " +
+                "ultimo=${sourceWidth}x${sourceHeight}; TFT=${targetWidth}x${targetHeight}; reason=$reason"
+        )
+    }
+
     private fun isLandscapeSource(): Boolean = sourceWidth >= sourceHeight
 
     private fun activeAdaptationProfile(): MirrorAdaptationConfig.Profile =
@@ -1248,8 +1367,10 @@ class MirrorService : Service() {
             top = config.topPx,
             right = config.rightPx,
             bottom = config.bottomPx,
-            enabled = config.enabled
+            enabled = config.calibrationActive
         )
+
+        // Editor visibility and rendered calibration are intentionally independent.
         val editorAllowedForOrientation = profile == MirrorAdaptationConfig.Profile.LANDSCAPE
         if (config.enabled && editorAllowedForOrientation && projection != null && !adaptationPanelDismissed) {
             showAdaptationOverlay()
@@ -1260,24 +1381,23 @@ class MirrorService : Service() {
         }
         clampAdaptationOverlayToScreen("runtime $reason")
 
-        val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && config.enabled) {
+        val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && config.calibrationActive) {
             MirrorAdaptationConfig.landscapeAutoFrameFor(targetWidth, targetHeight)
         } else {
             MirrorAdaptationConfig.AutoFrame(0, 0, targetWidth, targetHeight)
         }
-        val effectiveX = autoBase.x - if (config.enabled) config.leftPx else 0
-        val effectiveY = autoBase.y - if (config.enabled) config.bottomPx else 0
-        val effectiveW = (autoBase.width + if (config.enabled) config.netHorizontalPx else 0).coerceAtLeast(16)
-        val effectiveH = (autoBase.height + if (config.enabled) config.netVerticalPx else 0).coerceAtLeast(16)
+        val effectiveX = autoBase.x - if (config.calibrationActive) config.leftPx else 0
+        val effectiveY = autoBase.y - if (config.calibrationActive) config.bottomPx else 0
+        val effectiveW = (autoBase.width + if (config.calibrationActive) config.netHorizontalPx else 0).coerceAtLeast(16)
+        val effectiveH = (autoBase.height + if (config.calibrationActive) config.netVerticalPx else 0).coerceAtLeast(16)
 
         AppLog.add(
-            "ADATTAMENTO V15 STATE: reason=$reason orientation=${config.profile} enabled=${config.enabled}; " +
+            "ADATTAMENTO V1.4 STATE: reason=$reason orientation=${config.profile}; " +
+                "editor=${config.enabled}; calibrazioneAttiva=${config.calibrationActive}; " +
                 "autoBase=${autoBase.width}x${autoBase.height}@${autoBase.x},${autoBase.y}; " +
                 "extra L=${MirrorAdaptationConfig.signed(config.leftPx)} T=${MirrorAdaptationConfig.signed(config.topPx)} " +
                 "R=${MirrorAdaptationConfig.signed(config.rightPx)} B=${MirrorAdaptationConfig.signed(config.bottomPx)}; " +
-                "totale_extra=${MirrorAdaptationConfig.signed(config.totalNetPx)}px; " +
-                "viewport_effettivo=${effectiveW}x${effectiveH}@${effectiveX},${effectiveY}; target=${targetWidth}x${targetHeight}; " +
-                "autoGeometry=${if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE) "TBOX_RUNTIME_SCALE" else "PORTRAIT_FIT"}"
+                "viewport_effettivo=${effectiveW}x${effectiveH}@${effectiveX},${effectiveY}; target=${targetWidth}x${targetHeight}"
         )
     }
 
@@ -1290,10 +1410,10 @@ class MirrorService : Service() {
             config.topPx,
             config.rightPx,
             config.bottomPx,
-            config.enabled
+            config.calibrationActive
         )
 
-        val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && config.enabled) {
+        val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && config.calibrationActive) {
             MirrorAdaptationConfig.landscapeAutoFrameFor(targetWidth, targetHeight)
         } else {
             MirrorAdaptationConfig.AutoFrame(0, 0, targetWidth, targetHeight)
@@ -1533,12 +1653,15 @@ class MirrorService : Service() {
         }
         close.setOnClickListener {
             cancelResetConfirmation()
+            // X means "finished editing": switch OFF, calibration stays active and persisted.
+            MirrorAdaptationConfig.setEnabled(this, false)
             adaptationPanelDismissed = true
+            applyAdaptationRuntime("X pannello: editor OFF, calibrazione salvata")
+            sendBroadcast(Intent(ACTION_ADAPTATION_EDITOR_STATE_CHANGED).setPackage(packageName))
             AppLog.add(
-                "ADATTAMENTO V1.1: X premuta -> pannello chiuso; " +
-                    "Adattamento resta attivo e calibrazione salvata continua applicata"
+                "ADATTAMENTO V1.4: X premuta -> editor OFF automatico; " +
+                    "personalizzazione salvata continua applicata nelle sessioni future"
             )
-            hideAdaptationOverlay("X pannello")
         }
 
         val params = WindowManager.LayoutParams(
@@ -1885,6 +2008,8 @@ class MirrorService : Service() {
 
     private fun shutdown(stopProjection: Boolean = true) {
         projectionStartPending = false
+        cfmotoGeometryWatchRunnable?.let { geometryHandler.removeCallbacks(it) }
+        cfmotoGeometryWatchRunnable = null
         geometrySettleRunnable?.let { geometryHandler.removeCallbacks(it) }
         geometrySettleRunnable = null
         geometryWatchdogRunnable?.let { geometryHandler.removeCallbacks(it) }
@@ -1927,6 +2052,7 @@ class MirrorService : Service() {
             }
 
             lockPlaceholderActive = false
+            cfmotoCompat = false
             capturedContentVisible = true
             resumeNeedsKeyFrame = false
             hiddenSamples.set(0L)

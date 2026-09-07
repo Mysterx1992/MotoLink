@@ -131,7 +131,12 @@ class WifiDirectBikeConnector(context: Context) {
         releaseInternal(removeGroup = false, unregister = true)
         generation++
         val myGeneration = generation
-        targetName = profile.ssid?.trim().orEmpty()
+        val rawTargetName = profile.ssid?.trim().orEmpty()
+        targetName = if (profile.brand.equals("CFMOTO", ignoreCase = true)) {
+            Regex("CFMOTO-[A-Z0-9_-]+", RegexOption.IGNORE_CASE).find(rawTargetName)?.value ?: rawTargetName
+        } else {
+            rawTargetName
+        }
         connectRequested = false
         nextConnectAllowedAtMs = 0L
         connectionCreatedByUs = false

@@ -4,6 +4,9 @@ import android.Manifest
 import android.app.Activity
 import android.content.ClipData
 import android.content.ComponentName
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -117,6 +120,18 @@ class MainActivity : Activity() {
     private var pendingProfileEditIndex = -1
     private var firstStartProfileSetupPending = false
 
+    private var adaptationEditorReceiverRegistered = false
+    private val adaptationEditorStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != MirrorService.ACTION_ADAPTATION_EDITOR_STATE_CHANGED) return
+            val cfg = MirrorAdaptationConfig.load(this@MainActivity)
+            if (::dashboard.isInitialized) {
+                dashboard.updateAdaptation(cfg.enabled, MirrorAdaptationConfig.dashboardLabel(this@MainActivity))
+            }
+            AppLog.add("ADATTAMENTO V1.4 UI: regolazione conclusa -> interruttore OFF; personalizzazione conservata")
+        }
+    }
+
     private val logListener: (String) -> Unit = { line ->
         runOnUiThread {
             if (::dashboard.isInitialized) dashboard.appendSupportLog(line)
@@ -207,26 +222,44 @@ class MainActivity : Activity() {
 
         AppLog.subscribe(logListener)
         registerNetworkDiagnostics()
-        setRunSelection(RunSelection.NONE)
-
-        // A lock-placeholder transport can legitimately outlive MainActivity.
-        // Reattach the UI-side flag after Activity recreation so the next START
-        // performs the same clean teardown/new MediaProjection authorization as
-        // the established transport flow instead of layering a new session on top.
-        lockPlaceholderActive = H264FrameBus.lockPlaceholderActive()
-        if (lockPlaceholderActive) {
-            AppLog.add("LOCK PLACEHOLDER: stato riagganciato dopo ricreazione MainActivity")
+        val adaptationFilter = IntentFilter(MirrorService.ACTION_ADAPTATION_EDITOR_STATE_CHANGED)
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(adaptationEditorStateReceiver, adaptationFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(adaptationEditorStateReceiver, adaptationFilter)
         }
+        adaptationEditorReceiverRegistered = true
 
+        // A lock-placeholder or a normal live MirrorService session can outlive/recreate
+        // MainActivity. Reattach the controls instead of offering a duplicate START.
+        lockPlaceholderActive = H264FrameBus.lockPlaceholderActive()
         val activeProfile = BikeProfileStore.load(this)
-        setHeaderStatus("Pronto", activeProfile?.displayName ?: "", C_GREEN)
-        setState(
-            "Sistema pronto",
-            activeProfile?.let { "Profilo moto salvato · START per connettere" } ?: "La prossimità è sempre attiva",
-            C_GREEN,
-            "LAN"
-        )
-        AppLog.add("MotoLink V1.2 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
+        val liveSessionReattach = AppLog.isMirrorSessionOpen() && !lockPlaceholderActive
+        if (lockPlaceholderActive) {
+            setRunSelection(RunSelection.NONE)
+            AppLog.add("LOCK PLACEHOLDER: stato riagganciato dopo ricreazione MainActivity")
+            setHeaderStatus("Bloccato", activeProfile?.displayName ?: "", C_AMBER)
+            setState("Telefono bloccato", "Sblocca il telefono e premi START", C_AMBER, "LOCK")
+        } else if (liveSessionReattach) {
+            startInProgress = false
+            mirrorConnectedOnce = true
+            recoveryFailedWaitingManual = false
+            setRunSelection(RunSelection.START)
+            setHeaderStatus("Connesso", activeProfile?.displayName ?: "", C_GREEN)
+            setState("Sessione attiva", "Mirroring già in corso", C_GREEN, "LIVE")
+            AppLog.add("SESSION REATTACH V1.4: MainActivity ricreata; sessione MirrorService/EasyConn già attiva, START duplicato bloccato")
+        } else {
+            setRunSelection(RunSelection.NONE)
+            setHeaderStatus("Pronto", activeProfile?.displayName ?: "", C_GREEN)
+            setState(
+                "Sistema pronto",
+                activeProfile?.let { "Profilo moto salvato · START per connettere" } ?: "La prossimità è sempre attiva",
+                C_GREEN,
+                "LAN"
+            )
+        }
+        AppLog.add("MotoLink V1.4 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -1066,6 +1099,7 @@ class MainActivity : Activity() {
         if (waitingForAdaptationOverlayPermission) {
             waitingForAdaptationOverlayPermission = false
             val granted = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this)
+            if (granted) MirrorAdaptationConfig.setCalibrationActive(this, true)
             MirrorAdaptationConfig.setEnabled(this, granted)
             val cfg = MirrorAdaptationConfig.load(this)
             dashboard.updateAdaptation(cfg.enabled, MirrorAdaptationConfig.dashboardLabel(this))
@@ -1158,12 +1192,12 @@ class MainActivity : Activity() {
             // Generic HOTSPOT profiles rely on the rider already being on the motorcycle Wi-Fi.
             // Never continue on cellular: that produces a valid encoder session with no possible
             // EasyConn peer, as seen on the CFMOTO compatibility report.
-            if (profile.format.equals("HOTSPOT", ignoreCase = true) && !isDefaultNetworkWifi()) {
+            if (profile.format.equals("HOTSPOT", ignoreCase = true) && !bikeNetworkConnector.bindExistingWifiForHotspot()) {
                 startInProgress = false
                 setRunSelection(RunSelection.NONE)
                 setHeaderStatus("Rete moto", profile.displayName, C_DANGER)
                 setState("Collega il Wi-Fi della moto", "Il telefono è su rete mobile", C_DANGER, "!")
-                AppLog.add("HOTSPOT GUARD V1.2: profilo senza SSID e rete corrente non Wi-Fi; START interrotto prima di MediaProjection")
+                AppLog.add("HOTSPOT GUARD V1.4: nessuna rete Wi-Fi locale utilizzabile; START interrotto prima di MediaProjection")
                 NeonDialogs.showInfo(
                     activity = this,
                     title = "Collega prima la moto",
@@ -1183,10 +1217,11 @@ class MainActivity : Activity() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             }
             AppLog.add(
-                if (wifiDirectBikeConnector.shouldUse(profile))
-                    "WLAN DIRECT: richiesta permesso Android per collegamento P2P alla moto"
-                else
-                    "QR WIFI: richiesta permesso Android per collegamento alla rete moto"
+                when {
+                    isCfmotoProfile(profile) -> "CFMOTO P2P V1.4: richiesta permesso Android per WLAN Direct"
+                    wifiDirectBikeConnector.shouldUse(profile) -> "WLAN DIRECT: richiesta permesso Android per collegamento P2P alla moto"
+                    else -> "QR WIFI: richiesta permesso Android per collegamento alla rete moto"
+                }
             )
             requestPermissions(arrayOf(permission), REQ_BIKE_WIFI_PERMISSION)
             return
@@ -1197,6 +1232,64 @@ class MainActivity : Activity() {
         } else {
             connectBikeWifiThenProjection(profile)
         }
+    }
+
+    private fun isCfmotoProfile(profile: BikeProfile?): Boolean {
+        if (profile == null) return false
+        return profile.brand.equals("CFMOTO", ignoreCase = true) ||
+            profile.format.startsWith("CFMOTO_", ignoreCase = true)
+    }
+
+    /**
+     * Physical CFMOTO test proved that the QR/group SSID and P2P peer name are distinct:
+     * DIRECT-go-CFMOTO-XXXX vs CFMOTO-XXXX. This fallback deliberately keeps the original
+     * QR SSID; the primary CFMOTO path is WLAN Direct/P2P.
+     */
+    private fun connectCfmotoDirectNetworkFallback(profile: BikeProfile) {
+        if (runSelection != RunSelection.START) return
+        val originalSsid = profile.ssid?.trim().orEmpty()
+        if (originalSsid.isBlank()) {
+            startInProgress = false
+            setRunSelection(RunSelection.NONE)
+            setHeaderStatus("CFMOTO", profile.displayName, C_DANGER)
+            setState("Moto non collegata", "SSID CFMOTO assente", C_DANGER, "!")
+            AppLog.add("CFMOTO NETWORK V1.4 FALLBACK: SSID QR assente; START interrotto")
+            return
+        }
+        val token = sessionGeneration
+        wifiDirectLink = null
+        setHeaderStatus("CFMOTO", profile.displayName, C_AMBER)
+        setState("Connessione rete…", "Fallback rete T-Box CFMOTO", C_AMBER, "Wi-Fi")
+        AppLog.add("CFMOTO NETWORK V1.4 FALLBACK: WifiNetworkSpecifier sul SSID QR originale; EasyConn/H264 invariati")
+        bikeNetworkConnector.connect(
+            profile = profile.copy(ssid = originalSsid),
+            timeoutMs = 12_000,
+            onReady = {
+                runOnUiThread {
+                    if (token != sessionGeneration || runSelection != RunSelection.START) return@runOnUiThread
+                    AppLog.add("CFMOTO NETWORK V1.4 FALLBACK READY: rete T-Box associata")
+                    setHeaderStatus("Rete pronta", profile.displayName, C_GREEN)
+                    setState("CFMOTO collegata", "Ora autorizza la condivisione dello schermo", C_GREEN, "Wi-Fi")
+                    requestProjectionChoice()
+                }
+            },
+            onUnavailable = { reason ->
+                runOnUiThread {
+                    if (token != sessionGeneration || runSelection != RunSelection.START) return@runOnUiThread
+                    bikeNetworkConnector.release()
+                    startInProgress = false
+                    setRunSelection(RunSelection.NONE)
+                    setHeaderStatus("CFMOTO", profile.displayName, C_DANGER)
+                    setState("Moto non collegata", "P2P e rete T-Box non disponibili", C_DANGER, "!")
+                    AppLog.add("CFMOTO NETWORK V1.4 FAIL: P2P e fallback rete diretta falliti ($reason)")
+                    NeonDialogs.showInfo(
+                        activity = this,
+                        title = "CFMOTO non collegata",
+                        message = "MotoLink non è riuscita ad agganciare la CFMOTO. Lascia aperta sul TFT la schermata Connessione telefono/QR e riprova."
+                    )
+                }
+            }
+        )
     }
 
     private fun connectBikeWifiDirectThenProjection(profile: BikeProfile) {
@@ -1237,6 +1330,12 @@ class MainActivity : Activity() {
                 runOnUiThread {
                     if (token != sessionGeneration || runSelection != RunSelection.START) return@runOnUiThread
                     wifiDirectLink = null
+                    if (isCfmotoProfile(profile)) {
+                        AppLog.add("CFMOTO P2P V1.4: WLAN Direct non agganciata ($reason); provo fallback SSID QR originale")
+                        wifiDirectBikeConnector.release(removeGroup = false)
+                        connectCfmotoDirectNetworkFallback(profile)
+                        return@runOnUiThread
+                    }
                     if (!explicitP2p) {
                         AppLog.add("WLAN DIRECT AUTO-PROBE: target QR esatto non agganciato ($reason); fallback al percorso Wi-Fi/EasyConn classico")
                         wifiDirectBikeConnector.release(removeGroup = false)
@@ -1487,6 +1586,7 @@ class MainActivity : Activity() {
             putExtra(MirrorService.EXTRA_RESULT_CODE, resultCode)
             putExtra(MirrorService.EXTRA_RESULT_DATA, data)
             putExtra(MirrorService.EXTRA_VALICO_SOFT_H264, useValicoSoftH264)
+            putExtra(MirrorService.EXTRA_CFMOTO_COMPAT, isCfmotoProfile(activeProfileForVideo))
         }
         startForegroundService(serviceIntent)
         AppLog.markMirrorSessionStarted()
@@ -1532,13 +1632,16 @@ class MainActivity : Activity() {
     }
 
     private fun isEasyConnConnectionLoss(line: String): Boolean {
+        val socketAbort = line.contains("Broken pipe", ignoreCase = true) ||
+            line.contains("Connection reset", ignoreCase = true) ||
+            line.contains("Software caused connection abort", ignoreCase = true) ||
+            line.contains("Socket closed", ignoreCase = true)
         return line.contains("H264 stream chiuso dalla Voge", ignoreCase = true) ||
-            (line.contains("10920 errore", ignoreCase = true) &&
-                (line.contains("Broken pipe", ignoreCase = true) || line.contains("Connection reset", ignoreCase = true))) ||
+            (line.contains("10920 errore", ignoreCase = true) && socketAbort) ||
             ((line.contains("PXC#1", ignoreCase = true) || line.contains("PXC#2", ignoreCase = true)) &&
-                (line.contains("chiuso dalla Voge", ignoreCase = true) || line.contains("Connection reset", ignoreCase = true))) ||
+                (line.contains("chiuso dalla Voge", ignoreCase = true) || socketAbort)) ||
             (line.contains("10921", ignoreCase = true) &&
-                (line.contains("chiuso dalla Voge", ignoreCase = true) || line.contains("Connection reset", ignoreCase = true)))
+                (line.contains("chiuso dalla Voge", ignoreCase = true) || socketAbort))
     }
 
     private fun connectionLossReason(line: String): String = when {
@@ -2621,13 +2724,13 @@ class MainActivity : Activity() {
     private fun toggleAdaptationSetting() {
         val current = MirrorAdaptationConfig.load(this)
         if (current.enabled) {
+            // OFF now means only "editor closed". The calibration stays active and saved.
             MirrorAdaptationConfig.setEnabled(this, false)
             val cfg = MirrorAdaptationConfig.load(this)
             dashboard.updateAdaptation(false, MirrorAdaptationConfig.dashboardLabel(this))
-            val port = MirrorAdaptationConfig.load(this, MirrorAdaptationConfig.Profile.PORTRAIT)
             AppLog.add(
-                "ADATTAMENTO V15: OFF; profili conservati LAND=L${cfg.leftPx}/T${cfg.topPx}/R${cfg.rightPx}/B${cfg.bottomPx}; " +
-                    "PORT=L${port.leftPx}/T${port.topPx}/R${port.rightPx}/B${port.bottomPx}"
+                "ADATTAMENTO V1.4: EDITOR OFF manuale; calibrazioneAttiva=${cfg.calibrationActive}; " +
+                    "personalizzazione conservata e ancora applicata"
             )
             if (runSelection == RunSelection.START) {
                 startService(Intent(this, MirrorService::class.java).apply { action = MirrorService.ACTION_ADAPTATION_UPDATE })
@@ -2637,7 +2740,7 @@ class MainActivity : Activity() {
 
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
             waitingForAdaptationOverlayPermission = true
-            AppLog.add("ADATTAMENTO V15: richiedo permesso 'Mostra sopra altre app' per il pannello flottante")
+            AppLog.add("ADATTAMENTO V1.4: richiedo permesso 'Mostra sopra altre app' per l'editor flottante")
             try {
                 val settingsIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -2647,7 +2750,7 @@ class MainActivity : Activity() {
                 startActivity(settingsIntent)
             } catch (t: Throwable) {
                 waitingForAdaptationOverlayPermission = false
-                AppLog.add("ADATTAMENTO V15: apertura permesso fallita ${t.javaClass.simpleName}: ${t.message ?: "-"}")
+                AppLog.add("ADATTAMENTO V1.4: apertura permesso fallita ${t.javaClass.simpleName}: ${t.message ?: "-"}")
                 NeonDialogs.showInfo(
                     activity = this,
                     title = "Adattamento",
@@ -2657,21 +2760,20 @@ class MainActivity : Activity() {
             return
         }
 
+        MirrorAdaptationConfig.setCalibrationActive(this, true)
         MirrorAdaptationConfig.setEnabled(this, true)
         val cfg = MirrorAdaptationConfig.load(this)
         dashboard.updateAdaptation(true, MirrorAdaptationConfig.dashboardLabel(this))
-        val port = MirrorAdaptationConfig.load(this, MirrorAdaptationConfig.Profile.PORTRAIT)
         AppLog.add(
-            "ADATTAMENTO V15: ON; profili separati per orientamento; base landscape auto-scalata dalla geometria TFT; source crop/zoom automatico OFF; step=${MirrorAdaptationConfig.STEP_PX}px; range=${MirrorAdaptationConfig.MIN_EDGE_PX}..${MirrorAdaptationConfig.MAX_EDGE_PX}px; " +
-                "LAND=L${cfg.leftPx}/T${cfg.topPx}/R${cfg.rightPx}/B${cfg.bottomPx}; " +
-                "PORT=L${port.leftPx}/T${port.topPx}/R${port.rightPx}/B${port.bottomPx}"
+            "ADATTAMENTO V1.4: EDITOR ON; riparto dai valori salvati; " +
+                "calibrazioneAttiva=${cfg.calibrationActive}; step=${MirrorAdaptationConfig.STEP_PX}px"
         )
         if (runSelection == RunSelection.START) {
             startService(Intent(this, MirrorService::class.java).apply { action = MirrorService.ACTION_ADAPTATION_UPDATE })
         }
         NeonDialogs.showInfo(
             activity = this,
-            title = "Adattamento attivo",
+            title = "Regola Adattamento",
             message = MirrorAdaptationConfig.USER_HELP_TEXT
         )
     }
@@ -2823,6 +2925,10 @@ class MainActivity : Activity() {
         } catch (_: Throwable) {
         }
         networkCallback = null
+        if (adaptationEditorReceiverRegistered) {
+            runCatching { unregisterReceiver(adaptationEditorStateReceiver) }
+            adaptationEditorReceiverRegistered = false
+        }
         if (::bikeNetworkConnector.isInitialized) bikeNetworkConnector.release()
         if (::wifiDirectBikeConnector.isInitialized) wifiDirectBikeConnector.release(removeGroup = false)
         wifiDirectLink = null

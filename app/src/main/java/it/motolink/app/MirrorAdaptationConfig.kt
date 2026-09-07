@@ -53,7 +53,7 @@ object MirrorAdaptationConfig {
     const val V14_FINAL_RIGHT = 0
     const val V14_FINAL_BOTTOM = 110
 
-    const val SETTINGS_DESCRIPTION = "Adatta manualmente il display"
+    const val SETTINGS_DESCRIPTION = "Attiva per regolare. La X salva, chiude e lascia la personalizzazione applicata."
 
     val USER_HELP_TEXT: String
         get() = """
@@ -72,18 +72,18 @@ object MirrorAdaptationConfig {
             − restringe l’area dell’immagine
 
             PANNELLO
-            L’editor compare solo quando il telefono è in orizzontale. In verticale Adattamento resta attivo ma il pannello è nascosto.
+            Attiva Adattamento dalle Impostazioni quando vuoi modificare la calibrazione. L’editor compare solo quando il telefono è in orizzontale.
             Trascina la scritta “Adattamento” per spostarlo.
 
             SALVATAGGIO
-            Le regolazioni si salvano automaticamente e restano separate per ogni profilo moto e per orientamento verticale/orizzontale. Se una moto non è mai stata regolata, MotoLink usa la base automatica predefinita. Rinominare la moto non fa perdere le sue regolazioni.
+            Le regolazioni si salvano automaticamente e restano separate per ogni profilo moto e per orientamento verticale/orizzontale. Rinominare la moto non fa perdere le sue regolazioni.
 
             COMANDI
             ⓘ apre o chiude queste istruzioni. Quando le istruzioni sono aperte, i comandi vengono nascosti e la barra superiore con × resta sempre visibile.
-            × chiude solo il pannello: le regolazioni salvate restano attive.
+            × conclude la regolazione: chiude il pannello e porta automaticamente l’interruttore Adattamento su OFF, ma la personalizzazione appena salvata continua a essere applicata in ogni nuova sessione.
             ↺ Ripristina riporta solo l'orientamento che stai modificando ai valori iniziali dell'app e richiede due conferme.
 
-            Adattamento è OFF al primo accesso. Se lo attivi, resta ON finché non lo disattivi dalle Impostazioni.
+            OFF nelle Impostazioni significa “editor chiuso”, non “annulla personalizzazione”. Per modificare di nuovo il display, riattiva Adattamento: il pannello riparte dai valori già salvati.
         """.trimIndent()
 
     const val STEP_PX = 5
@@ -101,6 +101,7 @@ object MirrorAdaptationConfig {
 
     data class Snapshot(
         val enabled: Boolean,
+        val calibrationActive: Boolean,
         val profile: Profile,
         val leftPx: Int,
         val topPx: Int,
@@ -116,11 +117,13 @@ object MirrorAdaptationConfig {
             leftPx.coerceAtLeast(0) + topPx.coerceAtLeast(0) + rightPx.coerceAtLeast(0) + bottomPx.coerceAtLeast(0)
 
         val label: String
-            get() = if (!enabled) {
-                "OFF"
-            } else {
+            get() {
                 val p = if (profile == Profile.LANDSCAPE) "LAND" else "PORT"
-                "ON • $p • extra L${signed(leftPx)} T${signed(topPx)} R${signed(rightPx)} B${signed(bottomPx)}"
+                return when {
+                    enabled -> "ON • MODIFICA $p • extra L${signed(leftPx)} T${signed(topPx)} R${signed(rightPx)} B${signed(bottomPx)}"
+                    calibrationActive -> "OFF • PERSONALIZZAZIONE $p ATTIVA"
+                    else -> "OFF"
+                }
             }
     }
 
@@ -195,6 +198,9 @@ object MirrorAdaptationConfig {
         return arrayOf("${prefix}_left_px", "${prefix}_top_px", "${prefix}_right_px", "${prefix}_bottom_px")
     }
 
+    private fun calibrationActiveKey(context: Context): String =
+        "mirror_adaptation_bike_${activeBikeId(context)}_calibration_active"
+
     private fun migratePerBikeIfNeeded(context: Context) {
         val bike = BikeProfileStore.load(context) ?: return
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -224,14 +230,31 @@ object MirrorAdaptationConfig {
         }
     }
 
+    private fun ensureCalibrationDefault(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val key = calibrationActiveKey(context)
+        if (prefs.contains(key)) return
+
+        // Migration from previous V1.4 candidates: if the old editor switch was ON,
+        // or this bike already has non-zero saved corrections, preserve that calibration.
+        val savedKeys = profileKeys(context, Profile.LANDSCAPE).toList() +
+            profileKeys(context, Profile.PORTRAIT).toList()
+        val hasSavedCorrection = savedKeys.any { prefs.getInt(it, 0) != 0 }
+        val active = prefs.getBoolean(KEY_ENABLED, false) || hasSavedCorrection
+        prefs.edit().putBoolean(key, active).apply()
+        AppLog.add("ADATTAMENTO V1.4 PERSISTENZA: migrazione profilo -> calibrazioneAttiva=$active")
+    }
+
     fun load(context: Context, profile: Profile): Snapshot {
         migrateIfNeeded(context)
         migratePerBikeIfNeeded(context)
         ensureEnabledDefault(context)
+        ensureCalibrationDefault(context)
         val p = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val keys = profileKeys(context, profile)
         return Snapshot(
             enabled = p.getBoolean(KEY_ENABLED, false),
+            calibrationActive = p.getBoolean(calibrationActiveKey(context), false),
             profile = profile,
             leftPx = p.getInt(keys[0], 0).coerceIn(MIN_EDGE_PX, MAX_EDGE_PX),
             topPx = p.getInt(keys[1], 0).coerceIn(MIN_EDGE_PX, MAX_EDGE_PX),
@@ -249,8 +272,18 @@ object MirrorAdaptationConfig {
 
     fun setEnabled(context: Context, enabled: Boolean) {
         migrateIfNeeded(context)
+        migratePerBikeIfNeeded(context)
+        ensureCalibrationDefault(context)
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_ENABLED, enabled).apply()
+    }
+
+    fun setCalibrationActive(context: Context, active: Boolean) {
+        migrateIfNeeded(context)
+        migratePerBikeIfNeeded(context)
+        ensureEnabledDefault(context)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putBoolean(calibrationActiveKey(context), active).apply()
     }
 
     fun adjustEdge(context: Context, profile: Profile, edge: String, deltaPx: Int): Snapshot {
@@ -271,6 +304,7 @@ object MirrorAdaptationConfig {
             .putInt(keys[1], top)
             .putInt(keys[2], right)
             .putInt(keys[3], bottom)
+            .putBoolean(calibrationActiveKey(context), true)
             .apply()
         return load(context, profile)
     }
@@ -300,10 +334,14 @@ object MirrorAdaptationConfig {
 
     fun dashboardLabel(context: Context): String {
         val land = load(context, Profile.LANDSCAPE)
-        if (!land.enabled) return "OFF"
         val port = load(context, Profile.PORTRAIT)
         val bikeName = BikeProfileStore.load(context)?.displayName?.trim()?.takeIf { it.isNotEmpty() } ?: "profilo corrente"
-        return "ON • $bikeName • AUTO TFT • LAND extra L${signed(land.leftPx)} T${signed(land.topPx)} R${signed(land.rightPx)} B${signed(land.bottomPx)} " +
+        val mode = when {
+            land.enabled -> "ON • MODIFICA"
+            land.calibrationActive -> "OFF • PERSONALIZZAZIONE ATTIVA"
+            else -> "OFF"
+        }
+        return "$mode • $bikeName • LAND L${signed(land.leftPx)} T${signed(land.topPx)} R${signed(land.rightPx)} B${signed(land.bottomPx)} " +
             "• PORT L${signed(port.leftPx)} T${signed(port.topPx)} R${signed(port.rightPx)} B${signed(port.bottomPx)}"
     }
 
@@ -318,6 +356,7 @@ object MirrorAdaptationConfig {
                 .remove("${prefix}_top_px")
                 .remove("${prefix}_right_px")
                 .remove("${prefix}_bottom_px")
+                .remove("mirror_adaptation_bike_${id}_calibration_active")
         }
         edit.apply()
     }

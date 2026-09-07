@@ -10,6 +10,7 @@ import android.net.NetworkRequest
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
+import java.net.Inet4Address
 
 /**
  * App-scoped connection to a motorcycle/TFT Wi-Fi network learned from a QR code.
@@ -137,6 +138,35 @@ class BikeNetworkConnector(context: Context) {
             AppLog.add("QR WIFI: richiesta rete non riuscita: ${t.javaClass.simpleName}")
             onUnavailable("Impossibile richiedere la rete moto")
         }
+    }
+
+    /**
+     * V1.4 HOTSPOT: bind MotoLink to an already-connected local Wi-Fi even when
+     * Android keeps cellular as the default Internet network. Only this process is bound.
+     */
+    fun bindExistingWifiForHotspot(): Boolean {
+        val candidates = cm.allNetworks.mapNotNull { network ->
+            val caps = cm.getNetworkCapabilities(network) ?: return@mapNotNull null
+            if (!caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return@mapNotNull null
+            val lp = cm.getLinkProperties(network) ?: return@mapNotNull null
+            val hasIpv4 = lp.linkAddresses.any { link ->
+                val address = link.address
+                address is Inet4Address && !address.isLoopbackAddress
+            }
+            if (!hasIpv4) return@mapNotNull null
+            val localOnlyScore = if (
+                !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
+                !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            ) 0 else 1
+            Triple(localOnlyScore, network, lp)
+        }.sortedBy { it.first }
+
+        val chosen = candidates.firstOrNull() ?: return false
+        release()
+        bind(chosen.second)
+        linkProperties = chosen.third
+        AppLog.add("HOTSPOT V1.4: rete Wi-Fi locale rilevata; processo MotoLink associato alla rete moto")
+        return true
     }
 
     fun candidateGatewayHosts(profile: BikeProfile): List<String> {

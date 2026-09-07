@@ -1,5 +1,16 @@
 # Changelog MotoLink
 
+## v1.4 — 2026-09-07
+
+### Novità e correzioni
+
+- Percorso di connessione dedicato ai profili CFMOTO con normalizzazione del peer WLAN Direct e fallback rete QR.
+- Correzione HOTSPOT per reti moto locali quando Android mantiene la rete mobile come predefinita.
+- Miglioramenti CFMOTO a rotazione/display e recovery del video.
+- Riaggancio dell'interfaccia a sessioni di mirroring già attive.
+- Adattamento persistente: chiusura editor con X e personalizzazione mantenuta fino a ripristino esplicito.
+- Core EasyConn/H264 e geometria V15 di riferimento mantenuti invariati.
+
 ## v1.0 — 2026-09-04
 
 Prima release pubblica MotoLink con identità Android `it.motolink.app`.
