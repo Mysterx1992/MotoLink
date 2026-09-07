@@ -1,0 +1,87 @@
+name: Finalize MotoLink V1.4 README
+
+on:
+  push:
+    branches: [ "release/v1.4" ]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-readme:
+    if: github.event.head_commit.message == 'Run MotoLink V1.4 README finalizer'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/v1.4
+          fetch-depth: 0
+
+      - name: Update README for V1.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('README.md')
+          s = p.read_text(encoding='utf-8')
+
+          s = s.replace('releases/download/v1.1/MotoLink_V1.1.apk', 'releases/download/v1.4/MotoLink_V1.4.apk')
+          s = s.replace('MotoLink%20V1.1', 'MotoLink%20V1.4')
+          s = s.replace('Scarica MotoLink V1.1', 'Scarica MotoLink V1.4')
+          s = s.replace('### APK ufficiale V1.1', '### APK ufficiale V1.4')
+          s = s.replace('MotoLink_V1.1.apk', 'MotoLink_V1.4.apk')
+          s = s.replace('Download diretto MotoLink V1.1', 'Download diretto MotoLink V1.4')
+          s = s.replace('| Release pubblica | ✅ `v1.1` |', '| Release pubblica | ✅ `v1.4` |')
+          s = s.replace('<strong>MotoLink V1.1</strong>', '<strong>MotoLink V1.4</strong>')
+
+          start = s.index('## 🆕 MotoLink V1.1')
+          end = s.index('\n---\n\n## Download MotoLink', start)
+          intro = '''## 🆕 MotoLink V1.4
+
+La V1.4 è l'aggiornamento pubblico successivo alla V1.2 e introduce correzioni di compatibilità, recovery e persistenza delle regolazioni.
+
+### Novità principali
+
+- **CFMOTO**: percorso WLAN Direct dedicato con riconoscimento del peer reale della moto e fallback sulla rete indicata dal QR.
+- **HOTSPOT Trofeo/Valico**: MotoLink rileva la rete Wi-Fi locale della moto anche quando Android mantiene il 4G/5G come rete predefinita.
+- **Display e rotazione CFMOTO**: gestione migliorata durante il mirroring.
+- **Recovery video**: migliorata la ripresa del flusso quando si esce e si rientra nella modalità mirroring del TFT.
+- **Sessione già attiva**: l'interfaccia si riaggancia al mirroring esistente evitando avvii duplicati.
+- **Adattamento persistente**: la X chiude l'editor e porta l'interruttore su OFF, mentre la personalizzazione resta applicata finché l'utente non sceglie un ripristino esplicito.
+
+### Aggiornamento dalla V1.2
+
+Chi utilizza la release ufficiale MotoLink V1.2 può installare `MotoLink_V1.4.apk` direttamente sopra la V1.2. Il normale aggiornamento Android mantiene profili e impostazioni locali.
+
+La V1.3 non è pubblicata come release GitHub: il canale pubblico passa direttamente da **V1.2 a V1.4**.
+'''
+          s = s[:start] + intro + s[end:]
+
+          old_cf = '| _CfMoto_ | _None_ | _None_ | _None_ | No Testata | _App ancora da testare su CfMoto_ |'
+          new_cf = '| _CFMOTO_ | _Da confermare_ | _Da confermare_ | _TFT / EasyConn_ | ✅ Testata | _Connessione e mirroring verificati; compatibilità in ampliamento_ |'
+          s = s.replace(old_cf, new_cf)
+
+          old_privacy = "L'app non richiede accesso diretto a fotocamera, microfono, contatti, SMS o file personali. La scansione QR utilizza l'interfaccia fornita dai servizi Google."
+          new_privacy = "MotoLink non richiede accesso a microfono, contatti o SMS. Per il QR usa come prima scelta Google Code Scanner; se non è disponibile sul telefono può usare lo scanner interno CameraX + ML Kit, richiedendo il permesso Fotocamera solo quando necessario."
+          s = s.replace(old_privacy, new_privacy)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          grep -q 'MotoLink V1.4' README.md
+          grep -q 'releases/download/v1.4/MotoLink_V1.4.apk' README.md
+          grep -q 'Release pubblica | ✅ `v1.4`' README.md
+          BLOCKED_RE='moto[- _]?'$(printf 'hub')
+          if grep -RniE "$BLOCKED_RE" README.md; then exit 1; fi
+
+      - name: Commit clean README
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/finalize-v14-readme.yml .release-v14-trigger
+          git config user.name "Mysterx1992"
+          git config user.email "scarano.emanuele@hotmail.com"
+          git add -A
+          git commit -m "Update README for MotoLink V1.4"
+          git push origin HEAD:release/v1.4
