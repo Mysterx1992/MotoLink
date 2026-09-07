@@ -51,6 +51,31 @@ object H264FrameBus {
     }
 
     /**
+     * Clears encoder/GOP state while preserving an already accepted :10920 consumer.
+     * V1.5: Media control can open 10920 before MediaProjection finishes creating the encoder;
+     * resetting consumerActive/generation in that window loses the real TFT consumer.
+     */
+    @Synchronized
+    fun resetEncoderStatePreservingConsumer() {
+        val hadConsumer = consumerActive && consumerGeneration > 0L
+        droppedFrames += pending.size.toLong()
+        pending.clear()
+        codecConfig = null
+        awaitIdr = true
+        catchupOnNextIdr = false
+        stickySyntheticIdr = null
+        lastSyntheticSentNs = 0L
+        syncRequestPending = hadConsumer
+        inputFrames = 0L
+        acceptedFrames = 0L
+        droppedFrames = 0L
+        queueResets = 0L
+    }
+
+    @Synchronized
+    fun hasActiveConsumer(): Boolean = consumerActive && consumerGeneration > 0L
+
+    /**
      * Called whenever the HU creates/recreates the :10920 consumer.
      * Returns a generation token. Only the newest token is allowed to consume frames or
      * deactivate the bridge, so a late finally{} from an older socket cannot kill a newer

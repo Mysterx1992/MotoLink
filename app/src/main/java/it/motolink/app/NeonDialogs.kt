@@ -25,12 +25,13 @@ object NeonDialogs {
     private const val DANGER = "#E06060"
     private const val DANGER_SOFT = "#7A2A2A"
 
-    fun showInfo(activity: Activity, title: String, message: String, positiveText: String = "OK", onPositive: (() -> Unit)? = null) {
+    fun showInfo(activity: Activity, title: String, message: String, positiveText: String = "OK", onPositive: (() -> Unit)? = null): Dialog {
         val built = baseDialog(activity, title, message)
         built.root.addView(buttonRow(activity, positiveText to {
             built.dialog.dismiss(); onPositive?.invoke()
         }))
         show(built.dialog, activity)
+        return built.dialog
     }
 
     fun showConfirm(

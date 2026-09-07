@@ -77,6 +77,9 @@ class EasyConnServers(private val context: Context) {
     @Volatile var lastStartErrorMessage: String? = null
         private set
 
+    // V1.5 local lifecycle callback: no wire/protocol behavior is changed.
+    @Volatile var onH264FirstFrameDelivered: ((Long) -> Unit)? = null
+
     @Volatile private var sessionCrypto: SessionCrypto? = null
     @Volatile private var sessionPhoneUuid: String = ""
     private val pxcConnectionSequence = AtomicInteger(0)
@@ -112,6 +115,16 @@ class EasyConnServers(private val context: Context) {
             AppLog.add("EasyConn peer atteso impostato per la sessione")
         }
     }
+
+    fun hasLivePxcChannel(): Boolean = clientSockets.any {
+        !it.isClosed && it.isConnected && it.localPort == 10922
+    }
+
+    fun hasLiveMediaControl(): Boolean = clientSockets.any {
+        !it.isClosed && it.isConnected && it.localPort == 10921
+    }
+
+    fun hasLiveH264Channel(): Boolean = H264FrameBus.hasActiveConsumer()
 
     @Synchronized
     fun start(): Boolean {
@@ -793,6 +806,7 @@ class EasyConnServers(private val context: Context) {
                     if (!firstFrameLogged) {
                         firstFrameLogged = true
                         AppLog.add("H264 FIRST FRAME -> Voge idx=$frameCounter ${au.size}B (Annex-B/AUD)")
+                        runCatching { onH264FirstFrameDelivered?.invoke(consumerGeneration) }
                     }
                     frameCounter = (frameCounter + 1) and 0x7fffffff
                 }

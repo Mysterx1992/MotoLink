@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.4/MotoLink_V1.4.apk">
-    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.4-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.4">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5/MotoLink_V1.5.apk">
+    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.5-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.5">
   </a>
   &nbsp;
   <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
@@ -27,23 +27,25 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.4
+## 🆕 MotoLink V1.5
 
-La V1.4 è la release pubblica successiva alla V1.2. La V1.3 non è stata pubblicata come release GitHub.
+La V1.5 raccoglie le correzioni emerse dai test fisici successivi alla V1.4 e consolida il comportamento su Voge Trofeo/Valico e CFMOTO.
 
-### Novità principali
+### Novità e correzioni principali
 
-- **Compatibilità CFMOTO migliorata** con percorso WLAN Direct dedicato e fallback di rete basato sul profilo QR.
-- **HOTSPOT Trofeo/Valico corretto** anche quando Android mantiene la rete mobile come rete predefinita: MotoLink può usare la rete Wi-Fi locale della moto senza richiedere che diventi la rete Internet principale del telefono.
-- **Rotazione e adattamento CFMOTO migliorati** per i display con area video differente dalla geometria di riferimento.
-- **Recovery del video migliorato** quando il display moto esce e rientra nella modalità mirroring.
-- **Riaggancio della UI** a una sessione di mirroring già attiva, evitando di creare una seconda sessione quando non serve.
-- **Adattamento persistente**: dopo la regolazione, la personalizzazione resta salvata e applicata alle sessioni successive finché l'utente non decide di modificarla o ripristinarla.
-- EasyConn wire-level, H264FrameBus e geometria V15 di riferimento restano invariati rispetto alla base validata.
+- **Trofeo: adattamento predefinito ripristinato.** Alla prima installazione la geometria approvata viene applicata automaticamente anche con l'editor Adattamento chiuso.
+- **Adattamento display corretto:** le regolazioni restano salvate, la X chiude l'editor senza perdere la personalizzazione e il pulsante **OK** delle istruzioni è stato sistemato.
+- **Recovery della sessione migliorato:** quando il TFT cambia modalità, MotoLink resta in attesa e riprende automaticamente il mirroring quando il display torna disponibile, senza interrompere la sessione dopo un numero fisso di tentativi.
+- **Recovery H264 reso affidabile:** il successo della riconnessione non viene più dedotto da semplici stringhe del Log, evitando falsi `RECOVERY OK`.
+- **CFMOTO: corretto il lifecycle del consumer H264**, eliminando il caso in cui P2P/EasyConn risultavano collegati ma il video non partiva. La correzione è stata verificata fisicamente con collegamento MotoLink V1.5 → CFMOTO.
+- **Assistente MotoLink ripristinato:** la release include la configurazione pubblica corretta del backend, senza secret privati nell'APK.
+- **VERSIONE nelle Impostazioni:** toccando la voce VERSIONE si possono leggere offline le novità e i bugfix della versione installata.
+- **Guida aggiornata** con il nuovo comportamento della voce VERSIONE.
+- Il protocollo EasyConn wire-level, il clock e i percorsi di rete già validati restano separati dalle correzioni di recovery e display.
 
-### Aggiornamento dalla V1.2
+### Aggiornamento
 
-Chi utilizza già la **V1.2 ufficiale GitHub** può installare `MotoLink_V1.4.apk` direttamente sopra la V1.2. V1.2 e V1.4 utilizzano la stessa identità di firma permanente MotoLink.
+Chi utilizza già una release ufficiale firmata con l'identità permanente MotoLink può installare `MotoLink_V1.5.apk` come aggiornamento.
 
 > [!NOTE]
 > Se sul telefono è installata una vecchia build MotoLink firmata con una firma differente, Android può richiedere una disinstallazione una tantum prima dell'installazione della release ufficiale.
@@ -52,10 +54,10 @@ Chi utilizza già la **V1.2 ufficiale GitHub** può installare `MotoLink_V1.4.ap
 
 ## Scarica MotoLink
 
-### APK ufficiale V1.4
+### APK ufficiale V1.5
 
-<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.4/MotoLink_V1.4.apk">
-  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.4.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.4">
+<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5/MotoLink_V1.5.apk">
+  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.5.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.5">
 </a>
 
 **Pagina dell'ultima release:**  
@@ -98,9 +100,9 @@ Moto sulle quali l'app è stata testata:
 
 | Marca | Modello | Anno / versione | Display / sistema | Stato | Note |
 |---|---|---|---|---|---|
-| _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
+| _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata e adattamento predefinito verificato per questo specifico modello_ |
 | _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento QR Code_ |
-| _CFMOTO_ | _In verifica su TFT compatibile_ | _—_ | _TFT / EasyConn_ | 🔄 Test fisici in corso | _Collegamento e mirroring ottenuti; ottimizzazioni display/recovery introdotte in V1.4_ |
+| _CFMOTO_ | _TFT compatibile testato_ | _—_ | _TFT / EasyConn_ | ✅ Testata | _Connessione P2P/EasyConn e mirroring verificati fisicamente con MotoLink V1.5_ |
 
 > [!WARNING]
 > Un display simile o appartenente allo stesso marchio **non garantisce automaticamente la compatibilità**. Modello e firmware devono essere verificati separatamente.
@@ -125,7 +127,7 @@ Puoi selezionare fino a **quattro applicazioni preferite** e richiamarle rapidam
 
 ### 📐 Adattamento display
 
-MotoLink include strumenti per adattare manualmente l'immagine alla geometria del display della moto. Le regolazioni vengono mantenute per il relativo profilo moto e per orientamento.
+MotoLink include strumenti per adattare manualmente l'immagine alla geometria del display della moto. Le regolazioni vengono mantenute per il relativo profilo moto e per orientamento. Sulla Trofeo la base predefinita validata viene applicata automaticamente, mentre l'editor serve per eventuali regolazioni personali.
 
 ### 📱 Modalità tasca
 
@@ -152,6 +154,10 @@ Per allegare volontariamente la diagnostica:
 **Supporto → Log → Condividi → Assistente**
 
 MotoLink applica un filtro alle informazioni tecniche prima dell'elaborazione.
+
+### ℹ️ VERSIONE
+
+Nelle Impostazioni, toccando **VERSIONE**, MotoLink mostra localmente le novità e i bugfix della versione installata. Non è necessaria una connessione Internet per leggere queste informazioni.
 
 ---
 
@@ -189,7 +195,7 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Release pubblica | ✅ `v1.4` |
+| Release pubblica | ✅ `v1.5` |
 | Mirroring | ✅ Implementato |
 | Garage / profili moto | ✅ Implementato |
 | App preferite | ✅ Implementato |
@@ -206,7 +212,7 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 Il codice sorgente di MotoLink è **pubblico e consultabile** in questa repository per finalità di studio, trasparenza e verifica.
 
 > [!IMPORTANT]
-> **MotoLink non è distribuito con una licenza open source.** Il software è protetto da copyright e tutti i diritti sono riservati. La disponibilità pubblica del sorgente non autorizza automaticamente copia, modifica, ridistribuzione o creazione di opere derivate. Consulta [`LICENSE`](LICENSE) per i termini completi.
+> **MotoLink non è open source.** Il software è protetto da copyright e tutti i diritti sono riservati; vedere [`LICENSE`](LICENSE). La disponibilità pubblica del sorgente non autorizza automaticamente copia, modifica, ridistribuzione o creazione di opere derivate.
 
 ---
 
@@ -233,6 +239,6 @@ Per i termini completi consulta [`LICENSE`](LICENSE).
 ---
 
 <p align="center">
-  <strong>MotoLink V1.4</strong><br>
+  <strong>MotoLink V1.5</strong><br>
   Mirroring • Connessione • Supporto
 </p>
