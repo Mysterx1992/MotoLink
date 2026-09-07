@@ -37,16 +37,25 @@ object AppLog {
 
     @Synchronized
     fun install(context: Context) {
-        if (appContext == null) appContext = context.applicationContext
+        val firstInstallInProcess = appContext == null
+        if (firstInstallInProcess) appContext = context.applicationContext
         cleanupOldLogs()
         installCrashHandlerIfNeeded()
 
-        val marker = markerFile()
-        if (marker?.exists() == true) {
-            add("AVVIO: la sessione precedente non risulta chiusa normalmente")
-            marker.delete()
+        // Only a fresh app process may interpret the marker as a previous abnormal exit.
+        // MainActivity can be recreated while MirrorService/EasyConn are still legitimately
+        // alive; treating that as a crash used to erase the marker and allow duplicate START.
+        if (firstInstallInProcess) {
+            val marker = markerFile()
+            if (marker?.exists() == true) {
+                add("AVVIO: la sessione precedente non risulta chiusa normalmente")
+                marker.delete()
+            }
         }
     }
+
+    @Synchronized
+    fun isMirrorSessionOpen(): Boolean = mirrorSessionOpen.get()
 
     @Synchronized
     fun add(message: String) {

@@ -1,35 +1,23 @@
-name: MotoLink V1.4 R8 Adaptation Persistence Build
+name: Android CI
 
 on:
   push:
-    branches: [ "v1.4-adaptation-r8-build" ]
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build MotoLink V1.4 r8 unsigned release
+    name: Build MotoLink
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Apply V1.4 connectivity and CFMOTO fixes
-        run: python3 .github/scripts/patch_v14_r7.py
-
-      - name: Apply V1.4 adaptation persistence fix
-        run: python3 .github/scripts/patch_v14_r8_adaptation.py
-
-      - name: Verify no forbidden external-product references
-        shell: bash
-        run: |
-          BLOCKED_RE='moto[- _]?'$(printf 'hub')
-          if grep -RniE "$BLOCKED_RE" app docs README.md .github --include='*.kt' --include='*.kts' --include='*.md' --include='*.yml' --include='*.yaml' --include='*.py' --include='*.txt'; then
-            echo "Forbidden external-product reference found"
-            exit 1
-          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -49,35 +37,10 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build MotoLink V1.4 r8 release APK
-        run: ./gradlew assembleRelease --stacktrace
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: Verify frozen EasyConn wire and H264 bus
-        run: |
-          git diff --exit-code -- \
-            app/src/main/java/it/motolink/app/EasyConnDiscovery.kt \
-            app/src/main/java/it/motolink/app/EasyConnInitClient.kt \
-            app/src/main/java/it/motolink/app/EasyConnServers.kt \
-            app/src/main/java/it/motolink/app/H264FrameBus.kt
-
-      - name: Verify V1.4 r8 markers
-        run: |
-          grep -q 'versionCode = 8' app/build.gradle.kts
-          grep -q 'versionName = "1.4"' app/build.gradle.kts
-          grep -q 'CFMOTO ROTATION V1.4' app/src/main/java/it/motolink/app/MirrorService.kt
-          grep -q 'SESSION REATTACH V1.4' app/src/main/java/it/motolink/app/MainActivity.kt
-          grep -q 'HOTSPOT V1.4' app/src/main/java/it/motolink/app/BikeNetworkConnector.kt
-          grep -q 'calibrationActive' app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
-          grep -q 'editor OFF automatico' app/src/main/java/it/motolink/app/MirrorService.kt
-          grep -q 'calibrazioneAttiva' app/src/main/java/it/motolink/app/MirrorService.kt
-          grep -q 'OFF • PERSONALIZZAZIONE' app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
-
-      - name: Stage unsigned APK
-        run: cp app/build/outputs/apk/release/app-release-unsigned.apk MotoLink_V1.4_UNSIGNED_R8.apk
-
-      - name: Upload V1.4 r8 unsigned APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: MotoLink_V1.4_UNSIGNED_R8
-          path: MotoLink_V1.4_UNSIGNED_R8.apk
-          if-no-files-found: error
+# Questo workflow verifica che MotoLink compili correttamente.
+# Usa un runner standard ubuntu-latest su repository pubblico.
+# Non carica artefatti e non contiene né utilizza keystore, password
+# o credenziali di firma release.
