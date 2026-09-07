@@ -1,23 +1,35 @@
-name: MotoLink V1.4 R7 Physical Fix Build
+name: MotoLink V1.4 R8 Adaptation Persistence Build
 
 on:
   push:
-    branches: [ "v1.4-cfmoto-build" ]
+    branches: [ "v1.4-adaptation-r8-build" ]
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: Build MotoLink V1.4 r7 unsigned release
+    name: Build MotoLink V1.4 r8 unsigned release
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Apply isolated V1.4 r7 patches
+      - name: Apply V1.4 connectivity and CFMOTO fixes
         run: python3 .github/scripts/patch_v14_r7.py
+
+      - name: Apply V1.4 adaptation persistence fix
+        run: python3 .github/scripts/patch_v14_r8_adaptation.py
+
+      - name: Verify no forbidden external-product references
+        shell: bash
+        run: |
+          BLOCKED_RE='moto[- _]?'$(printf 'hub')
+          if grep -RniE "$BLOCKED_RE" app docs README.md .github --include='*.kt' --include='*.kts' --include='*.md' --include='*.yml' --include='*.yaml' --include='*.py' --include='*.txt'; then
+            echo "Forbidden external-product reference found"
+            exit 1
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -37,7 +49,7 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build MotoLink V1.4 r7 release APK
+      - name: Build MotoLink V1.4 r8 release APK
         run: ./gradlew assembleRelease --stacktrace
 
       - name: Verify frozen EasyConn wire and H264 bus
@@ -48,21 +60,23 @@ jobs:
             app/src/main/java/it/motolink/app/EasyConnServers.kt \
             app/src/main/java/it/motolink/app/H264FrameBus.kt
 
-      - name: Verify V1.4 r7 markers
+      - name: Verify V1.4 r8 markers
         run: |
-          grep -q 'versionCode = 7' app/build.gradle.kts
+          grep -q 'versionCode = 8' app/build.gradle.kts
           grep -q 'versionName = "1.4"' app/build.gradle.kts
           grep -q 'CFMOTO ROTATION V1.4' app/src/main/java/it/motolink/app/MirrorService.kt
           grep -q 'SESSION REATTACH V1.4' app/src/main/java/it/motolink/app/MainActivity.kt
-          grep -q 'Software caused connection abort' app/src/main/java/it/motolink/app/MainActivity.kt
           grep -q 'HOTSPOT V1.4' app/src/main/java/it/motolink/app/BikeNetworkConnector.kt
+          grep -q 'calibrationActive' app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
+          grep -q 'EDITOR OFF automatico' app/src/main/java/it/motolink/app/MirrorService.kt
+          grep -q 'PERSONALIZZAZIONE ATTIVA' app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
 
       - name: Stage unsigned APK
-        run: cp app/build/outputs/apk/release/app-release-unsigned.apk MotoLink_V1.4_UNSIGNED_R7.apk
+        run: cp app/build/outputs/apk/release/app-release-unsigned.apk MotoLink_V1.4_UNSIGNED_R8.apk
 
-      - name: Upload V1.4 r7 unsigned APK
+      - name: Upload V1.4 r8 unsigned APK
         uses: actions/upload-artifact@v4
         with:
-          name: MotoLink_V1.4_UNSIGNED_R7
-          path: MotoLink_V1.4_UNSIGNED_R7.apk
+          name: MotoLink_V1.4_UNSIGNED_R8
+          path: MotoLink_V1.4_UNSIGNED_R8.apk
           if-no-files-found: error
