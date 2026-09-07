@@ -912,7 +912,7 @@ class MirrorService : Service() {
         valicoSoftH264 = intent.getBooleanExtra(EXTRA_VALICO_SOFT_H264, false)
         cfmotoCompat = intent.getBooleanExtra(EXTRA_CFMOTO_COMPAT, false)
         if (cfmotoCompat) {
-            AppLog.add("CFMOTO VIDEO V1.4: compatibilità source dinamica attiva; pre-Android14 orientation watcher abilitato")
+            AppLog.add("CFMOTO VIDEO V1.5: compatibilità source dinamica attiva; pre-Android14 orientation watcher abilitato")
         }
         AppLog.add(
             if (valicoSoftH264)
@@ -1155,7 +1155,7 @@ class MirrorService : Service() {
         pipProbeAwaitKeyFrame = false
         pipProbeCandidateStreak = 0
         visibleSampleSizeEwma = 0.0
-        H264FrameBus.resetAll()
+        H264FrameBus.resetEncoderStatePreservingConsumer()
 
         try {
             val choice = createAvcEncoder(valicoSoftH264)
@@ -1282,7 +1282,7 @@ class MirrorService : Service() {
         }
         cfmotoGeometryWatchRunnable = tick
         geometryHandler.postDelayed(tick, 350L)
-        AppLog.add("CFMOTO ROTATION V1.4: watcher source pre-Android14 armato")
+        AppLog.add("CFMOTO ROTATION V1.5: watcher source pre-Android14 armato")
     }
 
     private fun queueCfmotoSourceResize(width: Int, height: Int, reason: String) {
@@ -1317,9 +1317,9 @@ class MirrorService : Service() {
                         pendingGeometryWidth = 0
                         pendingGeometryHeight = 0
                         requestImmediateSyncFrame("CFMOTO rotation direct-surface")
-                        AppLog.add("CFMOTO ROTATION V1.4: COMMIT SOURCE ${settledW}x${settledH} [$reason]")
+                        AppLog.add("CFMOTO ROTATION V1.5: COMMIT SOURCE ${settledW}x${settledH} [$reason]")
                     }
-                    .onFailure { AppLog.add("CFMOTO ROTATION V1.4: resize direct fallito: ${it.javaClass.simpleName}") }
+                    .onFailure { AppLog.add("CFMOTO ROTATION V1.5: resize direct fallito: ${it.javaClass.simpleName}") }
                 return@Runnable
             }
 
@@ -1335,13 +1335,13 @@ class MirrorService : Service() {
                             applyAdaptationRuntime("CFMOTO orientation ${settledW}x${settledH}")
                             renderer.notifyProducerResized(settledW, settledH)
                             AppLog.add(
-                                "CFMOTO ROTATION V1.4: VirtualDisplay SOURCE=${settledW}x${settledH}; " +
+                                "CFMOTO ROTATION V1.5: VirtualDisplay SOURCE=${settledW}x${settledH}; " +
                                     "TFT=${targetWidth}x${targetHeight}; reason=$reason"
                             )
                         }
                         .onFailure {
                             renderer.cancelGeometryTransition("CFMOTO VirtualDisplay.resize fallito")
-                            AppLog.add("CFMOTO ROTATION V1.4: VirtualDisplay resize fallito: ${it.javaClass.simpleName}")
+                            AppLog.add("CFMOTO ROTATION V1.5: VirtualDisplay resize fallito: ${it.javaClass.simpleName}")
                         }
                 }
             }
@@ -1349,7 +1349,7 @@ class MirrorService : Service() {
         geometrySettleRunnable = settle
         geometryHandler.postDelayed(settle, 180L)
         AppLog.add(
-            "CFMOTO ROTATION V1.4: candidato SOURCE=${width}x${height}; " +
+            "CFMOTO ROTATION V1.5: candidato SOURCE=${width}x${height}; " +
                 "ultimo=${sourceWidth}x${sourceHeight}; TFT=${targetWidth}x${targetHeight}; reason=$reason"
         )
     }
@@ -1362,12 +1362,15 @@ class MirrorService : Service() {
     private fun applyAdaptationRuntime(reason: String) {
         val profile = activeAdaptationProfile()
         val config = MirrorAdaptationConfig.load(this, profile)
+        val profileHasPersonalEdges = config.leftPx != 0 || config.topPx != 0 || config.rightPx != 0 || config.bottomPx != 0
+        val approvedBaseActive = profile == MirrorAdaptationConfig.Profile.LANDSCAPE && !cfmotoCompat
+        val renderAdaptation = approvedBaseActive || profileHasPersonalEdges
         coverRenderer?.updateEdgeAdaptation(
-            left = config.leftPx,
-            top = config.topPx,
-            right = config.rightPx,
-            bottom = config.bottomPx,
-            enabled = config.calibrationActive
+            left = if (profileHasPersonalEdges) config.leftPx else 0,
+            top = if (profileHasPersonalEdges) config.topPx else 0,
+            right = if (profileHasPersonalEdges) config.rightPx else 0,
+            bottom = if (profileHasPersonalEdges) config.bottomPx else 0,
+            enabled = renderAdaptation
         )
 
         // Editor visibility and rendered calibration are intentionally independent.
@@ -1381,18 +1384,18 @@ class MirrorService : Service() {
         }
         clampAdaptationOverlayToScreen("runtime $reason")
 
-        val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && config.calibrationActive) {
+        val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && renderAdaptation) {
             MirrorAdaptationConfig.landscapeAutoFrameFor(targetWidth, targetHeight)
         } else {
             MirrorAdaptationConfig.AutoFrame(0, 0, targetWidth, targetHeight)
         }
-        val effectiveX = autoBase.x - if (config.calibrationActive) config.leftPx else 0
-        val effectiveY = autoBase.y - if (config.calibrationActive) config.bottomPx else 0
-        val effectiveW = (autoBase.width + if (config.calibrationActive) config.netHorizontalPx else 0).coerceAtLeast(16)
-        val effectiveH = (autoBase.height + if (config.calibrationActive) config.netVerticalPx else 0).coerceAtLeast(16)
+        val effectiveX = autoBase.x - if (profileHasPersonalEdges) config.leftPx else 0
+        val effectiveY = autoBase.y - if (profileHasPersonalEdges) config.bottomPx else 0
+        val effectiveW = (autoBase.width + if (profileHasPersonalEdges) config.netHorizontalPx else 0).coerceAtLeast(16)
+        val effectiveH = (autoBase.height + if (profileHasPersonalEdges) config.netVerticalPx else 0).coerceAtLeast(16)
 
         AppLog.add(
-            "ADATTAMENTO V1.4 STATE: reason=$reason orientation=${config.profile}; " +
+            "ADATTAMENTO V1.5 STATE: reason=$reason orientation=${config.profile}; " +
                 "editor=${config.enabled}; calibrazioneAttiva=${config.calibrationActive}; " +
                 "autoBase=${autoBase.width}x${autoBase.height}@${autoBase.x},${autoBase.y}; " +
                 "extra L=${MirrorAdaptationConfig.signed(config.leftPx)} T=${MirrorAdaptationConfig.signed(config.topPx)} " +
@@ -1413,7 +1416,9 @@ class MirrorService : Service() {
             config.calibrationActive
         )
 
-        val autoBase = if (config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && config.calibrationActive) {
+        val profileHasPersonalEdges = config.leftPx != 0 || config.topPx != 0 || config.rightPx != 0 || config.bottomPx != 0
+        val useApprovedBase = config.profile == MirrorAdaptationConfig.Profile.LANDSCAPE && (!cfmotoCompat || profileHasPersonalEdges)
+        val autoBase = if (useApprovedBase) {
             MirrorAdaptationConfig.landscapeAutoFrameFor(targetWidth, targetHeight)
         } else {
             MirrorAdaptationConfig.AutoFrame(0, 0, targetWidth, targetHeight)

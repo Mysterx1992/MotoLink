@@ -128,7 +128,7 @@ class MainActivity : Activity() {
             if (::dashboard.isInitialized) {
                 dashboard.updateAdaptation(cfg.enabled, MirrorAdaptationConfig.dashboardLabel(this@MainActivity))
             }
-            AppLog.add("ADATTAMENTO V1.4 UI: regolazione conclusa -> interruttore OFF; personalizzazione conservata")
+            AppLog.add("ADATTAMENTO V1.5 UI: regolazione conclusa -> interruttore OFF; personalizzazione conservata")
         }
     }
 
@@ -179,6 +179,9 @@ class MainActivity : Activity() {
         })
         bikeNetworkConnector = BikeNetworkConnector(this)
         wifiDirectBikeConnector = WifiDirectBikeConnector(this)
+        easyConnServers.onH264FirstFrameDelivered = { consumerGeneration ->
+            runOnUiThread { handleRealH264FirstFrame(consumerGeneration) }
+        }
 
         dashboard = TrofeoDashboardView(this).apply {
             onStartClick = { startOneTouch() }
@@ -200,6 +203,7 @@ class MainActivity : Activity() {
             onGuideClick = { toggleGuideSetting() }
             onBackgroundToggleClick = { toggleDynamicBackgroundSetting() }
             onAdaptationClick = { toggleAdaptationSetting() }
+            onVersionClick = { showInstalledReleaseNotes() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
             onOnboardingFinished = {
@@ -259,7 +263,7 @@ class MainActivity : Activity() {
                 "LAN"
             )
         }
-        AppLog.add("MotoLink V1.4 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
+        AppLog.add("MotoLink V1.5 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -511,28 +515,25 @@ class MainActivity : Activity() {
         }, HARD_STOP_SERVICE_VERIFY_MS)
     }
 
+    private fun handleRealH264FirstFrame(consumerGeneration: Long) {
+        if (runSelection != RunSelection.START) return
+        lockPlaceholderActive = false
+        val recovered = recoveryActive
+        mirrorConnectedOnce = true
+        recoveryFailedWaitingManual = false
+        if (recovered) {
+            invalidateRecovery()
+            AppLog.add("RECOVERY OK V1.5: primo frame reale consegnato al consumerGen=$consumerGeneration")
+        }
+        startInProgress = false
+        setRunSelection(RunSelection.START)
+        setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
+        setState("Sistema pronto", "La prossimità è sempre attiva", C_GREEN, "LIVE")
+    }
+
     private fun reactToLog(line: String) {
         when {
-            line.contains("H264 FIRST FRAME") && runSelection == RunSelection.START -> {
-                lockPlaceholderActive = false
-                val recovered = recoveryActive
-                val forcedAttempt = recoveryAttemptIndex
-                mirrorConnectedOnce = true
-                recoveryFailedWaitingManual = false
-                if (recovered) {
-                    invalidateRecovery()
-                    if (forcedAttempt < 0) {
-                        AppLog.add("RECOVERY OK: reconnect naturale moto completato; nessun teardown EasyConn")
-                    } else {
-                        AppLog.add("RECOVERY OK: H264 ripristinato automaticamente al tentativo ${forcedAttempt + 1}")
-                    }
-                }
-                startInProgress = false
-                setRunSelection(RunSelection.START)
-                setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
-                setState("Sistema pronto", "La prossimità è sempre attiva", C_GREEN, "LIVE")
-            }
-            recoveryActive && recoveryAttemptIndex < 0 && line.contains("IN 10920 H264 stream", ignoreCase = true) -> {
+            recoveryActive && line.contains("IN 10920 H264 stream", ignoreCase = true) -> {
                 // The Voge often performs its own reconnect when the rider exits/re-enters
                 // the mirroring page. Never tear that freshly reopened socket down.
                 recoveryNaturalH264Observed = true
@@ -739,153 +740,116 @@ class MainActivity : Activity() {
         recoveryAttemptIndex = -1
         recoveryNaturalH264Observed = false
         recoveryNaturalWaitArmed = false
-        recoveryPersistentMode = false
+        recoveryPersistentMode = true
         val generation = ++recoveryGeneration
-        AppLog.add("RECOVERY ARMATO: perdita EasyConn rilevata [$reason]; MediaProjection/encoder restano attivi")
-        setHeaderStatus("Riconnessione", "", C_AMBER)
-        armInitialRecoveryGrace(generation)
+        AppLog.add("RECOVERY CONTINUO V1.5: perdita canale [$reason]; rete moto e MediaProjection restano attive")
+        if (isBikeTransportAlive()) {
+  setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
+  setState("Video in attesa", "TFT fuori mirroring • riconnessione automatica continua", C_AMBER, "WIFI")
+  armInitialRecoveryGrace(generation)
+        } else {
+  finishRecoveryFailure(generation, "rete moto non più disponibile")
+        }
     }
 
     private fun armInitialRecoveryGrace(generation: Long) {
         if (!isRecoveryCurrent(generation)) return
-        setState("Riconnessione…", "Attendo il reconnect naturale della moto", C_AMBER, "…")
-        AppLog.add("RECOVERY grace naturale ${RECOVERY_NATURAL_GRACE_MS / 1000}s prima di qualsiasi teardown")
+        AppLog.add("RECOVERY CONTINUO V1.5: attendo reconnect naturale del TFT")
         mainHandler.postDelayed({
-            if (!isRecoveryCurrent(generation)) return@postDelayed
-            if (recoveryNaturalH264Observed) {
-                if (!recoveryNaturalWaitArmed) {
-                    recoveryNaturalWaitArmed = true
-                    armNaturalReconnectFirstFrameTimeout(generation)
-                }
-                AppLog.add("RECOVERY: reconnect naturale in corso; teardown annullato, attendo FIRST FRAME")
-            } else {
-                performRecoveryAttempt(generation, 0)
-            }
+  if (!isRecoveryCurrent(generation)) return@postDelayed
+  if (!isBikeTransportAlive()) {
+      finishRecoveryFailure(generation, "rete moto non più disponibile")
+      return@postDelayed
+  }
+  if (recoveryNaturalH264Observed) {
+      recoveryNaturalWaitArmed = true
+      armNaturalReconnectFirstFrameTimeout(generation)
+  } else {
+      scheduleRecoveryAttempt(generation, 0)
+  }
         }, RECOVERY_NATURAL_GRACE_MS)
     }
 
     private fun scheduleRecoveryAttempt(generation: Long, attemptIndex: Int) {
         if (!isRecoveryCurrent(generation)) return
-        if (attemptIndex >= RECOVERY_BACKOFF_MS.size) {
-            if (isBikeTransportAlive()) enterPersistentRecovery(generation)
-            else finishRecoveryFailure(generation, "rete moto non più disponibile")
-            return
+        if (!isBikeTransportAlive()) {
+  finishRecoveryFailure(generation, "rete moto non più disponibile")
+  return
         }
-        val delay = RECOVERY_BACKOFF_MS[attemptIndex]
-        AppLog.add("RECOVERY attesa ${delay / 1000}s prima del tentativo ${attemptIndex + 1}/${RECOVERY_BACKOFF_MS.size}")
+        val delay = if (attemptIndex <= 0) 1_000L else RECOVERY_PERSISTENT_RETRY_MS
         mainHandler.postDelayed({
-            if (isRecoveryCurrent(generation)) performRecoveryAttempt(generation, attemptIndex)
+  if (isRecoveryCurrent(generation)) performRecoveryAttempt(generation, attemptIndex)
         }, delay)
     }
 
     private fun performRecoveryAttempt(generation: Long, attemptIndex: Int) {
         if (!isRecoveryCurrent(generation)) return
-        // Race guard: a HU-side reconnect can happen milliseconds before our retry timer.
-        // If :10920 has already reopened, never stop the listeners underneath it.
-        if (recoveryNaturalH264Observed) {
-            if (!recoveryNaturalWaitArmed) {
-                recoveryNaturalWaitArmed = true
-                armNaturalReconnectFirstFrameTimeout(generation)
-            }
-            AppLog.add("RECOVERY RACE GUARD: 10920 già riaperto dalla moto; skip teardown e attendo FIRST FRAME")
-            return
+        if (!isBikeTransportAlive()) {
+  finishRecoveryFailure(generation, "rete moto non più disponibile")
+  return
         }
         recoveryAttemptIndex = attemptIndex
-        val attempt = attemptIndex + 1
-        AppLog.add("RECOVERY tentativo $attempt/${RECOVERY_BACKOFF_MS.size}: riavvio sola sessione EasyConn")
-        if (recoveryPersistentMode && isBikeTransportAlive()) {
-            // Wi-Fi/P2P is still alive: preserve the connected identity while only the video/EasyConn
-            // layer is being rebuilt. The rider can still press STOP at any time.
-            setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
-            setState("Video in attesa", "Wi-Fi moto attivo • ripristino automatico", C_AMBER, "WIFI")
-        } else {
-            setHeaderStatus("Riconnessione", "", C_AMBER)
-            setState("Riconnessione $attempt/${RECOVERY_BACKOFF_MS.size}", "MediaProjection resta attiva", C_AMBER, "…")
+        setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
+        setState("Video in attesa", "Riconnessione automatica continua", C_AMBER, "WIFI")
+
+        if (recoveryNaturalH264Observed || easyConnServers.hasLiveH264Channel()) {
+  recoveryNaturalH264Observed = true
+  if (!recoveryNaturalWaitArmed) {
+      recoveryNaturalWaitArmed = true
+      armNaturalReconnectFirstFrameTimeout(generation)
+  }
+  AppLog.add("RECOVERY CONTINUO V1.5: 10920 presente; attendo un primo frame reale senza teardown")
+  return
         }
 
-        // The encoder and MediaProjection live in MirrorService and are deliberately untouched.
-        discovery.stop()
-        EasyConnInitClient.cancelAll()
-        easyConnServers.stop()
-        if (!easyConnServers.start()) {
-            AppLog.add("RECOVERY tentativo $attempt: listener EasyConn non avviati")
-            scheduleRecoveryAttempt(generation, attemptIndex + 1)
-            return
+        // Crucial V1.5 rule: never stop/restart the EasyConn listeners while the motorcycle
+        // transport is alive. A TFT may leave mirroring for minutes and then reconnect to the
+        // same 10922/10921/10920 listeners. If PXC is still alive we simply wait.
+        if (easyConnServers.hasLivePxcChannel()) {
+  AppLog.add("RECOVERY CONTINUO V1.5: PXC ancora vivo; sessione mantenuta, attendo il TFT")
+  armRecoveryFirstFrameTimeout(generation, attemptIndex)
+  return
         }
 
         val resolved = lastResolved
         if (resolved == null) {
-            AppLog.add("RECOVERY tentativo $attempt: endpoint non in cache, riavvio mDNS")
-            discovery.start()
-            // If mDNS resolves, the normal callback will run EC INIT. Give it the same
-            // bounded first-frame window before moving to the next retry.
-            armRecoveryFirstFrameTimeout(generation, attemptIndex)
-            return
+  AppLog.add("RECOVERY CONTINUO V1.5: endpoint non in cache; riavvio solo discovery")
+  discovery.start()
+  armRecoveryFirstFrameTimeout(generation, attemptIndex)
+  return
         }
 
         io.execute {
-            val ok = runInit(resolved, sessionGeneration, generation, attempt)
-            runOnUiThread {
-                if (!isRecoveryCurrent(generation)) return@runOnUiThread
-                if (ok) {
-                    armRecoveryFirstFrameTimeout(generation, attemptIndex)
-                } else {
-                    scheduleRecoveryAttempt(generation, attemptIndex + 1)
-                }
-            }
+  val ok = runInit(resolved, sessionGeneration, generation, attemptIndex + 1, failureIsTerminal = false)
+  runOnUiThread {
+      if (!isRecoveryCurrent(generation)) return@runOnUiThread
+      if (ok) {
+          AppLog.add("RECOVERY CONTINUO V1.5: EasyConn riattivato; attendo 10920 + frame reale")
+          armRecoveryFirstFrameTimeout(generation, attemptIndex)
+      } else {
+          scheduleRecoveryAttempt(generation, attemptIndex + 1)
+      }
+  }
         }
     }
 
     private fun armNaturalReconnectFirstFrameTimeout(generation: Long) {
         mainHandler.postDelayed({
-            if (!isRecoveryCurrent(generation)) return@postDelayed
-            if (!recoveryNaturalH264Observed) return@postDelayed
-            AppLog.add("RECOVERY naturale: 10920 aperto ma nessun H264 FIRST FRAME entro ${RECOVERY_FIRST_FRAME_TIMEOUT_MS / 1000}s; passo al recovery forzato")
-            recoveryNaturalH264Observed = false
-            recoveryNaturalWaitArmed = false
-            performRecoveryAttempt(generation, 0)
+  if (!isRecoveryCurrent(generation)) return@postDelayed
+  if (!recoveryNaturalH264Observed && !easyConnServers.hasLiveH264Channel()) return@postDelayed
+  AppLog.add("RECOVERY CONTINUO V1.5: 10920 aperto ma nessun frame reale; continuo senza chiudere la sessione")
+  recoveryNaturalH264Observed = false
+  recoveryNaturalWaitArmed = false
+  scheduleRecoveryAttempt(generation, recoveryAttemptIndex + 1)
         }, RECOVERY_FIRST_FRAME_TIMEOUT_MS)
     }
 
     private fun armRecoveryFirstFrameTimeout(generation: Long, attemptIndex: Int) {
         mainHandler.postDelayed({
-            if (!isRecoveryCurrent(generation)) return@postDelayed
-            AppLog.add("RECOVERY tentativo ${attemptIndex + 1}: nessun H264 FIRST FRAME entro ${RECOVERY_FIRST_FRAME_TIMEOUT_MS / 1000}s")
-            scheduleRecoveryAttempt(generation, attemptIndex + 1)
+  if (!isRecoveryCurrent(generation)) return@postDelayed
+  AppLog.add("RECOVERY CONTINUO V1.5: video non ancora tornato; rete moto mantenuta e attesa continua")
+  scheduleRecoveryAttempt(generation, attemptIndex + 1)
         }, RECOVERY_FIRST_FRAME_TIMEOUT_MS)
-    }
-
-    private fun enterPersistentRecovery(generation: Long) {
-        if (!isRecoveryCurrent(generation)) return
-        if (!isBikeTransportAlive()) {
-            finishRecoveryFailure(generation, "rete moto non più disponibile")
-            return
-        }
-        recoveryPersistentMode = true
-        recoveryFailedWaitingManual = false
-        recoveryAttemptIndex = -1
-        recoveryNaturalH264Observed = false
-        recoveryNaturalWaitArmed = false
-        AppLog.add(
-            "RECOVERY PERSISTENTE: 3 tentativi rapidi esauriti ma Wi-Fi/P2P moto ancora attivo; " +
-                "sessione mantenuta e retry EasyConn ogni ${RECOVERY_PERSISTENT_RETRY_MS / 1000}s"
-        )
-        setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
-        setState("Video in attesa", "Wi-Fi moto attivo • riconnessione automatica continua", C_AMBER, "WIFI")
-        schedulePersistentRecovery(generation)
-    }
-
-    private fun schedulePersistentRecovery(generation: Long) {
-        if (!isRecoveryCurrent(generation) || !recoveryPersistentMode) return
-        mainHandler.postDelayed({
-            if (!isRecoveryCurrent(generation) || !recoveryPersistentMode) return@postDelayed
-            if (!isBikeTransportAlive()) {
-                finishRecoveryFailure(generation, "rete moto persa durante attesa video")
-                return@postDelayed
-            }
-            AppLog.add("RECOVERY PERSISTENTE: Wi-Fi/P2P ancora attivo; nuovo ciclo EasyConn")
-            performRecoveryAttempt(generation, 0)
-        }, RECOVERY_PERSISTENT_RETRY_MS)
     }
 
     private fun isBikeTransportAlive(): Boolean {
@@ -901,7 +865,7 @@ class MainActivity : Activity() {
         recoveryFailedWaitingManual = true
         recoveryAttemptIndex = -1
         recoveryGeneration++
-        AppLog.add("RECOVERY TERMINATA: $reason; il collegamento Wi-Fi/P2P non risulta più attivo")
+        AppLog.add("RECOVERY V1.5 TERMINATO solo per perdita trasporto reale: $reason")
         setHeaderStatus("Connessione persa", "", C_DANGER)
         setState("Connessione persa", "Rete moto non disponibile • premi START per riprovare", C_DANGER, "—")
     }
@@ -1218,7 +1182,7 @@ class MainActivity : Activity() {
             }
             AppLog.add(
                 when {
-                    isCfmotoProfile(profile) -> "CFMOTO P2P V1.4: richiesta permesso Android per WLAN Direct"
+                    isCfmotoProfile(profile) -> "CFMOTO P2P V1.5: richiesta permesso Android per WLAN Direct"
                     wifiDirectBikeConnector.shouldUse(profile) -> "WLAN DIRECT: richiesta permesso Android per collegamento P2P alla moto"
                     else -> "QR WIFI: richiesta permesso Android per collegamento alla rete moto"
                 }
@@ -1331,7 +1295,7 @@ class MainActivity : Activity() {
                     if (token != sessionGeneration || runSelection != RunSelection.START) return@runOnUiThread
                     wifiDirectLink = null
                     if (isCfmotoProfile(profile)) {
-                        AppLog.add("CFMOTO P2P V1.4: WLAN Direct non agganciata ($reason); provo fallback SSID QR originale")
+                        AppLog.add("CFMOTO P2P V1.5: WLAN Direct non agganciata ($reason); provo fallback SSID QR originale")
                         wifiDirectBikeConnector.release(removeGroup = false)
                         connectCfmotoDirectNetworkFallback(profile)
                         return@runOnUiThread
@@ -2729,7 +2693,7 @@ class MainActivity : Activity() {
             val cfg = MirrorAdaptationConfig.load(this)
             dashboard.updateAdaptation(false, MirrorAdaptationConfig.dashboardLabel(this))
             AppLog.add(
-                "ADATTAMENTO V1.4: EDITOR OFF manuale; calibrazioneAttiva=${cfg.calibrationActive}; " +
+                "ADATTAMENTO V1.5: EDITOR OFF manuale; calibrazioneAttiva=${cfg.calibrationActive}; " +
                     "personalizzazione conservata e ancora applicata"
             )
             if (runSelection == RunSelection.START) {
@@ -2740,7 +2704,7 @@ class MainActivity : Activity() {
 
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
             waitingForAdaptationOverlayPermission = true
-            AppLog.add("ADATTAMENTO V1.4: richiedo permesso 'Mostra sopra altre app' per l'editor flottante")
+            AppLog.add("ADATTAMENTO V1.5: richiedo permesso 'Mostra sopra altre app' per l'editor flottante")
             try {
                 val settingsIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -2750,7 +2714,7 @@ class MainActivity : Activity() {
                 startActivity(settingsIntent)
             } catch (t: Throwable) {
                 waitingForAdaptationOverlayPermission = false
-                AppLog.add("ADATTAMENTO V1.4: apertura permesso fallita ${t.javaClass.simpleName}: ${t.message ?: "-"}")
+                AppLog.add("ADATTAMENTO V1.5: apertura permesso fallita ${t.javaClass.simpleName}: ${t.message ?: "-"}")
                 NeonDialogs.showInfo(
                     activity = this,
                     title = "Adattamento",
@@ -2760,22 +2724,38 @@ class MainActivity : Activity() {
             return
         }
 
-        MirrorAdaptationConfig.setCalibrationActive(this, true)
         MirrorAdaptationConfig.setEnabled(this, true)
         val cfg = MirrorAdaptationConfig.load(this)
         dashboard.updateAdaptation(true, MirrorAdaptationConfig.dashboardLabel(this))
         AppLog.add(
-            "ADATTAMENTO V1.4: EDITOR ON; riparto dai valori salvati; " +
+            "ADATTAMENTO V1.5: EDITOR ON; riparto dai valori salvati; " +
                 "calibrazioneAttiva=${cfg.calibrationActive}; step=${MirrorAdaptationConfig.STEP_PX}px"
         )
-        if (runSelection == RunSelection.START) {
-            startService(Intent(this, MirrorService::class.java).apply { action = MirrorService.ACTION_ADAPTATION_UPDATE })
-        }
-        NeonDialogs.showInfo(
+        val infoDialog = NeonDialogs.showInfo(
             activity = this,
             title = "Regola Adattamento",
             message = MirrorAdaptationConfig.USER_HELP_TEXT
         )
+        infoDialog.setOnDismissListener {
+            if (runSelection == RunSelection.START && MirrorAdaptationConfig.load(this).enabled) {
+                startService(Intent(this, MirrorService::class.java).apply { action = MirrorService.ACTION_ADAPTATION_UPDATE })
+            }
+        }
+    }
+
+    private fun showInstalledReleaseNotes() {
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.5" }.getOrDefault("1.5")
+        val notes = if (version == "1.5") {
+            "• Ripristinata la calibrazione display predefinita approvata su Trofeo/Valico.\n" +
+                "• Corretto il salvataggio dell’Adattamento e il pulsante OK delle istruzioni.\n" +
+                "• Migliorata la permanenza della connessione quando si cambia modalità sul TFT.\n" +
+                "• Corretto il riaggancio automatico del video senza limite di tentativi finché la rete moto resta attiva.\n" +
+                "• Corretto il ciclo H264 CFMOTO quando il TFT apre il canale video prima dell’encoder.\n" +
+                "• Ripristinato l’Assistente MotoLink e aggiunte le note Release locali nella voce Versione."
+        } else {
+            "Nessuna nota locale disponibile per questa versione."
+        }
+        NeonDialogs.showInfo(this, "Release v$version", notes)
     }
 
     private fun showAssistantInfo() {

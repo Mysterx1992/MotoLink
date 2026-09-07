@@ -75,6 +75,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onAssistantWhatsAppClick: (() -> Unit)? = null
     var onIntroToggleClick: (() -> Unit)? = null
     var onAdaptationClick: (() -> Unit)? = null
+    var onVersionClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
 
@@ -171,8 +172,14 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Adattamento",
-            body = "ATTIVAZIONE\nADATTAMENTO è disattivato al primo utilizzo. Quando lo attivi, rimane attivo finché non lo disattivi dalle IMPOSTAZIONI.\n\nREGOLAZIONE DEI BORDI\n↑ regola il bordo superiore.\n↓ regola il bordo inferiore.\n← regola il bordo sinistro.\n→ regola il bordo destro.\nOgni pressione modifica il bordo di 5 px.\n\nDIMENSIONE\n+ allarga l’area visibile.\n− restringe l’area visibile.\n\nPANNELLO ADATTAMENTO\nIl pannello di regolazione compare solo quando il telefono è in orizzontale. In verticale Adattamento può restare ON ma l’editor rimane nascosto.\nTrascina il titolo per spostare il pannello. Il pannello viene mantenuto dentro lo schermo.\nⓘ mostra le istruzioni al posto dei comandi, lasciando sempre visibili la barra superiore e la ×. Tocca di nuovo ⓘ per tornare ai comandi.\n× chiude soltanto il pannello: la regolazione personalizzata resta salvata e continua a essere applicata.\n↺ Ripristina torna ai valori iniziali dell’app solo per l’orientamento che stai modificando e richiede due conferme.\n\nPROFILI MOTO\nOgni moto conserva le proprie regolazioni. Anche quando ADATTAMENTO è OFF i valori personali restano salvati; riattivandolo tornano disponibili. Un profilo mai regolato utilizza la base automatica predefinita.",
+            body = "ATTIVAZIONE\nADATTAMENTO serve ad aprire l’editor. La base display approvata resta applicata automaticamente anche con l’interruttore OFF.\n\nREGOLAZIONE\n↑ ↓ ← → regolano i quattro bordi di 5 px. + allarga e − restringe. Le modifiche vengono salvate per la moto attiva e per orientamento.\n\nCHIUSURA\n× conclude la regolazione, chiude il pannello e porta automaticamente l’interruttore su OFF. La personalizzazione rimane applicata nelle sessioni successive e non viene azzerata.\n\nRIPRISTINO\n↺ Ripristina richiede due conferme e torna ai valori iniziali approvati dell’app per quell’orientamento.",
             target = GuideTarget(58f, 995f, 824f, 175f)
+        ),
+        GuideStep(
+            Page.SETTINGS,
+            title = "IMPOSTAZIONI · Versione",
+            body = "VERSIONE\nTocca Versione app per vedere le novità e i bugfix della versione MotoLink installata. Le note sono disponibili anche senza connessione Internet e mostrano solo le modifiche della versione corrente.",
+            target = GuideTarget(58f, 1190f, 824f, 145f)
         ),
         GuideStep(
             Page.CREDITS,
@@ -1174,7 +1181,13 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun versionCard(): View {
-        val row = FrameLayout(context).apply { background = roundedBg(0xF5070A08.toInt(), 0xFF4D5F40.toInt(), 30f, 1f) }
+        val row = FrameLayout(context).apply {
+            background = roundedBg(0xF5070A08.toInt(), 0xFF4D5F40.toInt(), 30f, 1f)
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Versione app"
+            setOnClickListener { onVersionClick?.invoke() }
+        }
         val iconWrap = FrameLayout(context).apply { background = roundedBg(0xFF101410.toInt(), 0xFF465346.toInt(), 62f, 1f) }
         iconWrap.addView(icon(IconKind.INFO, GREEN), FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).apply { leftMargin = pxX(21f); rightMargin = pxX(21f); topMargin = pxH(21f); bottomMargin = pxH(21f) })
         row.addView(iconWrap, FrameLayout.LayoutParams(pxX(126f), pxH(126f), Gravity.START or Gravity.CENTER_VERTICAL).apply { leftMargin = pxX(32f) })

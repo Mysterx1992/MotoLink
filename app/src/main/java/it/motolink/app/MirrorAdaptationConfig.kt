@@ -53,7 +53,7 @@ object MirrorAdaptationConfig {
     const val V14_FINAL_RIGHT = 0
     const val V14_FINAL_BOTTOM = 110
 
-    const val SETTINGS_DESCRIPTION = "Attiva per regolare. La X salva, chiude e lascia la personalizzazione applicata."
+    const val SETTINGS_DESCRIPTION = "Adatta manualmente il display"
 
     val USER_HELP_TEXT: String
         get() = """
@@ -240,7 +240,7 @@ object MirrorAdaptationConfig {
         val savedKeys = profileKeys(context, Profile.LANDSCAPE).toList() +
             profileKeys(context, Profile.PORTRAIT).toList()
         val hasSavedCorrection = savedKeys.any { prefs.getInt(it, 0) != 0 }
-        val active = prefs.getBoolean(KEY_ENABLED, false) || hasSavedCorrection
+        val active = hasSavedCorrection
         prefs.edit().putBoolean(key, active).apply()
         AppLog.add("ADATTAMENTO V1.4 PERSISTENZA: migrazione profilo -> calibrazioneAttiva=$active")
     }
@@ -254,7 +254,8 @@ object MirrorAdaptationConfig {
         val keys = profileKeys(context, profile)
         return Snapshot(
             enabled = p.getBoolean(KEY_ENABLED, false),
-            calibrationActive = p.getBoolean(calibrationActiveKey(context), false),
+            calibrationActive = (profileKeys(context, Profile.LANDSCAPE).toList() + profileKeys(context, Profile.PORTRAIT).toList())
+                .any { p.getInt(it, 0) != 0 },
             profile = profile,
             leftPx = p.getInt(keys[0], 0).coerceIn(MIN_EDGE_PX, MAX_EDGE_PX),
             topPx = p.getInt(keys[1], 0).coerceIn(MIN_EDGE_PX, MAX_EDGE_PX),
@@ -315,12 +316,16 @@ object MirrorAdaptationConfig {
     fun resetEdges(context: Context, profile: Profile): Snapshot {
         migrateIfNeeded(context)
         val keys = profileKeys(context, profile)
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
             .putInt(keys[0], 0)
             .putInt(keys[1], 0)
             .putInt(keys[2], 0)
             .putInt(keys[3], 0)
             .apply()
+        val anySaved = (profileKeys(context, Profile.LANDSCAPE).toList() + profileKeys(context, Profile.PORTRAIT).toList())
+            .any { prefs.getInt(it, 0) != 0 }
+        prefs.edit().putBoolean(calibrationActiveKey(context), anySaved).apply()
         return load(context, profile)
     }
 
