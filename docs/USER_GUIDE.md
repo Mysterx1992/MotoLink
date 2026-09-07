@@ -40,9 +40,20 @@ Durante il mirroring, la pressione rapida di **Volume Giù due volte** attiva/di
 
 Adattamento permette di correggere manualmente come il contenuto viene mostrato sul display moto.
 
-- Regola i bordi solo quando necessario.
-- Le correzioni vengono conservate per il profilo moto interessato.
-- Disattivando Adattamento, MotoLink torna alla geometria automatica prevista dall'app.
+- La geometria di base prevista per il profilo viene applicata automaticamente.
+- Attiva **Adattamento** quando vuoi aprire l'editor e fare una regolazione personale.
+- Le correzioni vengono salvate automaticamente per il profilo moto interessato.
+- La **X** chiude l'editor e porta la voce Adattamento su OFF, ma la personalizzazione resta applicata.
+- **Adattamento OFF** significa editor chiuso: non annulla la geometria di base né le regolazioni personali salvate.
+- Usa **Ripristina** solo quando vuoi tornare alla geometria di base prevista per il profilo.
+
+## Impostazioni — VERSIONE
+
+Tocca **VERSIONE** per vedere le novità e i bugfix della versione MotoLink installata. Le informazioni sono disponibili localmente e non richiedono Internet.
+
+## Connessione e rientro nel mirroring
+
+Se il TFT cambia temporaneamente modalità mentre la rete della moto resta disponibile, MotoLink mantiene la sessione e continua ad attendere il display. Quando il TFT torna alla modalità mirroring, l'app prova a riprendere automaticamente il flusso senza richiedere un nuovo START.
 
 ## Sicurezza durante la guida
 
