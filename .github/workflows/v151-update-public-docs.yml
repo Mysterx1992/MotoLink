@@ -1,0 +1,103 @@
+name: Update MotoLink V1.5.1 public docs
+
+on:
+  push:
+    branches: [ "release/v1.5.1-source" ]
+    paths: [ ".github/workflows/v151-update-public-docs.yml" ]
+
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update README and changelog for V1.5.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('README.md')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('releases/download/v1.5/MotoLink_V1.5.apk', 'releases/download/v1.5.1/MotoLink_V1.5.1.apk')
+          s = s.replace('MotoLink%20V1.5-39FF14', 'MotoLink%20V1.5.1-39FF14')
+          s = s.replace('alt="Scarica MotoLink V1.5"', 'alt="Scarica MotoLink V1.5.1"')
+          start = s.index('## 🆕 MotoLink V1.5')
+          end = s.index('\n---\n\n## Scarica MotoLink', start)
+          release = '''## 🆕 MotoLink V1.5.1
+
+La V1.5.1 è un aggiornamento di stabilità della V1.5, con particolare attenzione alla Modalità tasca/prossimità e alla prevenzione del blocco automatico del telefono durante il mirroring.
+
+### Novità e correzioni principali
+
+- **Prossimità più affidabile all’avvio:** se l’armamento arriva prima che MediaProjection e il video siano realmente pronti, MotoLink conserva la richiesta e la applica automaticamente appena la sessione è pronta.
+- **Modalità tasca mantenuta attiva:** listener di prossimità e wake-lock dedicato restano armati fino a STOP/teardown della sessione.
+- **Anti auto-lock durante il mirroring:** MotoLink mantiene il telefono sveglio rispetto al normale timeout di inattività; il tasto Power manuale resta utilizzabile.
+- **Diagnostica blocco schermo migliorata:** il Log distingue il percorso di prossimità, l’anti-auto-lock attivo e i possibili blocchi manuali/policy OEM.
+- **Doppio Volume Giù invariato** come comando manuale di blackout/riattivazione.
+- **Core validato preservato:** EasyConn, H264, clock, percorsi rete e geometrie display già validate restano invariati da questo bugfix.
+
+### Aggiornamento
+
+Chi utilizza già una release ufficiale firmata con l’identità permanente MotoLink può installare `MotoLink_V1.5.1.apk` come aggiornamento.
+
+> [!NOTE]
+> Se sul telefono è installata una vecchia build MotoLink firmata con una firma differente, Android può richiedere una disinstallazione una tantum prima dell'installazione della release ufficiale.
+'''
+          s = s[:start] + release + s[end:]
+          s = s.replace('### APK ufficiale V1.5\n', '### APK ufficiale V1.5.1\n')
+          s = s.replace('MotoLink_V1.5.apk-39FF14', 'MotoLink_V1.5.1.apk-39FF14')
+          s = s.replace('alt="Download diretto MotoLink V1.5"', 'alt="Download diretto MotoLink V1.5.1"')
+          s = s.replace('| Release pubblica | ✅ `v1.5` |', '| Release pubblica | ✅ `v1.5.1` |')
+          s = s.replace('con MotoLink V1.5_ |', 'con MotoLink V1.5.1_ |')
+          p.write_text(s, encoding='utf-8')
+
+          c = Path('CHANGELOG.md')
+          ch = c.read_text(encoding='utf-8')
+          entry = '''## v1.5.1 — 2026-09-08
+
+### Novità e correzioni
+
+- Corretto l’armamento della prossimità quando la richiesta arriva prima che MediaProjection/video siano pronti: la richiesta resta pendente e viene applicata automaticamente appena la sessione è pronta.
+- Listener `TYPE_PROXIMITY` e wake-lock di prossimità mantenuti armati fino a STOP/teardown.
+- Aggiunto anti auto-lock durante il mirroring per evitare il blocco dovuto al timer di inattività, mantenendo disponibile il tasto Power manuale.
+- Migliorata la diagnostica del blocco schermo per distinguere prossimità, anti-auto-lock e possibili blocchi manuali/policy OEM.
+- Doppio Volume Giù invariato come comando manuale di blackout.
+- EasyConn, H264, clock, percorsi rete e geometrie display già validate restano invariati.
+
+'''
+          if '## v1.5.1 — 2026-09-08' not in ch:
+              ch = ch.replace('# Changelog MotoLink\n\n', '# Changelog MotoLink\n\n' + entry, 1)
+          c.write_text(ch, encoding='utf-8')
+          PY
+
+      - name: Public safety gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'MotoLink V1.5.1' README.md
+          grep -q 'releases/download/v1.5.1/MotoLink_V1.5.1.apk' README.md
+          grep -q '## v1.5.1 — 2026-09-08' CHANGELOG.md
+          ! grep -R -n -E 'MOTO-HUB|MOTO HUB|MotoHub' app/src/main README.md CHANGELOG.md
+          git diff --quiet HEAD -- app/src/main/res/values/ai_config.xml
+          git diff --quiet HEAD -- app/src/main/java/it/motolink/app/MotoLinkAiClient.kt
+          if git diff HEAD -- README.md CHANGELOG.md | grep -Eiq 'GROQ_API_KEY|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|service_role|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gsk_[A-Za-z0-9]|sk-[A-Za-z0-9]'; then
+            echo 'Potential secret in public docs'
+            exit 1
+          fi
+
+      - name: Commit docs and remove one-time workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/v151-update-public-docs.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md CHANGELOG.md
+          git commit -m 'Update public documentation for MotoLink V1.5.1'
+          git push origin HEAD:release/v1.5.1-source
