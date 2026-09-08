@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 
 public final class VogeNavPacketEncoder {
+    public static final int CMD_HEARTBEAT = 0x5A;
     public static final int CMD_NAV = 0x6A;
     public static final int CMD_NEXT_1 = 0x6B;
     public static final int CMD_NEXT_2 = 0x6C;
@@ -31,6 +32,28 @@ public final class VogeNavPacketEncoder {
         m.sourceTitle = "TEST ROMA: svolta a destra verso Via del Corso";
         m.sourceSubText = "Dati sintetici, non provenienti da Maps";
         return m;
+    }
+
+    /**
+     * Frame 0x5A ricostruito dal metodo bluetooth/w.f() di VOGE Global 1.1.18.
+     * Layout osservato: header/cmd, reserved, battery level, 0x32, HH:mm:ss,
+     * PM flag, zero flag, constant 0x02, reserved, XOR checksum, tail 0x04.
+     */
+    public static byte[] heartbeatFrame(int batteryLevel) {
+        byte[] p = base(CMD_HEARTBEAT);
+        p[2] = 0;
+        p[3] = (byte) clamp(batteryLevel, 0, 255);
+        p[4] = 0x32;
+
+        Calendar now = Calendar.getInstance();
+        int hour24 = now.get(Calendar.HOUR_OF_DAY);
+        p[5] = (byte) hour24;
+        p[6] = (byte) now.get(Calendar.MINUTE);
+        p[7] = (byte) now.get(Calendar.SECOND);
+        p[8] = (byte) (hour24 >= 12 ? 1 : 0);
+        p[9] = 0;
+        p[10] = 0x02;
+        return checksum(p);
     }
 
     public static List<byte[]> allFrames(NavModel m) {
