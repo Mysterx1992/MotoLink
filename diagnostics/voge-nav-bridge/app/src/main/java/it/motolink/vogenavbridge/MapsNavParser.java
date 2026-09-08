@@ -126,7 +126,7 @@ public final class MapsNavParser {
 
     private static String join(String... values) {
         StringBuilder sb = new StringBuilder();
-        for (String s : values) if (s != null && !s.isBlank()) sb.append(' ').append(s);
+        for (String s : values) if (s != null && !s.trim().isEmpty()) sb.append(' ').append(s);
         return sb.toString().trim();
     }
 
