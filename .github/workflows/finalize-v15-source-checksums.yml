@@ -1,0 +1,39 @@
+name: Finalize MotoLink V1.5 source checksums
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: [ ".github/workflows/finalize-v15-source-checksums.yml" ]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.head_commit.message == 'Start final V1.5 checksum refresh'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Refresh frozen source checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > /tmp/SOURCE_SHA256SUMS.txt
+          while read -r hash path; do
+            test -f "$path"
+            sha256sum "$path" >> /tmp/SOURCE_SHA256SUMS.txt
+          done < SOURCE_SHA256SUMS.txt
+          mv /tmp/SOURCE_SHA256SUMS.txt SOURCE_SHA256SUMS.txt
+          git diff --check
+      - name: Commit final checksums and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Mysterx1992"
+          git config user.email "scarano.emanuele@hotmail.com"
+          git add SOURCE_SHA256SUMS.txt
+          git rm .github/workflows/finalize-v15-source-checksums.yml
+          git commit -m "Finalize MotoLink V1.5 source checksums"
+          git push origin HEAD:main
