@@ -100,9 +100,9 @@ Moto sulle quali l'app è stata testata:
 
 | Marca | Modello | Anno / versione | Display / sistema | Stato | Note |
 |---|---|---|---|---|---|
-| _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata e adattamento predefinito verificato per questo specifico modello_ |
+| _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
 | _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento QR Code_ |
-| _CFMOTO_ | _TFT compatibile testato_ | _—_ | _TFT / EasyConn_ | ✅ Testata | _Connessione P2P/EasyConn e mirroring verificati fisicamente con MotoLink V1.5_ |
+| _CFMOTO_ | _TFT compatibile testato_ | _—_ | _TFT / EasyConn_ | ✅ Collegamento testato | _Connessione P2P/EasyConn e avvio video verificati fisicamente con MotoLink V1.5_ |
 
 > [!WARNING]
 > Un display simile o appartenente allo stesso marchio **non garantisce automaticamente la compatibilità**. Modello e firmware devono essere verificati separatamente.
@@ -127,7 +127,7 @@ Puoi selezionare fino a **quattro applicazioni preferite** e richiamarle rapidam
 
 ### 📐 Adattamento display
 
-MotoLink include strumenti per adattare manualmente l'immagine alla geometria del display della moto. Le regolazioni vengono mantenute per il relativo profilo moto e per orientamento. Sulla Trofeo la base predefinita validata viene applicata automaticamente, mentre l'editor serve per eventuali regolazioni personali.
+MotoLink include strumenti per adattare manualmente l'immagine alla geometria del display della moto. Le regolazioni vengono mantenute per il relativo profilo moto e per orientamento.
 
 ### 📱 Modalità tasca
 
@@ -154,10 +154,6 @@ Per allegare volontariamente la diagnostica:
 **Supporto → Log → Condividi → Assistente**
 
 MotoLink applica un filtro alle informazioni tecniche prima dell'elaborazione.
-
-### ℹ️ VERSIONE
-
-Nelle Impostazioni, toccando **VERSIONE**, MotoLink mostra localmente le novità e i bugfix della versione installata. Non è necessaria una connessione Internet per leggere queste informazioni.
 
 ---
 
@@ -212,7 +208,7 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 Il codice sorgente di MotoLink è **pubblico e consultabile** in questa repository per finalità di studio, trasparenza e verifica.
 
 > [!IMPORTANT]
-> **MotoLink non è open source.** Il software è protetto da copyright e tutti i diritti sono riservati; vedere [`LICENSE`](LICENSE). La disponibilità pubblica del sorgente non autorizza automaticamente copia, modifica, ridistribuzione o creazione di opere derivate.
+> **MotoLink non è distribuito con una licenza open source.** Il software è protetto da copyright e tutti i diritti sono riservati. La disponibilità pubblica del sorgente non autorizza automaticamente copia, modifica, ridistribuzione o creazione di opere derivate. Consulta [`LICENSE`](LICENSE) per i termini completi.
 
 ---
 
