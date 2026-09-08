@@ -5,6 +5,7 @@ import android.os.Build;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -14,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -80,12 +80,19 @@ public final class DiagLog {
         synchronized (LOCK) {
             File f = logFile(c);
             if (!f.exists()) return "";
-            try (FileInputStream in = new FileInputStream(f)) {
+            try (FileInputStream in = new FileInputStream(f); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 long len = f.length();
                 int wanted = (int) Math.min(len, Math.max(1, maxChars * 2L));
-                if (len > wanted) in.skip(len - wanted);
-                byte[] b = in.readAllBytes();
-                String s = new String(b, StandardCharsets.UTF_8);
+                long skip = Math.max(0, len - wanted);
+                while (skip > 0) {
+                    long n = in.skip(skip);
+                    if (n <= 0) break;
+                    skip -= n;
+                }
+                byte[] buf = new byte[4096];
+                int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                String s = new String(out.toByteArray(), StandardCharsets.UTF_8);
                 return s.length() > maxChars ? s.substring(s.length() - maxChars) : s;
             } catch (IOException e) {
                 return "log_error=" + e.getClass().getSimpleName();
