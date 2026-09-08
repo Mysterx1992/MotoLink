@@ -64,7 +64,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .release/v1.5.1/recipe3_chunk_* | base64 -d | xz -d > /tmp/v151.recipe
+          cat .release/v1.5.1/recipe3_chunk_* | base64 --decode --ignore-garbage | xz -d > /tmp/v151.recipe
           python3 - <<'PY'
           import os, struct, zipfile
           from collections import defaultdict, deque
