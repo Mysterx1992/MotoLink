@@ -263,7 +263,7 @@ class MainActivity : Activity() {
                 "LAN"
             )
         }
-        AppLog.add("MotoLink V1.5 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
+        AppLog.add("MotoLink V1.5.1 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -2744,14 +2744,14 @@ class MainActivity : Activity() {
     }
 
     private fun showInstalledReleaseNotes() {
-        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.5" }.getOrDefault("1.5")
-        val notes = if (version == "1.5") {
-            "• Ripristinata la calibrazione display predefinita approvata su Trofeo/Valico.\n" +
-                "• Corretto il salvataggio dell’Adattamento e il pulsante OK delle istruzioni.\n" +
-                "• Migliorata la permanenza della connessione quando si cambia modalità sul TFT.\n" +
-                "• Corretto il riaggancio automatico del video senza limite di tentativi finché la rete moto resta attiva.\n" +
-                "• Corretto il ciclo H264 CFMOTO quando il TFT apre il canale video prima dell’encoder.\n" +
-                "• Ripristinato l’Assistente MotoLink e aggiunte le note Release locali nella voce Versione."
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.5.1" }.getOrDefault("1.5.1")
+        val notes = if (version == "1.5.1") {
+            "• Corretto l’armamento della prossimità: se la richiesta arriva prima di MediaProjection resta pendente e viene applicata appena il video è realmente pronto.\n" +
+                "• Il listener TYPE_PROXIMITY e il wake-lock di prossimità restano armati fino a STOP/teardown.\n" +
+                "• Durante il mirroring MotoLink mantiene il telefono sveglio per evitare il blocco automatico dovuto al timer di inattività; il tasto Power manuale resta utilizzabile.\n" +
+                "• Migliorata la diagnostica del blocco schermo: il Log distingue prossimità, anti-auto-lock attivo e possibili blocchi manuali/policy OEM.\n" +
+                "• Il doppio Volume Giù resta invariato come comando manuale di blackout.\n" +
+                "• EasyConn, H264, clock e geometrie display già validate restano invariati."
         } else {
             "Nessuna nota locale disponibile per questa versione."
         }
