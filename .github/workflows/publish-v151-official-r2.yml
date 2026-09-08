@@ -1,0 +1,162 @@
+name: Publish MotoLink V1.5.1 official R2
+
+on:
+  push:
+    branches: [ "automation/publish-v1.5.1" ]
+    paths: [ ".github/workflows/publish-v151-official-r2.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: 07c4767da2805aea8f2077437a4cdc5a99fad508
+      UNSIGNED_ARTIFACT_ID: "10052853431"
+      UNSIGNED_SHA256: d91271ed175b6e4a348d883377923087d7f8ac41030ee158462bf4c47ead46de
+      FINAL_SHA256: 18f413e93fe0a76055765bcd64f4654ebeb3641b1fe0a27c7bfd90505c55d21f
+      FINAL_SIZE: "53675401"
+      CERT_SHA256: 9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout publishing branch
+        uses: actions/checkout@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "build-tools;36.0.0" "platform-tools"
+
+      - name: Verify public target source identity and AI boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$TARGET_SHA"
+          git show "$TARGET_SHA:app/build.gradle.kts" | grep -q 'versionName = "1.5.1"'
+          git show "$TARGET_SHA:app/build.gradle.kts" | grep -q 'versionCode = 10'
+          git diff --quiet "$TARGET_SHA^" "$TARGET_SHA" -- app/src/main/res/values/ai_config.xml
+          git diff --quiet "$TARGET_SHA^" "$TARGET_SHA" -- app/src/main/java/it/motolink/app/MotoLinkAiClient.kt
+          if git show "$TARGET_SHA" --format= -- . | grep -Eiq 'GROQ_API_KEY|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|service_role|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gsk_[A-Za-z0-9]|sk-[A-Za-z0-9]'; then
+            echo 'Potential private AI/API secret detected in V1.5.1 publication commit'
+            exit 1
+          fi
+
+      - name: Download exact unsigned V1.5.1 GitHub artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${UNSIGNED_ARTIFACT_ID}/zip" > /tmp/v151-artifact.zip
+          mkdir -p /tmp/v151-artifact
+          unzip -q /tmp/v151-artifact.zip -d /tmp/v151-artifact
+          UNSIGNED="$(find /tmp/v151-artifact -type f -name 'MotoLink_V1.5.1_UNSIGNED.apk' | head -n1)"
+          test -n "$UNSIGNED"
+          echo "UNSIGNED=$UNSIGNED" >> "$GITHUB_ENV"
+          echo "${UNSIGNED_SHA256}  $UNSIGNED" | sha256sum -c -
+
+      - name: Reconstruct exact tested signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .release/v1.5.1/recipe3_chunk_* | base64 -d | xz -d > /tmp/v151.recipe
+          python3 - <<'PY'
+          import os, struct, zipfile
+          from collections import defaultdict, deque
+          unsigned = os.environ['UNSIGNED']
+          src = open(unsigned, 'rb').read()
+          by_name = defaultdict(deque)
+          with zipfile.ZipFile(unsigned, 'r') as z:
+              for info in sorted(z.infolist(), key=lambda x: x.header_offset):
+                  off = info.header_offset
+                  sig, = struct.unpack_from('<I', src, off)
+                  if sig != 0x04034b50:
+                      raise SystemExit('bad local zip header')
+                  vals = struct.unpack_from('<IHHHHHIIIHH', src, off)
+                  name_len, extra_len = vals[-2], vals[-1]
+                  data_start = off + 30 + name_len + extra_len
+                  by_name[info.filename].append(src[data_start:data_start + info.compress_size])
+          r = open('/tmp/v151.recipe', 'rb').read()
+          p = 0
+          if r[:8] != b'ML151R1\0':
+              raise SystemExit('bad recipe magic')
+          p = 8
+          nops, = struct.unpack_from('<I', r, p); p += 4
+          out = bytearray()
+          for _ in range(nops):
+              op = r[p:p+1]; p += 1
+              if op == b'L':
+                  ln, = struct.unpack_from('<I', r, p); p += 4
+                  out += r[p:p+ln]; p += ln
+              elif op == b'C':
+                  nl, = struct.unpack_from('<H', r, p); p += 2
+                  name = r[p:p+nl].decode('utf-8'); p += nl
+                  ln, = struct.unpack_from('<I', r, p); p += 4
+                  if not by_name[name]:
+                      raise SystemExit(f'missing unsigned entry: {name}')
+                  data = by_name[name].popleft()
+                  if len(data) != ln:
+                      raise SystemExit(f'compressed length mismatch for {name}: {len(data)} != {ln}')
+                  out += data
+              else:
+                  raise SystemExit(f'bad recipe op: {op!r}')
+          if p != len(r):
+              raise SystemExit('recipe trailing bytes')
+          open('MotoLink_V1.5.1.apk', 'wb').write(out)
+          PY
+          test "$(stat -c %s MotoLink_V1.5.1.apk)" = "$FINAL_SIZE"
+          echo "${FINAL_SHA256}  MotoLink_V1.5.1.apk" | sha256sum -c -
+          unzip -t MotoLink_V1.5.1.apk >/dev/null
+
+      - name: Verify APK identity and permanent MotoLink signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          "$APKSIGNER" verify --verbose --print-certs MotoLink_V1.5.1.apk | tee /tmp/apksigner.txt
+          grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' /tmp/apksigner.txt
+          ACTUAL_CERT="$(grep -m1 'Signer #1 certificate SHA-256 digest:' /tmp/apksigner.txt | awk '{print $NF}' | tr '[:upper:]' '[:lower:]' | tr -d ':')"
+          test "$ACTUAL_CERT" = "$CERT_SHA256"
+          "$AAPT" dump badging MotoLink_V1.5.1.apk | head -n1 | tee /tmp/badging.txt
+          grep -q "name='it.motolink.app'" /tmp/badging.txt
+          grep -q "versionCode='10'" /tmp/badging.txt
+          grep -q "versionName='1.5.1'" /tmp/badging.txt
+
+      - name: Publish or refresh GitHub Release v1.5.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show "${TARGET_SHA}:docs/RELEASE_NOTES_V1.5.1.md" > /tmp/release-notes.md
+          if gh release view v1.5.1 >/dev/null 2>&1; then
+            gh release upload v1.5.1 MotoLink_V1.5.1.apk --clobber
+            gh release edit v1.5.1 --title 'MotoLink V1.5.1' --notes-file /tmp/release-notes.md
+          else
+            gh release create v1.5.1 MotoLink_V1.5.1.apk --target "$TARGET_SHA" --title 'MotoLink V1.5.1' --notes-file /tmp/release-notes.md
+          fi
+
+      - name: Verify published release and asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "/repos/${GITHUB_REPOSITORY}/releases/tags/v1.5.1" > /tmp/release.json
+          python3 - <<'PY'
+          import json, os
+          r=json.load(open('/tmp/release.json'))
+          assert r['tag_name']=='v1.5.1'
+          assert r['name']=='MotoLink V1.5.1'
+          assets=[a for a in r.get('assets',[]) if a.get('name')=='MotoLink_V1.5.1.apk']
+          assert len(assets)==1
+          a=assets[0]
+          assert a['size']==int(os.environ['FINAL_SIZE'])
+          digest=a.get('digest')
+          if digest is not None:
+              assert digest=='sha256:'+os.environ['FINAL_SHA256']
+          print('Release verified:', r['html_url'])
+          print('Asset:', a['name'], a['size'], digest)
+          PY
