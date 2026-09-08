@@ -1,0 +1,69 @@
+name: MotoLink V1.5.1 temporary APK build
+
+on:
+  push:
+    branches: [ "v1.5.1-apk-build-temp" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build unsigned V1.5.1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout temporary branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36
+        run: sdkmanager "platforms;android-36" "platform-tools"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply V1.5.1 hotfix in runner only
+        shell: bash
+        run: |
+          echo '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' | base64 -d | gzip -d > /tmp/apply_v151.py
+          python3 /tmp/apply_v151.py
+          grep -q 'versionName = "1.5.1"' app/build.gradle.kts
+          grep -q 'versionCode = 10' app/build.gradle.kts
+          grep -q 'PROX V1.5.1 READY' app/src/main/java/it/motolink/app/MirrorService.kt
+          grep -q 'ANTI AUTO-LOCK V1.5.1' app/src/main/java/it/motolink/app/MirrorService.kt
+          grep -q 'Release v\$version' app/src/main/java/it/motolink/app/MainActivity.kt
+          ! grep -R -n -E 'YOUR_PROJECT_REF|REPLACE_ME' app/src/main || (echo 'IA placeholder found' && exit 1)
+          ! grep -R -n -E 'MOTO-HUB|MOTO HUB|MotoHub' app/src/main || (echo 'Forbidden external reference found' && exit 1)
+
+      - name: Build release APK
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n1)
+          test -n "$APK"
+          mkdir -p out
+          cp "$APK" out/MotoLink_V1.5.1_UNSIGNED.apk
+          sha256sum out/MotoLink_V1.5.1_UNSIGNED.apk | tee out/SHA256.txt
+
+      - name: Upload unsigned V1.5.1 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.5.1_UNSIGNED
+          path: out/*
+          if-no-files-found: error
+          retention-days: 2
