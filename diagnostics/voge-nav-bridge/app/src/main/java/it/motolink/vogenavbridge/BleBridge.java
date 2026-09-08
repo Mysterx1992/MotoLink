@@ -15,6 +15,8 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
@@ -31,6 +33,8 @@ import java.util.UUID;
 
 public final class BleBridge {
     private static final UUID CCCD = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    private static final long HEARTBEAT_INTERVAL_MS = 1000L;
+
     private static final String[] SERVICE_HINTS = {
             "fe695f12-fd7b-4f9b-98cc-ee6cf57a776e",
             "00003719-0000-1000-8000-00805f9b34fb",
@@ -66,11 +70,13 @@ public final class BleBridge {
         }
 
         @Override public String toString() {
-            return (name == null || name.isBlank() ? "BLE senza nome" : name) + "  [" + redactedAddress + "]  RSSI " + rssi;
+            String n = name == null ? "" : name.trim();
+            return (n.isEmpty() ? "BLE senza nome" : n) + "  [" + redactedAddress + "]  RSSI " + rssi;
         }
     }
 
     private static volatile BleBridge instance;
+
     public static BleBridge get(Context c) {
         if (instance == null) {
             synchronized (BleBridge.class) {
@@ -84,14 +90,32 @@ public final class BleBridge {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Map<String, ScanEntry> scanMap = Collections.synchronizedMap(new LinkedHashMap<>());
     private final ArrayDeque<byte[]> txQueue = new ArrayDeque<>();
+
     private BluetoothLeScanner scanner;
     private BluetoothGatt gatt;
     private BluetoothGattCharacteristic writeChar;
     private BluetoothGattCharacteristic notifyChar;
     private boolean scanning;
     private boolean writeBusy;
+    private boolean heartbeatRunning;
     private String status = "BLE non connesso";
     private String connectedLabel = "-";
+
+    private final Runnable heartbeatRunnable = new Runnable() {
+        @Override public void run() {
+            synchronized (BleBridge.this) {
+                if (!heartbeatRunning || !isReady()) return;
+                if (!queueContainsCommandLocked(VogeNavPacketEncoder.CMD_HEARTBEAT)) {
+                    int battery = readBatteryLevel();
+                    byte[] frame = VogeNavPacketEncoder.heartbeatFrame(battery);
+                    txQueue.addLast(frame);
+                    DiagLog.log(app, "HB_QUEUE", "cmd=0x5A battery=" + battery + " hex=" + DiagLog.hex(frame));
+                }
+            }
+            main.post(BleBridge.this::sendNext);
+            main.postDelayed(this, HEARTBEAT_INTERVAL_MS);
+        }
+    };
 
     private BleBridge(Context app) {
         this.app = app;
@@ -176,6 +200,7 @@ public final class BleBridge {
 
     @SuppressLint("MissingPermission")
     public synchronized void disconnect() {
+        stopHeartbeatLocked();
         txQueue.clear();
         writeBusy = false;
         writeChar = null;
@@ -204,10 +229,43 @@ public final class BleBridge {
         List<byte[]> frames = VogeNavPacketEncoder.allFrames(model);
         txQueue.clear();
         txQueue.addAll(frames);
-        writeBusy = false;
         DiagLog.log(app, "TX_MODEL", "reason=" + reason + " " + model.summary());
-        for (byte[] p : frames) DiagLog.log(app, "TX_PLAN", reason + " cmd=0x" + String.format(Locale.US, "%02X", p[1] & 0xFF) + " hex=" + DiagLog.hex(p));
+        for (byte[] p : frames) {
+            DiagLog.log(app, "TX_PLAN", reason + " cmd=0x" + String.format(Locale.US, "%02X", p[1] & 0xFF) + " hex=" + DiagLog.hex(p));
+        }
         main.post(this::sendNext);
+    }
+
+    private synchronized void startHeartbeat() {
+        if (heartbeatRunning || !isReady()) return;
+        heartbeatRunning = true;
+        main.removeCallbacks(heartbeatRunnable);
+        DiagLog.log(app, "HEARTBEAT", "START cmd=0x5A intervalMs=" + HEARTBEAT_INTERVAL_MS + " source=VOGE_GLOBAL_1.1.18");
+        main.post(heartbeatRunnable);
+    }
+
+    private void stopHeartbeatLocked() {
+        if (heartbeatRunning) DiagLog.log(app, "HEARTBEAT", "STOP cmd=0x5A");
+        heartbeatRunning = false;
+        main.removeCallbacks(heartbeatRunnable);
+    }
+
+    private boolean queueContainsCommandLocked(int command) {
+        for (byte[] p : txQueue) {
+            if (p != null && p.length > 1 && (p[1] & 0xFF) == command) return true;
+        }
+        return false;
+    }
+
+    private int readBatteryLevel() {
+        try {
+            Intent battery = app.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery == null) return 0;
+            return Math.max(0, Math.min(255, battery.getIntExtra("level", 0)));
+        } catch (Throwable t) {
+            DiagLog.log(app, "HEARTBEAT", "battery_read_error=" + t.getClass().getSimpleName());
+            return 0;
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -264,7 +322,9 @@ public final class BleBridge {
             BluetoothDevice d = result.getDevice();
             String addr = safeAddress(d);
             String name = safeName(d);
-            if ((name == null || name.isBlank()) && result.getScanRecord() != null) name = result.getScanRecord().getDeviceName();
+            if ((name == null || name.trim().isEmpty()) && result.getScanRecord() != null) {
+                name = result.getScanRecord().getDeviceName();
+            }
             ScanEntry e = new ScanEntry(d, name, DiagLog.redactMac(addr), result.getRssi());
             scanMap.put(addr, e);
             DiagLog.log(app, "BLE_SCAN", "name='" + DiagLog.clean(name) + "' addr=" + DiagLog.redactMac(addr) + " rssi=" + result.getRssi());
@@ -285,9 +345,12 @@ public final class BleBridge {
             DiagLog.log(app, "BLE", "connection_state status=" + statusCode + " state=" + newState);
             if (newState == BluetoothProfile.STATE_CONNECTED && statusCode == BluetoothGatt.GATT_SUCCESS) {
                 setStatus("BLE connesso, scopro servizi...");
-                try { g.discoverServices(); } catch (Throwable t) { DiagLog.log(app, "BLE", "discover_error=" + t.getClass().getSimpleName()); }
+                try { g.discoverServices(); } catch (Throwable t) {
+                    DiagLog.log(app, "BLE", "discover_error=" + t.getClass().getSimpleName());
+                }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 synchronized (BleBridge.this) {
+                    stopHeartbeatLocked();
                     if (gatt == g) {
                         writeChar = null;
                         notifyChar = null;
@@ -323,10 +386,12 @@ public final class BleBridge {
                         if (bestNotify == null && notifiable && nh) bestNotify = c;
                     }
                 }
+
                 synchronized (BleBridge.this) {
                     writeChar = bestWrite;
                     notifyChar = bestNotify;
                 }
+
                 if (bestWrite == null) {
                     setStatus("Connesso, ma nessuna write characteristic VOGE nota trovata");
                     DiagLog.log(app, "BLE", "NO_KNOWN_VOGE_WRITE_CHARACTERISTIC");
@@ -334,6 +399,7 @@ public final class BleBridge {
                     setStatus("VOGE write pronta: " + bestWrite.getUuid());
                     DiagLog.log(app, "BLE", "selected_write=" + bestWrite.getUuid());
                 }
+
                 if (bestNotify != null) {
                     DiagLog.log(app, "BLE", "selected_notify=" + bestNotify.getUuid());
                     boolean local = g.setCharacteristicNotification(bestNotify, true);
@@ -357,6 +423,10 @@ public final class BleBridge {
                 setStatus("Errore servizi BLE: " + t.getClass().getSimpleName());
                 DiagLog.log(app, "BLE", "service_parse_error=" + t.getClass().getSimpleName() + ":" + DiagLog.clean(t.getMessage()));
             }
+
+            if (bestWrite != null) {
+                main.postDelayed(BleBridge.this::startHeartbeat, 750L);
+            }
             BridgeRuntime.notifyState(app);
         }
 
@@ -368,6 +438,7 @@ public final class BleBridge {
 
         @Override public void onDescriptorWrite(BluetoothGatt g, BluetoothGattDescriptor d, int statusCode) {
             DiagLog.log(app, "BLE", "descriptor_write uuid=" + d.getUuid() + " status=" + statusCode);
+            if (statusCode == BluetoothGatt.GATT_SUCCESS) main.post(BleBridge.this::startHeartbeat);
         }
 
         @Override public void onCharacteristicChanged(BluetoothGatt g, BluetoothGattCharacteristic c) {
@@ -389,7 +460,9 @@ public final class BleBridge {
     }
 
     private boolean hasScanPermission() {
-        if (Build.VERSION.SDK_INT >= 31) return app.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
+        if (Build.VERSION.SDK_INT >= 31) {
+            return app.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
+        }
         return app.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
@@ -410,7 +483,9 @@ public final class BleBridge {
     private static boolean matches(String value, String[] hints) {
         if (value == null) return false;
         String v = value.toLowerCase(Locale.US);
-        for (String h : hints) if (v.contains(h.toLowerCase(Locale.US))) return true;
+        for (String h : hints) {
+            if (v.contains(h.toLowerCase(Locale.US))) return true;
+        }
         return false;
     }
 
