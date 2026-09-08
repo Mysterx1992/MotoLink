@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5/MotoLink_V1.5.apk">
-    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.5-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.5">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5.1/MotoLink_V1.5.1.apk">
+    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.5.1-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.5.1">
   </a>
   &nbsp;
   <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
@@ -27,25 +27,22 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.5
+## 🆕 MotoLink V1.5.1
 
-La V1.5 raccoglie le correzioni emerse dai test fisici successivi alla V1.4 e consolida il comportamento su Voge Trofeo/Valico e CFMOTO.
+La V1.5.1 è un aggiornamento di stabilità della V1.5, con particolare attenzione alla Modalità tasca/prossimità e alla prevenzione del blocco automatico del telefono durante il mirroring.
 
 ### Novità e correzioni principali
 
-- **Trofeo: adattamento predefinito ripristinato.** Alla prima installazione la geometria approvata viene applicata automaticamente anche con l'editor Adattamento chiuso.
-- **Adattamento display corretto:** le regolazioni restano salvate, la X chiude l'editor senza perdere la personalizzazione e il pulsante **OK** delle istruzioni è stato sistemato.
-- **Recovery della sessione migliorato:** quando il TFT cambia modalità, MotoLink resta in attesa e riprende automaticamente il mirroring quando il display torna disponibile, senza interrompere la sessione dopo un numero fisso di tentativi.
-- **Recovery H264 reso affidabile:** il successo della riconnessione non viene più dedotto da semplici stringhe del Log, evitando falsi `RECOVERY OK`.
-- **CFMOTO: corretto il lifecycle del consumer H264**, eliminando il caso in cui P2P/EasyConn risultavano collegati ma il video non partiva. La correzione è stata verificata fisicamente con collegamento MotoLink V1.5 → CFMOTO.
-- **Assistente MotoLink ripristinato:** la release include la configurazione pubblica corretta del backend, senza secret privati nell'APK.
-- **VERSIONE nelle Impostazioni:** toccando la voce VERSIONE si possono leggere offline le novità e i bugfix della versione installata.
-- **Guida aggiornata** con il nuovo comportamento della voce VERSIONE.
-- Il protocollo EasyConn wire-level, il clock e i percorsi di rete già validati restano separati dalle correzioni di recovery e display.
+- **Prossimità più affidabile all’avvio:** se l’armamento arriva prima che MediaProjection e il video siano realmente pronti, MotoLink conserva la richiesta e la applica automaticamente appena la sessione è pronta.
+- **Modalità tasca mantenuta attiva:** listener di prossimità e wake-lock dedicato restano armati fino a STOP/teardown della sessione.
+- **Anti auto-lock durante il mirroring:** MotoLink mantiene il telefono sveglio rispetto al normale timeout di inattività; il tasto Power manuale resta utilizzabile.
+- **Diagnostica blocco schermo migliorata:** il Log distingue il percorso di prossimità, l’anti-auto-lock attivo e i possibili blocchi manuali/policy OEM.
+- **Doppio Volume Giù invariato** come comando manuale di blackout/riattivazione.
+- **Core validato preservato:** EasyConn, H264, clock, percorsi rete e geometrie display già validate restano invariati da questo bugfix.
 
 ### Aggiornamento
 
-Chi utilizza già una release ufficiale firmata con l'identità permanente MotoLink può installare `MotoLink_V1.5.apk` come aggiornamento.
+Chi utilizza già una release ufficiale firmata con l'identità permanente MotoLink può installare `MotoLink_V1.5.1.apk` come aggiornamento.
 
 > [!NOTE]
 > Se sul telefono è installata una vecchia build MotoLink firmata con una firma differente, Android può richiedere una disinstallazione una tantum prima dell'installazione della release ufficiale.
@@ -54,10 +51,10 @@ Chi utilizza già una release ufficiale firmata con l'identità permanente MotoL
 
 ## Scarica MotoLink
 
-### APK ufficiale V1.5
+### APK ufficiale V1.5.1
 
-<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5/MotoLink_V1.5.apk">
-  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.5.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.5">
+<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5.1/MotoLink_V1.5.1.apk">
+  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.5.1.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.5.1">
 </a>
 
 **Pagina dell'ultima release:**  
@@ -102,7 +99,7 @@ Moto sulle quali l'app è stata testata:
 |---|---|---|---|---|---|
 | _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
 | _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento QR Code_ |
-| _CFMOTO_ | _700 MT Stradale_ | _2024_ | _TFT / EasyConn_ | ✅ Testata | _Connessione P2P/EasyConn e avvio video verificati fisicamente con MotoLink V1.5_ |
+| _CFMOTO_ | _700 MT Stradale_ | _2024_ | _TFT / EasyConn_ | ✅ Testata | _Connessione P2P/EasyConn e avvio video verificati fisicamente nella lineage V1.5/V1.5.1_ |
 
 > [!WARNING]
 > Un display simile o appartenente allo stesso marchio **non garantisce automaticamente la compatibilità**. Modello e firmware devono essere verificati separatamente.
@@ -191,7 +188,7 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Release pubblica | ✅ `v1.5` |
+| Release pubblica | ✅ `v1.5.1` |
 | Mirroring | ✅ Implementato |
 | Garage / profili moto | ✅ Implementato |
 | App preferite | ✅ Implementato |
@@ -235,6 +232,6 @@ Per i termini completi consulta [`LICENSE`](LICENSE).
 ---
 
 <p align="center">
-  <strong>MotoLink V1.5</strong><br>
+  <strong>MotoLink V1.5.1</strong><br>
   Mirroring • Connessione • Supporto
 </p>
