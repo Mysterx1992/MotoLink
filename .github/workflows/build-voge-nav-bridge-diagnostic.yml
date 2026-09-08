@@ -1,0 +1,63 @@
+name: Build VOGE Nav Bridge Diagnostic
+
+on:
+  push:
+    branches:
+      - diagnostic/voge-nav-bridge-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Static diagnostic safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f diagnostics/voge-nav-bridge/app/src/main/AndroidManifest.xml
+          grep -q 'applicationId = "it.motolink.vogenavbridge"' diagnostics/voge-nav-bridge/app/build.gradle.kts
+          grep -q 'Via del Corso' diagnostics/voge-nav-bridge/app/src/main/java/it/motolink/vogenavbridge/VogeNavPacketEncoder.java
+          if grep -R -i -q 'Via Rimembranze' diagnostics/voge-nav-bridge; then
+            echo 'Private test address unexpectedly present' >&2
+            exit 1
+          fi
+          if grep -q 'android.permission.INTERNET' diagnostics/voge-nav-bridge/app/src/main/AndroidManifest.xml; then
+            echo 'INTERNET permission must remain absent' >&2
+            exit 1
+          fi
+          if grep -R -E -q 'GROQ_API_KEY|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|service_role|gsk_|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' diagnostics/voge-nav-bridge; then
+            echo 'Secret-like token found in diagnostic source' >&2
+            exit 1
+          fi
+          echo 'Static safety gates PASS'
+
+      - name: Build standalone diagnostic APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew -p diagnostics/voge-nav-bridge :app:assembleDebug --stacktrace
+          cp diagnostics/voge-nav-bridge/app/build/outputs/apk/debug/app-debug.apk MotoLink_VOGE_NavBridge_Diagnostic_V1.apk
+          sha256sum MotoLink_VOGE_NavBridge_Diagnostic_V1.apk | tee SHA256SUMS.txt
+          unzip -t MotoLink_VOGE_NavBridge_Diagnostic_V1.apk >/dev/null
+
+      - name: Upload diagnostic APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_VOGE_NavBridge_Diagnostic_V1
+          path: |
+            MotoLink_VOGE_NavBridge_Diagnostic_V1.apk
+            SHA256SUMS.txt
+          if-no-files-found: error
