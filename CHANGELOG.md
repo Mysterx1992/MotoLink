@@ -1,19 +1,18 @@
 # Changelog MotoLink
 
-## v1.5 — 2026-09-07
+## v1.5 — 2026-09-08
 
 ### Novità e correzioni
 
-- Ripristinata sulla Trofeo la calibrazione/adattamento predefinito validato già dalla prima installazione, indipendentemente dall'apertura dell'editor.
-- Corretto il comportamento dell'editor Adattamento: personalizzazione persistente, chiusura con X senza reset e pulsante OK delle istruzioni funzionante.
-- Ripristinata la permanenza della sessione quando il TFT cambia modalità: MotoLink continua ad attendere il display e riprende il mirroring quando torna disponibile.
-- Eliminato il falso successo del recovery basato sulla stringa `H264 FIRST FRAME`; il ripristino viene confermato dallo stato reale della sessione/video.
-- Corretto su CFMOTO il lifecycle del consumer H264 che poteva lasciare P2P/EasyConn collegati ma senza flusso video.
-- Collegamento CFMOTO con MotoLink V1.5 verificato fisicamente dopo la correzione.
-- Ripristinata la configurazione pubblica dell'Assistente MotoLink, mantenendo i secret privati esclusivamente lato server.
-- Aggiunta nelle Impostazioni la voce VERSIONE interattiva con novità e bugfix locali della release installata.
-- Guida aggiornata per la nuova funzione VERSIONE.
-- Mantenuti separati e invariati i componenti/protocolli già validati che non richiedevano correzioni.
+- Ripristinata la geometria/adattamento predefinito Trofeo già dalla prima installazione, anche con editor Adattamento chiuso.
+- Corretto il comportamento dell'Adattamento: regolazioni persistenti, X senza reset e pulsante **OK** delle istruzioni funzionante.
+- Recovery TFT resa persistente quando il display cambia temporaneamente modalità, senza un numero fisso di tentativi.
+- Eliminato il falso `RECOVERY OK` basato sul testo del Log: il ripristino viene confermato dallo stato reale della sessione/video.
+- Corretto il lifecycle del consumer H264 su CFMOTO; collegamento MotoLink V1.5 → CFMOTO verificato fisicamente.
+- Ripristinata la configurazione pubblica dell'Assistente MotoLink senza includere secret privati nell'APK.
+- Aggiunta la voce **VERSIONE** interattiva nelle Impostazioni con novità e bugfix locali della release installata.
+- Guida utente aggiornata per Adattamento, VERSIONE e rientro automatico nel mirroring.
+- Release ufficiale `v1.5` pubblicata con `MotoLink_V1.5.apk` firmato con l'identità permanente MotoLink.
 
 ## v1.4 — 2026-09-07
 
@@ -48,7 +47,6 @@ Prima release pubblica MotoLink con identità Android `it.motolink.app`.
 
 ### Repository
 
-- Codice sorgente Android pubblico e consultabile.
-- MotoLink non è open source; tutti i diritti sono riservati e valgono i termini in `LICENSE`.
+- Codice sorgente Android pubblico.
 - Backend Supabase dell'Assistente incluso senza secret.
 - Nessuna chiave privata o keystore incluso nel repository.
