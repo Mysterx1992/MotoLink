@@ -28,7 +28,11 @@ jobs:
           set -euo pipefail
           test -f diagnostics/voge-nav-bridge/app/src/main/AndroidManifest.xml
           grep -q 'applicationId = "it.motolink.vogenavbridge"' diagnostics/voge-nav-bridge/app/build.gradle.kts
+          grep -q 'versionName = "1.1-heartbeat-test"' diagnostics/voge-nav-bridge/app/build.gradle.kts
           grep -q 'Via del Corso' diagnostics/voge-nav-bridge/app/src/main/java/it/motolink/vogenavbridge/VogeNavPacketEncoder.java
+          grep -q 'CMD_HEARTBEAT = 0x5A' diagnostics/voge-nav-bridge/app/src/main/java/it/motolink/vogenavbridge/VogeNavPacketEncoder.java
+          grep -q 'HEARTBEAT_INTERVAL_MS = 1000L' diagnostics/voge-nav-bridge/app/src/main/java/it/motolink/vogenavbridge/BleBridge.java
+          grep -q 'source=VOGE_GLOBAL_1.1.18' diagnostics/voge-nav-bridge/app/src/main/java/it/motolink/vogenavbridge/BleBridge.java
           if grep -R -i -q 'Via Rimembranze' diagnostics/voge-nav-bridge; then
             echo 'Private test address unexpectedly present' >&2
             exit 1
@@ -49,15 +53,15 @@ jobs:
           set -euo pipefail
           chmod +x gradlew
           ./gradlew -p diagnostics/voge-nav-bridge :app:assembleDebug --stacktrace
-          cp diagnostics/voge-nav-bridge/app/build/outputs/apk/debug/app-debug.apk MotoLink_VOGE_NavBridge_Diagnostic_V1.apk
-          sha256sum MotoLink_VOGE_NavBridge_Diagnostic_V1.apk | tee SHA256SUMS.txt
-          unzip -t MotoLink_VOGE_NavBridge_Diagnostic_V1.apk >/dev/null
+          cp diagnostics/voge-nav-bridge/app/build/outputs/apk/debug/app-debug.apk MotoLink_VOGE_NavBridge_Diagnostic_V1_1_HEARTBEAT.apk
+          sha256sum MotoLink_VOGE_NavBridge_Diagnostic_V1_1_HEARTBEAT.apk | tee SHA256SUMS.txt
+          unzip -t MotoLink_VOGE_NavBridge_Diagnostic_V1_1_HEARTBEAT.apk >/dev/null
 
       - name: Upload diagnostic APK
         uses: actions/upload-artifact@v4
         with:
-          name: MotoLink_VOGE_NavBridge_Diagnostic_V1
+          name: MotoLink_VOGE_NavBridge_Diagnostic_V1_1_HEARTBEAT
           path: |
-            MotoLink_VOGE_NavBridge_Diagnostic_V1.apk
+            MotoLink_VOGE_NavBridge_Diagnostic_V1_1_HEARTBEAT.apk
             SHA256SUMS.txt
           if-no-files-found: error
