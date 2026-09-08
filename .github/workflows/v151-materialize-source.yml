@@ -1,0 +1,95 @@
+name: Materialize MotoLink V1.5.1 source
+
+on:
+  push:
+    branches: [ "release/v1.5.1-source" ]
+    paths: [ ".github/workflows/v151-materialize-source.yml" ]
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current release branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36
+        run: sdkmanager "platforms;android-36" "platform-tools"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply frozen V1.5.1 runner patch to normal source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin v1.5.1-apk-build-temp:v151temp
+          git show v151temp:.github/workflows/v151-temp-apk-build2.yml > /tmp/v151-build.yml
+          python3 - <<'PY'
+          import base64, gzip, pathlib, re
+          text = pathlib.Path('/tmp/v151-build.yml').read_text(encoding='utf-8')
+          m = re.search(r"echo '([A-Za-z0-9+/=]+)' \| base64 -d \| gzip -d > /tmp/apply_v151.py", text)
+          if not m:
+              raise SystemExit('Frozen V1.5.1 patch payload not found')
+          payload = gzip.decompress(base64.b64decode(m.group(1)))
+          pathlib.Path('/tmp/apply_v151.py').write_bytes(payload)
+          PY
+          python3 /tmp/apply_v151.py
+
+      - name: Verify V1.5.1 identity and frozen markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'versionName = "1.5.1"' app/build.gradle.kts
+          grep -q 'versionCode = 10' app/build.gradle.kts
+          grep -q 'PROX V1.5.1 READY' app/src/main/java/it/motolink/app/MirrorService.kt
+          grep -q 'ANTI AUTO-LOCK V1.5.1' app/src/main/java/it/motolink/app/MirrorService.kt
+          grep -q 'Release v\$version' app/src/main/java/it/motolink/app/MainActivity.kt
+
+      - name: Protect integrated AI secrets and configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --quiet HEAD -- app/src/main/res/values/ai_config.xml
+          git diff --quiet HEAD -- app/src/main/java/it/motolink/app/MotoLinkAiClient.kt
+          if git diff --name-only HEAD | grep -Eiq '(^|/)(supabase|functions|secrets?)(/|$)|(^|/)\.env($|\.)|keystore|\.jks$|\.keystore$'; then
+            echo 'Sensitive/server-side path changed: refusing publication'
+            exit 1
+          fi
+          if git diff HEAD -- . ':!.github/workflows/v151-materialize-source.yml' | grep -Eiq 'GROQ_API_KEY|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|service_role|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gsk_[A-Za-z0-9]|sk-[A-Za-z0-9]'; then
+            echo 'Potential private API secret detected in changed source: refusing publication'
+            exit 1
+          fi
+          ! grep -R -n -E 'MOTO-HUB|MOTO HUB|MotoHub' app/src/main
+
+      - name: Compile materialized V1.5.1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleRelease
+
+      - name: Commit normal V1.5.1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/v151-materialize-source.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git commit -m 'Materialize MotoLink V1.5.1 source'
+          git push origin HEAD:release/v1.5.1-source
