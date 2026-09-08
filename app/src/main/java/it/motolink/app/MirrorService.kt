@@ -123,6 +123,9 @@ class MirrorService : Service() {
     @Volatile private var proximityNear: Boolean? = null
     @Volatile private var proximityWakeLockFrameworkEnabled: Boolean? = null
     @Volatile private var proximityGateAllowed = true
+    @Volatile private var proximityArmRequested = false
+    @Volatile private var projectionReadyForProximity = false
+    private var mirrorKeepAwakeWakeLock: PowerManager.WakeLock? = null
     private val lastObservedVolumes = LinkedHashMap<Int, Int>()
     private var manualVolumeReceiverRegistered = false
     private var manualUnlockFailsafeReceiverRegistered = false
@@ -276,10 +279,18 @@ class MirrorService : Service() {
             ACTION_START -> startProjection(intent)
             ACTION_PROX_ARM -> {
                 proximityGateAllowed = intent?.getBooleanExtra(EXTRA_PROX_GATE_ALLOWED, true) ?: true
+                proximityArmRequested = true
                 AppLog.add("PROX GATE POLICY: ${if (proximityGateAllowed) "ABILITATA" else "DISABILITATA"}")
-                armProximityScreenOff()
+                if (projectionReadyForProximity) {
+                    armProximityScreenOff()
+                } else {
+                    AppLog.add("PROX V1.5.1 PENDING: richiesta ricevuta prima che il mirroring sia pronto; armo automaticamente appena encoder/VirtualDisplay sono attivi")
+                }
             }
-            ACTION_PROX_RELEASE -> releaseProximityScreenOff()
+            ACTION_PROX_RELEASE -> {
+                proximityArmRequested = false
+                releaseProximityScreenOff()
+            }
             ACTION_PROX_SNAPSHOT -> {
                 val stage = intent.getStringExtra(EXTRA_PROX_STAGE) ?: "ACTIVITY_TRANSITION"
                 logProximityPowerPath(stage)
@@ -342,11 +353,11 @@ class MirrorService : Service() {
     }
 
     private fun armProximityScreenOff() {
-        if (projection == null) {
-            AppLog.add("PROX SERVICE non armato: avvia prima il mirror")
+        proximityArmRequested = true
+        if (projection == null || !projectionReadyForProximity) {
+            AppLog.add("PROX V1.5.1 PENDING: mirroring non ancora pronto; richiesta conservata")
             return
         }
-
 
         val pm = getSystemService(PowerManager::class.java)
         if (!pm.isWakeLockLevelSupported(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK)) {
@@ -435,6 +446,42 @@ class MirrorService : Service() {
             AppLog.add("PROX CONTINUOUS HOLD: wake lock prossimità era già acquisito")
         }
         scheduleProximityPowerPathSnapshots("CONTINUOUS_AFTER_ACQUIRE")
+    }
+
+    @Suppress("DEPRECATION")
+    private fun acquireMirrorKeepAwake() {
+        val pm = getSystemService(PowerManager::class.java)
+        if (mirrorKeepAwakeWakeLock == null) {
+            mirrorKeepAwakeWakeLock = pm.newWakeLock(
+                PowerManager.SCREEN_DIM_WAKE_LOCK,
+                "$packageName:MirrorKeepAwake"
+            ).apply { setReferenceCounted(false) }
+        }
+        val wl = mirrorKeepAwakeWakeLock ?: return
+        if (!wl.isHeld) {
+            wl.acquire()
+            AppLog.add(
+                "ANTI AUTO-LOCK V1.5.1: attivo durante il mirroring; " +
+                    "il timeout di inattività non deve bloccare il telefono; Power manuale resta consentito"
+            )
+        } else {
+            AppLog.add("ANTI AUTO-LOCK V1.5.1: già attivo")
+        }
+    }
+
+    private fun releaseMirrorKeepAwake(reason: String) {
+        val wl = mirrorKeepAwakeWakeLock
+        if (wl != null && wl.isHeld) {
+            runCatching { wl.release() }
+            AppLog.add("ANTI AUTO-LOCK V1.5.1: rilasciato [$reason]")
+        }
+        mirrorKeepAwakeWakeLock = null
+    }
+
+    private fun screenLockCauseClass(): String = when {
+        proximityNear == true -> "PROXIMITY_PATH"
+        mirrorKeepAwakeWakeLock?.isHeld == true -> "MANUAL_POWER_OR_OEM_POLICY"
+        else -> "AUTO_TIMEOUT_POSSIBLE"
     }
 
     private fun launchProximityTopGate() {
@@ -888,6 +935,7 @@ class MirrorService : Service() {
     private fun startProjection(intent: Intent) {
         if (projection != null || projectionStartPending) return
         projectionStartPending = true
+        projectionReadyForProximity = false
         adaptationPanelDismissed = !MirrorAdaptationConfig.load(this).enabled
 
         val notification = android.app.Notification.Builder(this, CHANNEL_ID)
@@ -1002,9 +1050,11 @@ class MirrorService : Service() {
         projection!!.registerCallback(object : MediaProjection.Callback() {
             override fun onStop() {
                 if (isRealScreenLockActive()) {
+                    val lockClass = screenLockCauseClass()
                     AppLog.add(
-                        "BLOCCO SCHERMO REALE RILEVATO: Android ha terminato MediaProjection; " +
-                            "mantengo EasyConn e mostro il placeholder lucchetto sul TFT"
+                        "BLOCCO SCHERMO V1.5.1: keyguard attivo; causa=$lockClass; " +
+                            "antiAutoLock=${mirrorKeepAwakeWakeLock?.isHeld == true}; proxNear=${proximityNear == true}. " +
+                            "Android non espone in modo affidabile la differenza Power vs policy OEM; mantengo EasyConn e mostro il placeholder sul TFT"
                     )
                     enterLockPlaceholderMode()
                 } else {
@@ -1226,6 +1276,12 @@ class MirrorService : Service() {
             applyAdaptationRuntime("projection ready")
             startCfmotoPre34GeometryWatcher()
             startDrain()
+            projectionReadyForProximity = true
+            acquireMirrorKeepAwake()
+            if (proximityArmRequested) {
+                AppLog.add("PROX V1.5.1 READY: mirroring pronto -> eseguo armamento pendente")
+                armProximityScreenOff()
+            }
             AppLog.add(
                 if (valicoSoftH264)
                     "SOURCE NATIVE V15 READY -> VALICO SOFT H264 ${targetWidth}x${targetHeight}@$FPS; " +
@@ -1796,6 +1852,9 @@ class MirrorService : Service() {
     private fun enterLockPlaceholderMode() {
         if (lockPlaceholderActive) return
         lockPlaceholderActive = true
+        projectionReadyForProximity = false
+        proximityArmRequested = false
+        releaseMirrorKeepAwake("keyguard/lock placeholder")
 
         val lockAu = try {
             resources.openRawResource(R.raw.motolink_lock_placeholder).use { it.readBytes() }
@@ -2025,6 +2084,9 @@ class MirrorService : Service() {
         // Guard against the callback re-entering shutdown while ACTION_STOP is already cleaning up.
         if (!shuttingDown.compareAndSet(false, true)) return
         try {
+            projectionReadyForProximity = false
+            proximityArmRequested = false
+            releaseMirrorKeepAwake("STOP/teardown")
             hideAdaptationOverlay("shutdown")
             disarmManualDisplayGesture("shutdown")
             releaseProximityScreenOff()
