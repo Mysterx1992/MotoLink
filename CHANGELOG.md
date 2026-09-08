@@ -1,5 +1,16 @@
 # Changelog MotoLink
 
+## v1.5.1 — 2026-09-08
+
+### Novità e correzioni
+
+- Corretto l’armamento della prossimità quando la richiesta arriva prima che MediaProjection/video siano pronti: la richiesta resta pendente e viene applicata automaticamente appena la sessione è pronta.
+- Listener `TYPE_PROXIMITY` e wake-lock di prossimità mantenuti armati fino a STOP/teardown.
+- Aggiunto anti auto-lock durante il mirroring per evitare il blocco dovuto al timer di inattività, mantenendo disponibile il tasto Power manuale.
+- Migliorata la diagnostica del blocco schermo per distinguere prossimità, anti-auto-lock e possibili blocchi manuali/policy OEM.
+- Doppio Volume Giù invariato come comando manuale di blackout.
+- EasyConn, H264, clock, percorsi rete e geometrie display già validate restano invariati.
+
 ## v1.5 — 2026-09-08
 
 ### Novità e correzioni
