@@ -63,34 +63,18 @@ jobs:
           )
           PY
           python3 tools/apply_v16.py
+          python3 tools/apply_v16_profile_ui.py
           chmod +x ./gradlew
-      - name: Inspect generated profile connection flow
+      - name: Verify V1.6 profile UI source
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          for path in [
-              Path('app/src/main/java/it/motolink/app/MainActivity.kt'),
-              Path('app/src/main/java/it/motolink/app/BikeProfileStore.kt'),
-          ]:
-              text = path.read_text()
-              print(f'===== {path} =====')
-              for needle in [
-                  'private fun showBikeProfileCreationDialog',
-                  'private fun showFirstStartConnectionChoice',
-                  'V16ConnectionModeDialog.show',
-                  'connectionMode',
-                  'Descrizione (facoltativa)',
-              ]:
-                  start = 0
-                  while True:
-                      i = text.find(needle, start)
-                      if i < 0: break
-                      lo = max(0, i - 900)
-                      hi = min(len(text), i + 2800)
-                      print(f'--- {needle} @ {i} ---')
-                      print(text[lo:hi])
-                      start = i + len(needle)
-          PY
+          set -euo pipefail
+          MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
+          grep -F 'text = "Connessione:"' "$MAIN"
+          grep -F 'listOf("Automatico", "Hotspot", "QrCode", "BLE")' "$MAIN"
+          ! grep -F 'V16ConnectionModeDialog.show' "$MAIN"
+          ! grep -F 'private fun showV16ConnectionTypeChoice' "$MAIN"
+          ! grep -F 'private fun showV16HotspotQrChoice' "$MAIN"
+          test ! -f app/src/main/java/it/motolink/app/V16ConnectionModeDialog.kt
       - name: Compile release APK
         run: ./gradlew assembleRelease --stacktrace
       - name: Verify unsigned identity
