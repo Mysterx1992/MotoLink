@@ -1,0 +1,188 @@
+name: Prepare MotoLink V1.6 official release
+
+on:
+  push:
+    branches: [ "release/v1.6" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release-source-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release/v1.6
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Materialize V1.6 release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/v16_materialize_release.py
+          sed -i 's/MotoLink V1.6 TEST GUI pronta/MotoLink V1.6 GUI pronta/g' app/src/main/java/it/motolink/app/MainActivity.kt
+          mkdir -p docs
+          cat > docs/RELEASE_NOTES_V1.6.md <<'EOF'
+          # MotoLink V1.6
+
+          MotoLink V1.6 estende la linea ufficiale V1.x introducendo i profili multi-connessione e il canale di navigazione VOGE BLE, preservando il core EasyConn/H.264 già validato della V1.5.1 per i profili non-BLE.
+
+          ## Novità
+
+          - Il primo START senza profili apre direttamente **Nuovo profilo moto**.
+          - Il profilo moto usa **Nome**, **Modello** e **Tipo di connessione**: Automatico, Hotspot, Qrcode o BLE.
+          - Il campo Descrizione viene rimosso dal flusso di creazione/modifica profilo.
+          - In modalità **Automatico**, MotoLink prova il collegamento VOGE BLE e può ricadere su un Hotspot moto già collegato.
+          - La modifica del tipo di connessione dal Garage richiede conferma e sostituisce la configurazione precedente solo dopo una verifica riuscita.
+          - Aggiunto il trasporto navigazione VOGE sul secondo collegamento BLE con heartbeat `0x5A` e pacchetti `0x6A`–`0x6E`.
+          - Per i profili BLE, MotoLink può leggere le indicazioni di Google Maps tramite l'accesso notifiche autorizzato dall'utente e trasformarle nel formato VOGE. I dati mancanti non vengono inventati.
+          - Il doppio Volume Giù resta disponibile durante il mirroring come nella V1.5.1.
+          - EasyConn, H.264, clock, adattamento e geometrie display della V1.5.1 restano invariati per i profili non-BLE.
+
+          ## Versione
+
+          - applicationId: `it.motolink.app`
+          - versionCode: `11`
+          - versionName: `1.6`
+
+          ## Firma ufficiale
+
+          La release finale deve usare la stessa identità di firma permanente MotoLink delle release ufficiali precedenti. Certificato SHA-256 atteso:
+
+          `9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100`
+
+          La chiave privata di firma non viene conservata né pubblicata nel repository.
+
+          ## Sicurezza Assistente MotoLink
+
+          La V1.6 non modifica il boundary client/server dell'Assistente MotoLink e non pubblica chiavi private, service-role key o secret del provider IA.
+          EOF
+
+          # Temporary release materialization helpers must not remain in release source.
+          rm -f tools/v16_materialize_release.py
+          rm -f .github/workflows/materialize-build-v16-release.yml
+
+      - name: Verify official source gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+
+          grep -q 'versionCode = 11' app/build.gradle.kts
+          grep -q 'versionName = "1.6"' app/build.gradle.kts
+          grep -q 'applicationId = "it.motolink.app"' app/build.gradle.kts
+          grep -q 'MapsNavigationListenerService' app/src/main/AndroidManifest.xml
+          grep -q 'VogeNavService' app/src/main/AndroidManifest.xml
+          grep -q 'Tipo di connessione' app/src/main/java/it/motolink/app/MainActivity.kt
+          grep -q 'Automatico.*Hotspot.*Qrcode.*BLE' app/src/main/java/it/motolink/app/MainActivity.kt
+          grep -q 'CMD_HEARTBEAT = 0x5A' app/src/main/java/it/motolink/app/VogeNavPacketEncoder.kt
+
+          if grep -RniE 'V1\.6 TEST|V1_6_TEST|V1.6_TEST|MotoLink_V1\.6_TEST' app docs; then
+            echo 'Unrequested TEST branding detected in V1.6 release source'
+            exit 1
+          fi
+
+          # AI client boundary must remain byte-identical to official V1.5.1/main.
+          git diff --quiet origin/main -- app/src/main/java/it/motolink/app/MotoLinkAiClient.kt
+          git diff --quiet origin/main -- app/src/main/res/values/ai_config.xml
+
+          # Frozen mirroring/control-plane files must not change in this release integration.
+          FROZEN=(
+            app/src/main/java/it/motolink/app/MirrorService.kt
+            app/src/main/java/it/motolink/app/H264FrameBus.kt
+            app/src/main/java/it/motolink/app/EasyConnServers.kt
+            app/src/main/java/it/motolink/app/EasyConnDiscovery.kt
+            app/src/main/java/it/motolink/app/EasyConnInitClient.kt
+            app/src/main/java/it/motolink/app/BikeNetworkConnector.kt
+            app/src/main/java/it/motolink/app/MirrorAdaptationConfig.kt
+          )
+          for f in "${FROZEN[@]}"; do
+            git diff --quiet origin/main -- "$f"
+          done
+
+          # No private key/token material in newly added V1.6 sources.
+          V16=(
+            app/src/main/java/it/motolink/app/VogeNavModel.kt
+            app/src/main/java/it/motolink/app/VogeNavPacketEncoder.kt
+            app/src/main/java/it/motolink/app/MapsNavParser.kt
+            app/src/main/java/it/motolink/app/VogeBleProbe.kt
+            app/src/main/java/it/motolink/app/VogeNavService.kt
+            app/src/main/java/it/motolink/app/MapsNavigationListenerService.kt
+          )
+          if grep -Eiq 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gsk_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{10,}' "${V16[@]}"; then
+            echo 'Potential private key/token material detected'
+            exit 1
+          fi
+
+      - name: Commit materialized official V1.6 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "MotoLink Release Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit'
+          else
+            git commit -m 'Materialize MotoLink V1.6 official release source'
+            git push origin HEAD:release/v1.6
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build V1.6 release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew clean assembleRelease --stacktrace
+
+      - name: Verify unsigned official release candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/release -type f -name '*release*unsigned*.apk' | head -n1)"
+          test -n "$APK"
+          cp "$APK" MotoLink_V1.6_UNSIGNED.apk
+          unzip -t MotoLink_V1.6_UNSIGNED.apk >/dev/null
+          sha256sum MotoLink_V1.6_UNSIGNED.apk | tee SHA256SUMS.txt
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging MotoLink_V1.6_UNSIGNED.apk | head -n1 | tee APK_BADGING.txt
+          grep -q "name='it.motolink.app'" APK_BADGING.txt
+          grep -q "versionCode='11'" APK_BADGING.txt
+          grep -q "versionName='1.6'" APK_BADGING.txt
+
+          if "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify MotoLink_V1.6_UNSIGNED.apk >/dev/null 2>&1; then
+            echo 'Unexpected signature present: release intermediate must be unsigned before permanent MotoLink signing'
+            exit 1
+          else
+            echo 'UNSIGNED_RELEASE_CONFIRMED=PASS' | tee SIGNING_STATUS.txt
+          fi
+
+      - name: Upload V1.6 unsigned release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.6_UNSIGNED_RELEASE
+          path: |
+            MotoLink_V1.6_UNSIGNED.apk
+            SHA256SUMS.txt
+            APK_BADGING.txt
+            SIGNING_STATUS.txt
+            docs/RELEASE_NOTES_V1.6.md
+          if-no-files-found: error
+          retention-days: 14
