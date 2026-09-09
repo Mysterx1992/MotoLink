@@ -65,16 +65,22 @@ jobs:
           python3 tools/apply_v16.py
           sed -i "/'connectionType = \\\"BLE_NAV\\\"',/d; /'connectionType = \\\"AUTOMATIC\\\"',/d" tools/apply_v16_profile_ui.py
           python3 tools/apply_v16_profile_ui.py
+          python3 tools/apply_v16_garage_ui.py
           chmod +x ./gradlew
       - name: Verify V1.6 profile UI source
         run: |
           set -euo pipefail
           MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
+          STORE="app/src/main/java/it/motolink/app/BikeProfileStore.kt"
           grep -F 'text = "Connessione:"' "$MAIN"
           grep -F 'listOf("Automatico", "Hotspot", "QrCode", "BLE")' "$MAIN"
           grep -F '"Automatico" -> "AUTOMATIC"' "$MAIN"
-          grep -F '"Hotspot" -> "HOTSPOT_EASYCONN"' "$MAIN"
+          grep -F '"Hotspot", "QrCode" -> "HOTSPOT_EASYCONN"' "$MAIN"
           grep -F '"BLE" -> "BLE_NAV"' "$MAIN"
+          grep -F 'private fun showBikeProfileMenu(index: Int)' "$MAIN"
+          grep -F 'private fun showBikeProfileCreationDialog(' "$MAIN"
+          grep -F 'fun replaceAt(context: Context, index: Int, profile: BikeProfile): Boolean' "$STORE"
+          ! grep -F 'hint = "Descrizione (facoltativa)"' "$MAIN"
           ! grep -F 'V16ConnectionModeDialog.show' "$MAIN"
           ! grep -F 'private fun showV16ConnectionTypeChoice' "$MAIN"
           ! grep -F 'private fun showV16HotspotQrChoice' "$MAIN"
