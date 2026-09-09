@@ -21,13 +21,46 @@ jobs:
       - name: Install Android 36 build tools
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Materialize isolated V1.6 source delta
+      - name: Materialize verified V1.6 source delta
         run: |
           python3 - <<'PY'
-          import base64, gzip
+          import base64, gzip, hashlib
           from pathlib import Path
-          Path('tools/apply_v16.py').write_bytes(gzip.decompress(base64.b64decode(Path('tools/apply_v16.py.gz.b64').read_text().strip())))
-          Path('app/src/main/java/it/motolink/app/V16Navigation.kt').write_bytes(gzip.decompress(base64.b64decode(Path('tools/V16Navigation.kt.gz.b64').read_text().strip())))
+
+          def materialize_b64(b64_text, output, expected_sha256):
+              raw = base64.b64decode(b64_text, validate=True)
+              data = gzip.decompress(raw)
+              got = hashlib.sha256(data).hexdigest()
+              if got != expected_sha256:
+                  raise SystemExit(f"SOURCE HASH FAIL {output}: {got}")
+              Path(output).parent.mkdir(parents=True, exist_ok=True)
+              Path(output).write_bytes(data)
+              print(f"SOURCE HASH OK {output}: {got}")
+
+          chunks = []
+          for i in range(8):
+              p = Path(f"tools/v16_patch_chunks/{i:02d}.txt")
+              if not p.is_file():
+                  raise SystemExit(f"MISSING PATCH CHUNK {p}")
+              chunks.append(p.read_text().strip())
+          patch_b64 = "".join(chunks)
+          if len(patch_b64) != 7428:
+              raise SystemExit(f"PATCH B64 LENGTH FAIL: {len(patch_b64)}")
+          materialize_b64(
+              patch_b64,
+              "tools/apply_v16.py",
+              "56e759ba23c883314d28b9f11dc668f9d0a14409be8fae1fbb5672490a4ba4a4",
+          )
+          materialize_b64(
+              Path("tools/V16Navigation.kt.gz.b64").read_text().strip(),
+              "app/src/main/java/it/motolink/app/V16Navigation.kt",
+              "4d075a026cf6d35bf567e4d8766954d4957712ae3331d3d42a3feb6eaaf974fd",
+          )
+          materialize_b64(
+              Path("tools/V16ConnectionModeDialog.kt.gz.b64").read_text().strip(),
+              "app/src/main/java/it/motolink/app/V16ConnectionModeDialog.kt",
+              "7ff4f709a224a1d62a049aab521fd3bb613b1e496ae18890bf80393174303257",
+          )
           PY
           python3 tools/apply_v16.py
           chmod +x ./gradlew
@@ -38,7 +71,9 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release-unsigned.apk"
           test -f "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | head -n 4
+          BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
+          echo "$BADGING" | head -n 4
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='11' versionName='1.6'"
           sha256sum "$APK" > MotoLink_V1.6_UNSIGNED.sha256
       - name: Stage local-signing tools
         run: |
