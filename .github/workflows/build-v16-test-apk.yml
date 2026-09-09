@@ -1,0 +1,86 @@
+name: Build MotoLink V1.6 test APK
+
+on:
+  push:
+    branches: [ "automation/build-v1.6-test-apk5" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build MotoLink V1.6 BLE test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout V1.6 test branch
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Apply V1.6 integration patch in CI workspace
+        run: python3 tools/v16_ci_patch.py
+
+      - name: Verify V1.6 source gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'versionCode = 11' app/build.gradle.kts
+          grep -q 'versionName = "1.6"' app/build.gradle.kts
+          grep -q 'MapsNavigationListenerService' app/src/main/AndroidManifest.xml
+          grep -q 'VogeNavService' app/src/main/AndroidManifest.xml
+          grep -q 'Tipo di connessione' app/src/main/java/it/motolink/app/MainActivity.kt
+          grep -q 'Automatico.*Hotspot.*Qrcode.*BLE' app/src/main/java/it/motolink/app/MainActivity.kt
+          grep -q 'VogeNavPacketEncoder' app/src/main/java/it/motolink/app/VogeNavService.kt
+          grep -q 'CMD_HEARTBEAT = 0x5A' app/src/main/java/it/motolink/app/VogeNavPacketEncoder.kt
+          if grep -REiq 'GROQ_API_KEY|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gsk_[A-Za-z0-9]|sk-[A-Za-z0-9]' app/src/main; then
+            echo 'Potential private API secret detected in app source'
+            exit 1
+          fi
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Package and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs/apk/debug -type f -name '*debug*.apk' | head -n1)"
+          test -n "$APK"
+          cp "$APK" MotoLink_V1.6_TEST.apk
+          sha256sum MotoLink_V1.6_TEST.apk | tee SHA256SUMS.txt
+          unzip -t MotoLink_V1.6_TEST.apk >/dev/null
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging MotoLink_V1.6_TEST.apk | head -n1 | tee APK_BADGING.txt
+          grep -q "name='it.motolink.app'" APK_BADGING.txt
+          grep -q "versionCode='11'" APK_BADGING.txt
+          grep -q "versionName='1.6'" APK_BADGING.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs MotoLink_V1.6_TEST.apk | tee APK_SIGNATURE.txt
+
+      - name: Upload MotoLink V1.6 test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.6_TEST_APK
+          path: |
+            MotoLink_V1.6_TEST.apk
+            SHA256SUMS.txt
+            APK_BADGING.txt
+            APK_SIGNATURE.txt
+          if-no-files-found: error
+          retention-days: 14
