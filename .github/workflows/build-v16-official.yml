@@ -1,0 +1,57 @@
+name: Build MotoLink V1.6 Official Artifact
+
+on:
+  push:
+    branches: [ "build/v1.6-official-candidate" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android 36 build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Materialize isolated V1.6 source delta
+        run: |
+          python3 - <<'PY'
+          import base64, gzip
+          from pathlib import Path
+          Path('tools/apply_v16.py').write_bytes(gzip.decompress(base64.b64decode(Path('tools/apply_v16.py.gz.b64').read_text().strip())))
+          Path('app/src/main/java/it/motolink/app/V16Navigation.kt').write_bytes(gzip.decompress(base64.b64decode(Path('tools/V16Navigation.kt.gz.b64').read_text().strip())))
+          PY
+          python3 tools/apply_v16.py
+          chmod +x ./gradlew
+      - name: Compile release APK
+        run: ./gradlew assembleRelease --stacktrace
+      - name: Verify unsigned identity
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | head -n 4
+          sha256sum "$APK" > MotoLink_V1.6_UNSIGNED.sha256
+      - name: Stage local-signing tools
+        run: |
+          mkdir -p out/signing-tools/lib
+          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_UNSIGNED.apk
+          cp MotoLink_V1.6_UNSIGNED.sha256 out/
+          cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/aapt2" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/signing-tools/lib/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.6_OFFICIAL_UNSIGNED_AND_SIGNING_TOOLS
+          path: out/
+          if-no-files-found: error
+          retention-days: 2
