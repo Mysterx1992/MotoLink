@@ -66,6 +66,16 @@ jobs:
           sed -i "/'connectionType = \\\"BLE_NAV\\\"',/d; /'connectionType = \\\"AUTOMATIC\\\"',/d" tools/apply_v16_profile_ui.py
           python3 tools/apply_v16_profile_ui.py
           python3 tools/apply_v16_garage_ui.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle.kts")
+          s = p.read_text(encoding="utf-8")
+          if s.count("versionCode = 11") != 1:
+              raise SystemExit("V1.6 BUILD CODE PATCH FAIL: expected versionCode 11 once")
+          s = s.replace("versionCode = 11", "versionCode = 12", 1)
+          p.write_text(s, encoding="utf-8")
+          print("V1.6 BUILD CODE PATCH OK: versionCode 12, versionName unchanged")
+          PY
           chmod +x ./gradlew
       - name: Verify V1.6 profile UI source
         run: |
@@ -80,11 +90,14 @@ jobs:
           grep -F 'private fun showBikeProfileMenu(index: Int)' "$MAIN"
           grep -F 'private fun showBikeProfileCreationDialog(' "$MAIN"
           grep -F 'fun replaceAt(context: Context, index: Int, profile: BikeProfile): Boolean' "$STORE"
+          grep -F 'message = "Il nome della moto è obbligatorio. Connessione e modello sono modificabili;' tools/apply_v16_garage_ui.py
           ! grep -F 'hint = "Descrizione (facoltativa)"' "$MAIN"
           ! grep -F 'V16ConnectionModeDialog.show' "$MAIN"
           ! grep -F 'private fun showV16ConnectionTypeChoice' "$MAIN"
           ! grep -F 'private fun showV16HotspotQrChoice' "$MAIN"
           test ! -f app/src/main/java/it/motolink/app/V16ConnectionModeDialog.kt
+          grep -F 'versionCode = 12' app/build.gradle.kts
+          grep -F 'versionName = "1.6"' app/build.gradle.kts
       - name: Compile release APK
         run: ./gradlew assembleRelease --stacktrace
       - name: Verify unsigned identity
@@ -94,7 +107,7 @@ jobs:
           test -f "$APK"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
           echo "$BADGING" | head -n 4
-          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='11' versionName='1.6'"
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='12' versionName='1.6'"
           sha256sum "$APK" > MotoLink_V1.6_UNSIGNED.sha256
       - name: Stage local-signing tools
         run: |
