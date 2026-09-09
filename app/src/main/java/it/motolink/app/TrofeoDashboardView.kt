@@ -104,7 +104,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.HOME,
             title = "HOME · START / STOP",
-            body = "START avvia la ricerca e il mirroring verso la moto.\n\nPRIMO COLLEGAMENTO\nSe non esiste ancora un profilo, dopo la scelta della Modalità tasca MotoLink chiede HOTSPOT oppure QR CODE. In entrambi i casi si apre il normale pannello Nuovo profilo moto: assegna un nome, una descrizione facoltativa e scegli il modello. Con QR CODE lo scanner viene eseguito prima e i dati di collegamento rilevati restano associati al profilo. Dopo SALVA, START continua automaticamente.\n\nDagli START successivi, finché esiste un profilo salvato, questa scelta non viene più richiesta.\n\nIl colore del pulsante aiuta a riconoscere la fase corrente: pronto, ricerca o riconnessione, collegato.\n\nSTOP termina la sessione e interrompe il collegamento gestito da MotoLink.",
+            body = "START avvia la ricerca e il mirroring verso la moto.\n\nPRIMO COLLEGAMENTO\nSe non esiste ancora un profilo, START apre direttamente Nuovo profilo moto. Inserisci Nome, scegli Modello e Tipo di connessione: Automatico, Hotspot, Qrcode o BLE. Automatico prova a individuare da solo un collegamento compatibile; dopo una verifica riuscita il profilo viene salvato e START continua.\n\nDagli START successivi, finché esiste un profilo salvato, questa scelta non viene più richiesta.\n\nIl colore del pulsante aiuta a riconoscere la fase corrente: pronto, ricerca o riconnessione, collegato.\n\nSTOP termina la sessione e interrompe il collegamento gestito da MotoLink.",
             target = GuideTarget(50f, 495f, 840f, 285f)
         ),
         GuideStep(
@@ -122,7 +122,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.GARAGE,
             title = "GARAGE · Aggiungi moto",
-            body = "Usa Aggiungi con QR quando la moto mostra un codice QR compatibile. Dopo la scansione completi lo stesso normale profilo del Garage con nome, descrizione facoltativa e modello.\n\nSe il modello non utilizza il QR, puoi creare un profilo locale con la stessa schermata.\n\nAl primo START senza profili, MotoLink propone HOTSPOT oppure QR CODE e poi apre questo stesso pannello; dopo il salvataggio la connessione continua automaticamente.\n\nL’immagine del profilo dipende dal modello selezionato, non dal nome personalizzato.",
+            body = "Nel Garage i profili usano Nome, Modello e Tipo di connessione. Qrcode apre direttamente lo scanner; BLE verifica il secondo collegamento Bluetooth VOGE quando compatibile.\n\nSe il modello non utilizza il QR, puoi creare un profilo locale con la stessa schermata.\n\nAl primo START senza profili, MotoLink apre direttamente questo stesso pannello; dopo una verifica riuscita la connessione continua automaticamente.\n\nL’immagine del profilo dipende dal modello selezionato, non dal nome personalizzato.",
             target = GuideTarget(50f, 820f, 840f, 240f)
         ),
         GuideStep(

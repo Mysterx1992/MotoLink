@@ -37,6 +37,12 @@ data class BikeProfile(
     val description: String? = null,
     val photoUri: String? = null,
     val catalogLabel: String? = null,
+    val connectionType: String = "",
+    val bleAddress: String? = null,
+    val bleName: String? = null,
+    val bleServiceUuid: String? = null,
+    val bleWriteUuid: String? = null,
+    val bleNotifyUuid: String? = null,
     val savedAtMs: Long = System.currentTimeMillis(),
     val profileId: String = UUID.randomUUID().toString()
 ) {
@@ -47,6 +53,17 @@ data class BikeProfile(
         val sec = wifiSecurity?.uppercase().orEmpty()
         if (sec.contains("WEP")) return false
         return !wifiPassword.isNullOrBlank() || sec in setOf("", "NOPASS", "OPEN", "NONE")
+    }
+
+    fun resolvedConnectionType(): String {
+        val explicit = connectionType.trim().uppercase()
+        if (explicit in setOf("BLE", "HOTSPOT", "QR", "AUTOMATIC")) return explicit
+        return when {
+            format.equals("BLE_VOGE", true) || !bleAddress.isNullOrBlank() -> "BLE"
+            format.equals("HOTSPOT", true) -> "HOTSPOT"
+            format.contains("QR", true) || hasWifiIdentity() -> "QR"
+            else -> "AUTOMATIC"
+        }
     }
 }
 
@@ -160,6 +177,13 @@ object BikeProfileStore {
         return saveAll(context, list)
     }
 
+    fun replaceAt(context: Context, index: Int, profile: BikeProfile): Boolean {
+        val list = loadAll(context).toMutableList()
+        val old = list.getOrNull(index) ?: return false
+        list[index] = profile.copy(profileId = old.profileId, savedAtMs = old.savedAtMs)
+        return saveAll(context, list)
+    }
+
     fun clearPhoto(context: Context, index: Int): Boolean {
         val list = loadAll(context).toMutableList()
         val old = list.getOrNull(index) ?: return false
@@ -190,6 +214,7 @@ object BikeProfileStore {
 
     private fun sameIdentity(a: BikeProfile, b: BikeProfile): Boolean {
         if (a.machineId != null && b.machineId != null && a.machineId == b.machineId) return true
+        if (a.bleAddress != null && b.bleAddress != null && a.bleAddress == b.bleAddress) return true
         if (a.ssid != null && b.ssid != null && a.ssid == b.ssid) return true
         if (a.host != null && b.host != null && a.port == b.port && a.host == b.host) return true
         return a.rawPayload.isNotBlank() && a.rawPayload == b.rawPayload
@@ -216,6 +241,12 @@ object BikeProfileStore {
         .put("description", profile.description)
         .put("photoUri", profile.photoUri)
         .put("catalogLabel", profile.catalogLabel)
+        .put("connectionType", profile.connectionType)
+        .put("bleAddress", profile.bleAddress)
+        .put("bleName", profile.bleName)
+        .put("bleServiceUuid", profile.bleServiceUuid)
+        .put("bleWriteUuid", profile.bleWriteUuid)
+        .put("bleNotifyUuid", profile.bleNotifyUuid)
         .put("savedAtMs", profile.savedAtMs)
         .put("profileId", profile.profileId)
 
@@ -240,6 +271,12 @@ object BikeProfileStore {
         description = obj.optNullableString("description"),
         photoUri = obj.optNullableString("photoUri"),
         catalogLabel = obj.optNullableString("catalogLabel"),
+        connectionType = obj.optNullableString("connectionType") ?: "",
+        bleAddress = obj.optNullableString("bleAddress"),
+        bleName = obj.optNullableString("bleName"),
+        bleServiceUuid = obj.optNullableString("bleServiceUuid"),
+        bleWriteUuid = obj.optNullableString("bleWriteUuid"),
+        bleNotifyUuid = obj.optNullableString("bleNotifyUuid"),
         savedAtMs = obj.optLong("savedAtMs", 0L),
         profileId = obj.optString("profileId").trim().takeIf { it.isNotEmpty() }
             ?: legacyProfileId(obj)

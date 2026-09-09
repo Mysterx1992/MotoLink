@@ -52,6 +52,7 @@ class MainActivity : Activity() {
         private const val REQ_PROFILE_CAMERA = 7005
         private const val REQ_QR_INTERNAL = 7006
         private const val REQ_QR_CAMERA_PERMISSION = 7007
+        private const val REQ_V16_BLE_PERMISSION = 7008
         private const val PREF_INTRO_ENABLED = "v1_intro_enabled"
         private const val PREF_DYNAMIC_BACKGROUND_ENABLED = "v1_dynamic_background_enabled"
         private const val QR_MDNS_FALLBACK_MS = 6_000L
@@ -263,7 +264,7 @@ class MainActivity : Activity() {
                 "LAN"
             )
         }
-        AppLog.add("MotoLink V1.5.1 GUI pronta; guida iniziale attiva; geometria display V15 validata invariata")
+        AppLog.add("MotoLink V1.6 GUI pronta; profili multi-connessione e VOGE BLE navigation abilitati")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -341,6 +342,11 @@ class MainActivity : Activity() {
         setRunSelection(RunSelection.START)
         setHeaderStatus("Avvio", "", C_AMBER)
         setState("Avvio…", "Preparazione della sessione", C_AMBER, "…")
+
+        if (BikeProfileStore.load(this) == null) {
+            showFirstStartConnectionChoice()
+            return
+        }
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         if (!prefs.getBoolean(PREF_POCKET_MODE_CHOICE_SET, false)) {
@@ -459,6 +465,7 @@ class MainActivity : Activity() {
     }
 
     private fun stopEverything() {
+        VogeNavService.stop(this)
         pendingFavoriteLaunchComponent = null
         lockPlaceholderActive = false
         // STOP is a deterministic teardown command even if the UI thinks no mirror is active.
@@ -932,6 +939,11 @@ class MainActivity : Activity() {
     }
 
     private fun continueStartAfterProfileReady() {
+        val profile = BikeProfileStore.load(this)
+        if (profile?.resolvedConnectionType() == "BLE") {
+            prepareBikeNetworkThenProjection()
+            return
+        }
         if (pocketModeForPendingStart) {
             ensureBackgroundGatePermissionThenProjection()
         } else {
@@ -948,53 +960,27 @@ class MainActivity : Activity() {
         }
 
         firstStartProfileSetupPending = true
-        var handled = false
-        val dialog = NeonDialogs.showCustom(
-            activity = this,
-            title = "Prima connessione",
-            message = "Non hai ancora un profilo moto salvato.\n\nScegli come collegare la moto. In entrambi i casi completerai il normale profilo del Garage prima che START continui.",
-            contentView = null,
-            positiveText = "QR CODE",
-            negativeText = "HOTSPOT",
-            onPositive = {
-                handled = true
-                AppLog.add("PRIMO START V1.1: scelta QR CODE; apro scanner, poi profilo completo Garage")
-                startQrCameraScan()
-            },
-            onNegative = {
-                handled = true
-                AppLog.add("PRIMO START V1.1: scelta HOTSPOT; apro profilo completo Garage")
-                val base = BikeProfile(
-                    displayName = "",
-                    format = "HOTSPOT",
-                    rawPayload = "HOTSPOT:${System.currentTimeMillis()}"
-                )
-                showBikeProfileCreationDialog(
-                    baseProfile = base,
-                    title = "Nuovo profilo moto",
-                    message = "Completa il profilo della moto. Dopo il salvataggio MotoLink continuerà automaticamente con il normale collegamento Hotspot / EasyConn.",
-                    onSaved = { profile ->
-                        firstStartProfileSetupPending = false
-                        lastResolved = null
-                        refreshBikeProfiles()
-                        setHeaderStatus("Avvio", profile.displayName, C_AMBER)
-                        setState("Profilo salvato", "Continuo con il collegamento", C_AMBER, "LAN")
-                        AppLog.add("PRIMO START V1.1: profilo HOTSPOT completo salvato; continuo automaticamente")
-                        continueStartAfterProfileReady()
-                    },
-                    onCancel = { showFirstStartConnectionChoice() }
-                )
-            }
+        val base = BikeProfile(
+            displayName = "",
+            format = "LOCAL",
+            connectionType = "AUTOMATIC",
+            rawPayload = "V16_NEW:${System.currentTimeMillis()}"
         )
-        dialog.setOnDismissListener {
-            mainHandler.post {
-                if (!handled && firstStartProfileSetupPending &&
-                    BikeProfileStore.load(this) == null && runSelection == RunSelection.START
-                ) {
-                    abortFirstStartProfileSetup("scelta Hotspot/QR chiusa")
-                }
-            }
-        }
+        showBikeProfileCreationDialog(
+            baseProfile = base,
+            title = "Nuovo profilo moto",
+            message = "Crea il profilo. MotoLink può rilevare automaticamente il collegamento oppure provare direttamente Hotspot, Qrcode o BLE.",
+            onSaved = { profile ->
+                firstStartProfileSetupPending = false
+                lastResolved = null
+                refreshBikeProfiles()
+                setHeaderStatus("Avvio", profile.displayName, C_AMBER)
+                setState("Profilo verificato", "Continuo con ${v16ConnectionLabel(profile)}", C_AMBER, "V1.6")
+                AppLog.add("PRIMO START V1.6: profilo verificato e salvato; tipo=${profile.resolvedConnectionType()}")
+                continueV16AfterProfileCreated(profile)
+            },
+            onCancel = { abortFirstStartProfileSetup("creazione profilo chiusa") }
+        )
     }
 
     private fun abortFirstStartProfileSetup(reason: String) {
@@ -1145,11 +1131,171 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun v16ConnectionLabels(): List<String> = listOf("Automatico", "Hotspot", "Qrcode", "BLE")
+
+    private fun v16ConnectionStorage(label: String): String = when (label.lowercase()) {
+        "hotspot" -> "HOTSPOT"
+        "qrcode" -> "QR"
+        "ble" -> "BLE"
+        else -> "AUTOMATIC"
+    }
+
+    private fun v16ConnectionLabel(profile: BikeProfile): String = when (profile.resolvedConnectionType()) {
+        "BLE" -> "BLE"
+        "HOTSPOT" -> "Hotspot"
+        "QR" -> "Qrcode"
+        else -> "Automatico"
+    }
+
+    private fun continueV16AfterProfileCreated(profile: BikeProfile) {
+        if (profile.resolvedConnectionType() == "BLE") {
+            pocketModeForPendingStart = false
+            continueStartAfterProfileReady()
+            return
+        }
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (!prefs.getBoolean(PREF_POCKET_MODE_CHOICE_SET, false)) {
+            showPocketModeFirstUseDialog()
+        } else {
+            pocketModeForPendingStart = prefs.getBoolean(PREF_POCKET_MODE_ENABLED, false)
+            continueStartAfterProfileReady()
+        }
+    }
+
+    private fun verifyV16Connection(
+        requested: String,
+        base: BikeProfile,
+        onSuccess: (BikeProfile) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        fun verifiedBle(result: VogeBleProbe.Result): BikeProfile = base.copy(
+            format = "BLE_VOGE",
+            connectionType = "BLE",
+            bleAddress = result.address,
+            bleName = result.name,
+            bleServiceUuid = result.serviceUuid,
+            bleWriteUuid = result.writeUuid,
+            bleNotifyUuid = result.notifyUuid,
+            rawPayload = "BLE_VOGE:${result.address}"
+        )
+
+        fun runBle(fallbackToHotspot: Boolean) {
+            if (!VogeBleProbe.hasPermissions(this)) {
+                VogeBleProbe.requestPermissions(this, REQ_V16_BLE_PERMISSION)
+                onFailure("Concedi i permessi Bluetooth richiesti da Android, poi premi di nuovo SALVA.")
+                return
+            }
+            setState("Ricerca BLE…", "Verifico il secondo Bluetooth della moto", C_AMBER, "BLE")
+            VogeBleProbe.probe(
+                activity = this,
+                timeoutMs = if (fallbackToHotspot) 14_000L else 12_000L,
+                onSuccess = { result -> onSuccess(verifiedBle(result)) },
+                onFailure = { bleReason ->
+                    if (fallbackToHotspot && bikeNetworkConnector.bindExistingWifiForHotspot()) {
+                        AppLog.add("V1.6 AUTO: BLE non verificato; rete Wi-Fi locale disponibile -> HOTSPOT")
+                        onSuccess(base.copy(format = "HOTSPOT", connectionType = "HOTSPOT", rawPayload = "HOTSPOT:${System.currentTimeMillis()}"))
+                    } else {
+                        onFailure(if (fallbackToHotspot) "$bleReason\nNessun Hotspot moto già collegato è stato rilevato. Se la moto mostra un QR, scegli Qrcode." else bleReason)
+                    }
+                }
+            )
+        }
+
+        when (requested.uppercase()) {
+            "BLE" -> runBle(false)
+            "HOTSPOT" -> {
+                if (bikeNetworkConnector.bindExistingWifiForHotspot()) {
+                    onSuccess(base.copy(format = "HOTSPOT", connectionType = "HOTSPOT", rawPayload = "HOTSPOT:${System.currentTimeMillis()}"))
+                } else {
+                    onFailure("Collega prima il telefono alla rete Wi-Fi/Hotspot della moto, poi riprova.")
+                }
+            }
+            "QR" -> {
+                if (base.resolvedConnectionType() == "QR" && base.rawPayload.isNotBlank() && !base.format.equals("LOCAL", true)) {
+                    onSuccess(base.copy(connectionType = "QR"))
+                    return
+                }
+                val options = GmsBarcodeScannerOptions.Builder()
+                    .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                    .enableAutoZoom()
+                    .build()
+                AppLog.add("V1.6 PROFILE: Qrcode selezionato -> apro scanner fotocamera")
+                GmsBarcodeScanning.getClient(this, options).startScan()
+                    .addOnSuccessListener { barcode ->
+                        val raw = barcode.rawValue
+                        if (raw.isNullOrBlank()) {
+                            onFailure("Il Qrcode non contiene dati leggibili.")
+                        } else {
+                            val parsed = runCatching { QrPairing.parse(raw) }.getOrNull()
+                            if (parsed == null) {
+                                onFailure("Il Qrcode non è riconosciuto come configurazione moto compatibile.")
+                            } else {
+                                onSuccess(parsed.copy(
+                                    displayName = base.displayName,
+                                    description = null,
+                                    catalogLabel = base.catalogLabel,
+                                    connectionType = "QR",
+                                    profileId = base.profileId,
+                                    savedAtMs = base.savedAtMs
+                                ))
+                            }
+                        }
+                    }
+                    .addOnCanceledListener { onFailure("Scansione Qrcode annullata.") }
+                    .addOnFailureListener { onFailure("Scanner Qrcode non disponibile: ${it.javaClass.simpleName}.") }
+            }
+            else -> runBle(true)
+        }
+    }
+
+    private fun startV16BleNavigation(profile: BikeProfile) {
+        if (!VogeBleProbe.hasPermissions(this)) {
+            VogeBleProbe.requestPermissions(this, REQ_V16_BLE_PERMISSION)
+            startInProgress = false
+            setRunSelection(RunSelection.NONE)
+            setState("Permesso Bluetooth", "Concedi l'accesso e premi START di nuovo", C_AMBER, "BLE")
+            return
+        }
+        val listeners = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this)
+        if (!listeners.contains(packageName)) {
+            startInProgress = false
+            setRunSelection(RunSelection.NONE)
+            NeonDialogs.showInfo(
+                activity = this,
+                title = "Accesso notifiche Maps",
+                message = "Per leggere le indicazioni di Google Maps in background, abilita MotoLink in Accesso alle notifiche. MotoLink usa questo accesso solo per trasformare le notifiche di navigazione compatibili in indicazioni per il TFT.",
+                onPositive = {
+                    runCatching { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+                }
+            )
+            return
+        }
+        VogeNavService.start(this, profile)
+        startInProgress = false
+        setRunSelection(RunSelection.START)
+        setHeaderStatus("BLE VOGE", profile.displayName, C_GREEN)
+        setState("Navigazione BLE attiva", "Apro Google Maps · avvia una rotta", C_GREEN, "BLE")
+        AppLog.add("V1.6 BLE PROFILE START: servizio VOGE avviato; Maps può restare in background dopo l'avvio della rotta")
+        mainHandler.postDelayed({
+            val launch = packageManager.getLaunchIntentForPackage("com.google.android.apps.maps")
+            if (launch != null) {
+                runCatching { startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)) }
+                    .onFailure { NeonDialogs.showInfo(this, "Google Maps", "Non riesco ad aprire Google Maps automaticamente.") }
+            } else {
+                NeonDialogs.showInfo(this, "Google Maps", "Google Maps non risulta installato sul telefono.")
+            }
+        }, 1800L)
+    }
+
     private fun prepareBikeNetworkThenProjection() {
         if (runSelection != RunSelection.START) return
         val profile = BikeProfileStore.load(this)
         if (profile == null) {
             requestProjectionChoice()
+            return
+        }
+        if (profile.resolvedConnectionType() == "BLE") {
+            startV16BleNavigation(profile)
             return
         }
         if (!profile.hasWifiIdentity()) {
@@ -2108,25 +2254,13 @@ class MainActivity : Activity() {
         onCancel: (() -> Unit)? = null
     ) {
         if (BikeProfileStore.loadAll(this).size >= BikeProfileStore.MAX_PROFILES) {
-            NeonDialogs.showInfo(
-                this,
-                "Garage pieno",
-                "Puoi salvare al massimo 3 profili moto. Elimina o modifica un profilo esistente.",
-                onPositive = { onCancel?.invoke() }
-            )
+            NeonDialogs.showInfo(this, "Garage pieno", "Puoi salvare al massimo 3 profili moto.", onPositive = { onCancel?.invoke() })
             return
         }
 
         val name = EditText(this).apply {
-            hint = "Nome moto (es. La mia Trofeo)"
-            setTextColor(Color.WHITE)
-            setHintTextColor(color(C_MUTED))
-            isSingleLine = true
-            background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
-            setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
-        }
-        val description = EditText(this).apply {
-            hint = "Descrizione (facoltativa)"
+            hint = "Nome moto (es. La mia Voge)"
+            setText(baseProfile.displayName)
             setTextColor(Color.WHITE)
             setHintTextColor(color(C_MUTED))
             isSingleLine = true
@@ -2136,17 +2270,28 @@ class MainActivity : Activity() {
         val catalogOptions = bikeCatalogOptions()
         val catalog = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions)
-            val currentLabel = baseProfile.catalogLabel?.trim()
-            if (!currentLabel.isNullOrEmpty()) {
-                val idx = catalogOptions.indexOfFirst { it.equals(currentLabel, true) }
-                if (idx >= 0) setSelection(idx)
-            }
+            val idx = catalogOptions.indexOfFirst { it.equals(baseProfile.catalogLabel, true) }
+            if (idx >= 0) setSelection(idx)
+        }
+        val connectionOptions = v16ConnectionLabels()
+        val connection = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, connectionOptions)
+            val idx = connectionOptions.indexOf(v16ConnectionLabel(baseProfile))
+            setSelection(if (idx >= 0) idx else 0)
+        }
+        fun label(textValue: String) = TextView(this).apply {
+            text = textValue
+            setTextColor(color(C_MUTED))
+            textSize = 13f
+            setPadding(2, (5 * resources.displayMetrics.density).toInt(), 2, (4 * resources.displayMetrics.density).toInt())
         }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(name, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() })
-            addView(description, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() })
-            addView(catalog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()))
+            addView(name, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (8 * resources.displayMetrics.density).toInt() })
+            addView(label("Modello"))
+            addView(catalog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (8 * resources.displayMetrics.density).toInt() })
+            addView(label("Tipo di connessione"))
+            addView(connection, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()))
         }
 
         var handled = false
@@ -2161,44 +2306,40 @@ class MainActivity : Activity() {
                 handled = true
                 val display = name.text.toString().trim()
                 if (display.isEmpty()) {
-                    NeonDialogs.showInfo(
-                        activity = this,
-                        title = "Nome moto richiesto",
-                        message = "Inserisci un nome per la moto prima di salvare.",
-                        onPositive = {
-                            showBikeProfileCreationDialog(baseProfile, title, message, onSaved, onCancel)
-                        }
-                    )
+                    NeonDialogs.showInfo(this, "Nome moto richiesto", "Inserisci un nome per la moto prima di salvare.", onPositive = {
+                        showBikeProfileCreationDialog(baseProfile, title, message, onSaved, onCancel)
+                    })
                     return@showCustom
                 }
-                val chosen = catalogOptions[catalog.selectedItemPosition]
-                val completed = baseProfile.copy(
+                val candidate = baseProfile.copy(
                     displayName = display,
-                    description = description.text.toString().trim().takeIf { it.isNotBlank() },
-                    catalogLabel = chosen
+                    description = null,
+                    catalogLabel = catalogOptions[catalog.selectedItemPosition]
                 )
-                if (BikeProfileStore.save(this, completed)) {
-                    handled = true
-                    onSaved(completed)
-                } else {
-                    NeonDialogs.showInfo(
-                        activity = this,
-                        title = "Profilo non salvato",
-                        message = "MotoLink non è riuscita a salvare il profilo sul dispositivo.",
-                        onPositive = { onCancel?.invoke() }
-                    )
-                }
+                val requested = v16ConnectionStorage(connectionOptions[connection.selectedItemPosition])
+                verifyV16Connection(
+                    requested = requested,
+                    base = candidate,
+                    onSuccess = { verified ->
+                        if (BikeProfileStore.save(this, verified)) {
+                            onSaved(verified)
+                        } else {
+                            NeonDialogs.showInfo(this, "Profilo non salvato", "MotoLink non è riuscita a salvare il profilo sul dispositivo.")
+                        }
+                    },
+                    onFailure = { reason ->
+                        NeonDialogs.showInfo(this, "Connessione non verificata", reason, onPositive = {
+                            showBikeProfileCreationDialog(candidate, title, message, onSaved, onCancel)
+                        })
+                    }
+                )
             },
             onNegative = {
                 handled = true
                 onCancel?.invoke()
             }
         )
-        dialog.setOnDismissListener {
-            mainHandler.post {
-                if (!handled) onCancel?.invoke()
-            }
-        }
+        dialog.setOnDismissListener { mainHandler.post { if (!handled) onCancel?.invoke() } }
     }
 
     private fun showLocalBikeProfileDialog() {
@@ -2210,7 +2351,7 @@ class MainActivity : Activity() {
         showBikeProfileCreationDialog(
             baseProfile = base,
             title = "Nuovo profilo moto",
-            message = "Crea un profilo locale per la moto. Il nome è obbligatorio; descrizione e modello servono a riconoscerla nel Garage. START continuerà a usare la discovery EasyConn standard.",
+            message = "Crea un profilo per la moto scegliendo nome, modello e tipo di connessione. Automatico prova prima BLE VOGE e poi un Hotspot già collegato.",
             onSaved = { profile ->
                 lastResolved = null
                 refreshBikeProfiles()
@@ -2224,7 +2365,8 @@ class MainActivity : Activity() {
     private fun showActiveBikeProfile(profile: BikeProfile) {
         val message = buildString {
             append("Nome: ${profile.displayName}\n")
-            append("Formato QR: ${profile.format}\n")
+            append("Formato: ${profile.format}\n")
+            append("Tipo connessione: ${v16ConnectionLabel(profile)}\n")
             profile.brand?.let { append("Marca/ecosistema: $it\n") }
             profile.model?.let { append("Modello: $it\n") }
             profile.ssid?.let { append("Rete Wi-Fi: $it\n") }
@@ -2406,7 +2548,7 @@ class MainActivity : Activity() {
                 else -> null
             }
             val drawable = personalDrawable ?: catalogDrawable
-            val descriptionLine = profile.description?.trim()?.takeIf { it.isNotBlank() }
+            val descriptionLine: String? = null
             val modelLine = profile.catalogLabel?.trim()?.takeIf { it.isNotBlank() }?.let { label ->
                 when (label) {
                     "Voge Trofeo 525DSX" -> "Voge Valico 525DSX"
@@ -2449,43 +2591,56 @@ class MainActivity : Activity() {
             setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
             isSingleLine = true
         }
-        val description = EditText(this).apply {
-            setText(profile.description.orEmpty())
-            hint = "Descrizione (facoltativa)"
-            setTextColor(Color.WHITE)
-            setHintTextColor(color(C_MUTED))
-            background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
-            setPadding((14 * resources.displayMetrics.density).toInt(), 0, (14 * resources.displayMetrics.density).toInt(), 0)
-            isSingleLine = true
+        val catalogOptions = bikeCatalogOptions()
+        val catalog = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions)
+            val normalized = when (profile.catalogLabel) {
+                "Voge Trofeo 525DSX" -> "Voge Valico 525DSX"
+                "Immagine MotoLink generica" -> "Altro modello"
+                else -> profile.catalogLabel
+            }
+            val idx = catalogOptions.indexOf(normalized)
+            setSelection(if (idx >= 0) idx else 0)
         }
-        val catalog = Spinner(this)
-        val catalogOptions = listOf(
-            "Voge Trofeo 500",
-            "Voge Valico 525DSX",
-            "Voge Valico 625DSX",
-            "Voge Valico 900DSX",
-            "CFMoto 450MT",
-            "CFMoto 700MT",
-            "CFMoto 800MT",
-            "CFMoto 800MT Explore",
-            "CFMoto 800MT-X",
-            "Altro modello"
-        )
-        catalog.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, catalogOptions)
-        val normalizedCatalogSelection = when (profile.catalogLabel) {
-            "Voge Trofeo 525DSX" -> "Voge Valico 525DSX"
-            "Immagine MotoLink generica" -> "Altro modello"
-            else -> profile.catalogLabel
+        val connectionOptions = v16ConnectionLabels()
+        val connection = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, connectionOptions)
+            val idx = connectionOptions.indexOf(v16ConnectionLabel(profile))
+            setSelection(if (idx >= 0) idx else 0)
         }
-        val selected = catalogOptions.indexOf(normalizedCatalogSelection).takeIf { it >= 0 } ?: 0
-        catalog.setSelection(selected)
+        var allowConnectionOpen = false
+        connection.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_UP && !allowConnectionOpen) {
+                NeonDialogs.showConfirm(
+                    activity = this,
+                    title = "Modifica tipo di connessione",
+                    message = "Cambiare il tipo di connessione potrebbe impedire al profilo di collegarsi correttamente alla moto. La nuova configurazione verrà verificata prima di essere salvata; se la verifica non riesce, la connessione attuale resterà invariata.",
+                    positiveText = "CONTINUA",
+                    negativeText = "ANNULLA",
+                    onPositive = {
+                        allowConnectionOpen = true
+                        connection.performClick()
+                        mainHandler.postDelayed({ allowConnectionOpen = false }, 600L)
+                    }
+                )
+                true
+            } else false
+        }
+
         var editProfileDialog: android.app.Dialog? = null
+        fun smallLabel(value: String) = TextView(this).apply {
+            text = value
+            setTextColor(color(C_MUTED))
+            textSize = 13f
+            setPadding(2, (5 * resources.displayMetrics.density).toInt(), 2, (4 * resources.displayMetrics.density).toInt())
+        }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() }
-            addView(name, lp)
-            addView(description, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() })
-            addView(catalog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (14 * resources.displayMetrics.density).toInt() })
+            addView(name, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (8 * resources.displayMetrics.density).toInt() })
+            addView(smallLabel("Modello"))
+            addView(catalog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (8 * resources.displayMetrics.density).toInt() })
+            addView(smallLabel("Tipo di connessione"))
+            addView(connection, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52 * resources.displayMetrics.density).toInt()).apply { bottomMargin = (14 * resources.displayMetrics.density).toInt() })
             addView(TextView(this@MainActivity).apply {
                 text = "ELIMINA PROFILO"
                 gravity = Gravity.CENTER
@@ -2493,8 +2648,6 @@ class MainActivity : Activity() {
                 textSize = 15f
                 typeface = Typeface.DEFAULT_BOLD
                 background = NeonDialogs.rounded("#07120B", "#7A2A2A", 1, 16, this@MainActivity)
-                isClickable = true
-                isFocusable = true
                 setOnClickListener {
                     NeonDialogs.showConfirm(
                         activity = this@MainActivity,
@@ -2510,54 +2663,66 @@ class MainActivity : Activity() {
                             val active = BikeProfileStore.load(this@MainActivity)
                             setHeaderStatus("Pronto", active?.displayName ?: "", C_GREEN)
                             setState("Profilo eliminato", "Garage aggiornato", C_GREEN, "GARAGE")
-                            AppLog.add("GARAGE: profilo eliminato da Modifica profilo index=$index")
                         }
                     )
                 }
             }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (50 * resources.displayMetrics.density).toInt()))
         }
+
         editProfileDialog = NeonDialogs.showCustom(
             activity = this,
             title = "Modifica profilo",
-            message = "Il nome della moto è obbligatorio. Descrizione e modello sono modificabili; per usare la foto della tua moto scegli FOTO / ALTRO. Le regolazioni di Adattamento restano associate a questo profilo anche se lo rinomini.",
+            message = "Nome, modello e tipo di connessione sono modificabili. Il tipo di connessione viene sostituito solo dopo una verifica riuscita.",
             contentView = box,
             positiveText = "SALVA",
             negativeText = "FOTO / ALTRO",
             onPositive = {
                 val editedName = name.text.toString().trim()
                 if (editedName.isEmpty()) {
-                    showQrError("Il nome della moto è obbligatorio. Inserisci un nome prima di salvare il profilo.")
+                    showQrError("Il nome della moto è obbligatorio.")
                     return@showCustom
                 }
-                if (!BikeProfileStore.updateMetadata(
-                        this, index,
-                        displayName = editedName,
-                        description = description.text.toString(),
-                        catalogLabel = catalogOptions[catalog.selectedItemPosition]
-                    )) {
-                    showQrError("Impossibile salvare il profilo.")
-                    return@showCustom
+                val base = profile.copy(
+                    displayName = editedName,
+                    description = null,
+                    catalogLabel = catalogOptions[catalog.selectedItemPosition]
+                )
+                val requested = v16ConnectionStorage(connectionOptions[connection.selectedItemPosition])
+                if (requested == profile.resolvedConnectionType()) {
+                    if (BikeProfileStore.replaceAt(this, index, base)) {
+                        refreshBikeProfiles()
+                        dashboard.updateAdaptation(MirrorAdaptationConfig.load(this).enabled, MirrorAdaptationConfig.dashboardLabel(this))
+                    }
+                } else {
+                    verifyV16Connection(
+                        requested = requested,
+                        base = base,
+                        onSuccess = { verified ->
+                            if (BikeProfileStore.replaceAt(this, index, verified)) {
+                                lastResolved = null
+                                refreshBikeProfiles()
+                                dashboard.updateAdaptation(MirrorAdaptationConfig.load(this).enabled, MirrorAdaptationConfig.dashboardLabel(this))
+                                NeonDialogs.showInfo(this, "Connessione aggiornata", "Nuovo tipo verificato: ${v16ConnectionLabel(verified)}.")
+                            }
+                        },
+                        onFailure = { reason ->
+                            NeonDialogs.showInfo(this, "Connessione invariata", "$reason\n\nIl profilo continua a usare ${v16ConnectionLabel(profile)}.")
+                        }
+                    )
                 }
-                refreshBikeProfiles()
-                dashboard.updateAdaptation(MirrorAdaptationConfig.load(this).enabled, MirrorAdaptationConfig.dashboardLabel(this))
             },
             onNegative = {
                 val editedName = name.text.toString().trim()
                 if (editedName.isEmpty()) {
-                    showQrError("Il nome della moto è obbligatorio. Inserisci un nome prima di continuare.")
+                    showQrError("Il nome della moto è obbligatorio.")
                     return@showCustom
                 }
-                if (!BikeProfileStore.updateMetadata(
-                        this, index,
-                        displayName = editedName,
-                        description = description.text.toString(),
-                        catalogLabel = catalogOptions[catalog.selectedItemPosition]
-                    )) {
-                    showQrError("Impossibile salvare il profilo.")
-                    return@showCustom
-                }
+                BikeProfileStore.replaceAt(this, index, profile.copy(
+                    displayName = editedName,
+                    description = null,
+                    catalogLabel = catalogOptions[catalog.selectedItemPosition]
+                ))
                 refreshBikeProfiles()
-                dashboard.updateAdaptation(MirrorAdaptationConfig.load(this).enabled, MirrorAdaptationConfig.dashboardLabel(this))
                 showBikeProfileExtraMenu(index)
             }
         )
@@ -2744,14 +2909,16 @@ class MainActivity : Activity() {
     }
 
     private fun showInstalledReleaseNotes() {
-        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.5.1" }.getOrDefault("1.5.1")
-        val notes = if (version == "1.5.1") {
-            "• Corretto l’armamento della prossimità: se la richiesta arriva prima di MediaProjection resta pendente e viene applicata appena il video è realmente pronto.\n" +
-                "• Il listener TYPE_PROXIMITY e il wake-lock di prossimità restano armati fino a STOP/teardown.\n" +
-                "• Durante il mirroring MotoLink mantiene il telefono sveglio per evitare il blocco automatico dovuto al timer di inattività; il tasto Power manuale resta utilizzabile.\n" +
-                "• Migliorata la diagnostica del blocco schermo: il Log distingue prossimità, anti-auto-lock attivo e possibili blocchi manuali/policy OEM.\n" +
-                "• Il doppio Volume Giù resta invariato come comando manuale di blackout.\n" +
-                "• EasyConn, H264, clock e geometrie display già validate restano invariati."
+        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.6" }.getOrDefault("1.6")
+        val notes = if (version == "1.6") {
+            "• START senza profili apre direttamente Nuovo profilo moto.\n" +
+                "• Il profilo usa Nome, Modello e Tipo di connessione: Automatico, Hotspot, Qrcode o BLE; il campo Descrizione è stato rimosso.\n" +
+                "• Automatico prova il BLE VOGE e, se non disponibile, un Hotspot moto già collegato.\n" +
+                "• Nel Garage il Tipo di connessione è modificabile con avviso preventivo; la configurazione precedente resta salvata se la nuova verifica fallisce.\n" +
+                "• Aggiunto il trasporto navigazione VOGE sul secondo BLE: heartbeat 0x5A e pacchetti 0x6A–0x6E con coda TX serializzata.\n" +
+                "• Google Maps viene aperto per i profili BLE; dopo l'avvio della rotta può restare in background. MotoLink invia al TFT solo manovre e distanze realmente presenti nelle notifiche Maps, senza inventare dati mancanti.\n" +
+                "• Il doppio Volume Giù resta disponibile durante il mirroring indipendentemente dalla Modalità tasca.\n" +
+                "• EasyConn, H264, clock, Adattamento e geometrie display della V1.5.1 restano invariati per i profili non-BLE."
         } else {
             "Nessuna nota locale disponibile per questa versione."
         }
