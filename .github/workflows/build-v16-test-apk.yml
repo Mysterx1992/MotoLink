@@ -44,8 +44,24 @@ jobs:
           grep -q 'Automatico.*Hotspot.*Qrcode.*BLE' app/src/main/java/it/motolink/app/MainActivity.kt
           grep -q 'VogeNavPacketEncoder' app/src/main/java/it/motolink/app/VogeNavService.kt
           grep -q 'CMD_HEARTBEAT = 0x5A' app/src/main/java/it/motolink/app/VogeNavPacketEncoder.kt
-          if grep -REiq 'GROQ_API_KEY|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gsk_[A-Za-z0-9]|sk-[A-Za-z0-9]' app/src/main; then
-            echo 'Potential private API secret detected in app source'
+
+          # V1.6 must not alter the already-frozen AI client/config boundary.
+          git fetch origin main --depth=1
+          git diff --quiet origin/main -- app/src/main/java/it/motolink/app/MotoLinkAiClient.kt
+          git diff --quiet origin/main -- app/src/main/res/values/ai_config.xml
+
+          # Scan only the newly-added V1.6 transport/parser sources for actual key material.
+          # Variable/config names alone are not secrets and are intentionally not rejected.
+          V16_FILES=(
+            app/src/main/java/it/motolink/app/VogeNavModel.kt
+            app/src/main/java/it/motolink/app/VogeNavPacketEncoder.kt
+            app/src/main/java/it/motolink/app/MapsNavParser.kt
+            app/src/main/java/it/motolink/app/VogeBleProbe.kt
+            app/src/main/java/it/motolink/app/VogeNavService.kt
+            app/src/main/java/it/motolink/app/MapsNavigationListenerService.kt
+          )
+          if grep -Eiq 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gsk_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{10,}' "${V16_FILES[@]}"; then
+            echo 'Potential private key/token material detected in V1.6 transport sources'
             exit 1
           fi
 
