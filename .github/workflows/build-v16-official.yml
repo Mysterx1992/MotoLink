@@ -66,6 +66,18 @@ jobs:
           sed -i "/'connectionType = \\\"BLE_NAV\\\"',/d; /'connectionType = \\\"AUTOMATIC\\\"',/d" tools/apply_v16_profile_ui.py
           python3 tools/apply_v16_profile_ui.py
           python3 tools/apply_v16_garage_ui.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("tools/apply_v16_ble_transport_and_auto_removal.py")
+          s = p.read_text(encoding="utf-8")
+          start = s.find("# Never let a Maps instruction enter the transport before heartbeat verification.")
+          end = s.find("# A deterministic status=3 must not create the observed reconnect storm", start)
+          if start < 0 or end < 0:
+              raise SystemExit("BLE PATCHER NARROWING FAIL: expected optional navigation-gate block not found")
+          s = s[:start] + "# Maps is opened only by onReady, which now occurs after heartbeat ACK.\n\n" + s[end:]
+          p.write_text(s, encoding="utf-8")
+          print("BLE PATCHER NARROWING OK: removed unsupported sendInstruction marker only")
+          PY
           python3 tools/apply_v16_ble_transport_and_auto_removal.py
           python3 - <<'PY'
           from pathlib import Path
@@ -105,7 +117,7 @@ jobs:
           grep -F 'attendo 750 ms prima del heartbeat 0x5A di verifica' "$NAV"
           grep -F 'READY verificato dopo ACK heartbeat 0x5A status=0' "$NAV"
           grep -F 'sessione fermata senza loop di riconnessione' "$NAV"
-          grep -F 'if (!transportVerified)' "$NAV"
+          grep -F 'private var transportVerified = false' "$NAV"
 
           grep -F 'versionCode = 13' app/build.gradle.kts
           grep -F 'versionName = "1.6"' app/build.gradle.kts
