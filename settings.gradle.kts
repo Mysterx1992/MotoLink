@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "MotoLink"
 include(":app")
+include(":diag-trofeo500")
