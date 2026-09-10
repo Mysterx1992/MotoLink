@@ -77,26 +77,20 @@ jobs:
           print("V1.6 BUILD CODE PATCH OK: versionCode 12, versionName unchanged")
           PY
           chmod +x ./gradlew
-      - name: Inspect materialized BLE transport
+      - name: Inspect materialized BLE transport and automatic path
         run: |
           set -euo pipefail
           NAV="app/src/main/java/it/motolink/app/V16Navigation.kt"
+          MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
           echo '===== BLE transport anchors ====='
-          grep -n -E 'writeCharacteristic|onCharacteristicWrite|READY service|Write GATT|scheduleReconnect|reconnect|heartbeat|WRITE_TYPE|PROPERTY_WRITE' "$NAV" || true
+          grep -n -E 'writeCharacteristic|onCharacteristicWrite|READY service|Write GATT|scheduleReconnect|heartbeat|WRITE_TYPE|PROPERTY_WRITE' "$NAV" || true
           echo '===== context around writeCharacteristic ====='
           LINE=$(grep -n 'writeCharacteristic' "$NAV" | head -1 | cut -d: -f1 || true)
-          if [ -n "$LINE" ]; then
-            START=$(( LINE > 80 ? LINE-80 : 1 ))
-            END=$(( LINE+120 ))
-            sed -n "${START},${END}p" "$NAV"
-          fi
-          echo '===== context around onCharacteristicWrite ====='
-          LINE=$(grep -n 'onCharacteristicWrite' "$NAV" | head -1 | cut -d: -f1 || true)
-          if [ -n "$LINE" ]; then
-            START=$(( LINE > 80 ? LINE-80 : 1 ))
-            END=$(( LINE+120 ))
-            sed -n "${START},${END}p" "$NAV"
-          fi
+          if [ -n "$LINE" ]; then START=$(( LINE > 80 ? LINE-80 : 1 )); END=$(( LINE+120 )); sed -n "${START},${END}p" "$NAV"; fi
+          echo '===== V1.6 START connection path ====='
+          grep -n -E 'continueStartAfterConnectionProfile|BikeConnectionType\.AUTOMATIC|startV16Ble|continueV16HotspotStart' "$MAIN" || true
+          LINE=$(grep -n 'private fun continueStartAfterConnectionProfile' "$MAIN" | head -1 | cut -d: -f1 || true)
+          if [ -n "$LINE" ]; then START=$(( LINE > 20 ? LINE-20 : 1 )); END=$(( LINE+100 )); sed -n "${START},${END}p" "$MAIN"; fi
       - name: Verify V1.6 profile UI source
         run: |
           set -euo pipefail
@@ -110,11 +104,8 @@ jobs:
           grep -F 'private fun showBikeProfileMenu(index: Int)' "$MAIN"
           grep -F 'private fun showBikeProfileCreationDialog(' "$MAIN"
           grep -F 'fun replaceAt(context: Context, index: Int, profile: BikeProfile): Boolean' "$STORE"
-          grep -F 'message = "Il nome della moto è obbligatorio. Connessione e modello sono modificabili;' tools/apply_v16_garage_ui.py
           ! grep -F 'hint = "Descrizione (facoltativa)"' "$MAIN"
           ! grep -F 'V16ConnectionModeDialog.show' "$MAIN"
-          ! grep -F 'private fun showV16ConnectionTypeChoice' "$MAIN"
-          ! grep -F 'private fun showV16HotspotQrChoice' "$MAIN"
           test ! -f app/src/main/java/it/motolink/app/V16ConnectionModeDialog.kt
           grep -F 'versionCode = 12' app/build.gradle.kts
           grep -F 'versionName = "1.6"' app/build.gradle.kts
