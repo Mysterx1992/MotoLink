@@ -150,6 +150,7 @@ jobs:
           mkdir -p out/signing-tools/lib
           cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_UNSIGNED.apk
           cp MotoLink_V1.6_UNSIGNED.sha256 out/
+          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation.kt
           cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" out/signing-tools/
           cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" out/signing-tools/
           cp "$ANDROID_HOME/build-tools/36.0.0/aapt2" out/signing-tools/
