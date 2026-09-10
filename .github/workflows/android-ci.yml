@@ -40,7 +40,16 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      # Research branch only. The production workflow on main does not retain APK artifacts.
+      - name: Upload Maps diagnostic APK
+        if: github.event_name == 'pull_request' && github.head_ref == 'experiment/maps-notification-diagnostic-v1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink-Maps-Notification-Diagnostic
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 1
+
 # Questo workflow verifica che MotoLink compili correttamente.
-# Usa un runner standard ubuntu-latest su repository pubblico.
-# Non carica artefatti e non contiene né utilizza keystore, password
-# o credenziali di firma release.
+# Il ramo diagnostico Maps conserva per 1 giorno soltanto l'APK DEBUG di test.
+# Non contiene né utilizza keystore, password o credenziali di firma release.
