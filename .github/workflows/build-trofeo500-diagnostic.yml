@@ -31,14 +31,15 @@ jobs:
           APK="diag-trofeo500/build/outputs/apk/debug/diag-trofeo500-debug.apk"
           test -f "$APK"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
-          echo "$BADGING" | head -n 4
-          echo "$BADGING" | grep -F "package: name='it.motolink.diag.trofeo500' versionCode='1' versionName='1.0'"
+          echo "$BADGING" | head -n 5
+          echo "$BADGING" | grep -F "package: name='it.motolink.diag.trofeo500' versionCode='2' versionName='1.0.1'"
+          echo "$BADGING" | grep -F "uses-permission: name='android.permission.CHANGE_NETWORK_STATE'"
           mkdir -p out
-          cp "$APK" out/Trofeo500_WIFI_BT_DIAGNOSTIC_V1.apk
-          sha256sum out/Trofeo500_WIFI_BT_DIAGNOSTIC_V1.apk > out/Trofeo500_WIFI_BT_DIAGNOSTIC_V1.apk.sha256
+          cp "$APK" out/Trofeo500_WIFI_BT_DIAGNOSTIC_V1_0_1.apk
+          sha256sum out/Trofeo500_WIFI_BT_DIAGNOSTIC_V1_0_1.apk > out/Trofeo500_WIFI_BT_DIAGNOSTIC_V1_0_1.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: Trofeo500_WIFI_BT_DIAGNOSTIC_V1
+          name: Trofeo500_WIFI_BT_DIAGNOSTIC_V1_0_1
           path: out/
           if-no-files-found: error
           retention-days: 7
