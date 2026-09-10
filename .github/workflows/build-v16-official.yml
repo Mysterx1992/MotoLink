@@ -66,39 +66,32 @@ jobs:
           sed -i "/'connectionType = \\\"BLE_NAV\\\"',/d; /'connectionType = \\\"AUTOMATIC\\\"',/d" tools/apply_v16_profile_ui.py
           python3 tools/apply_v16_profile_ui.py
           python3 tools/apply_v16_garage_ui.py
+          python3 tools/apply_v16_ble_transport_and_auto_removal.py
           python3 - <<'PY'
           from pathlib import Path
           p = Path("app/build.gradle.kts")
           s = p.read_text(encoding="utf-8")
           if s.count("versionCode = 11") != 1:
               raise SystemExit("V1.6 BUILD CODE PATCH FAIL: expected versionCode 11 once")
-          s = s.replace("versionCode = 11", "versionCode = 12", 1)
+          s = s.replace("versionCode = 11", "versionCode = 13", 1)
           p.write_text(s, encoding="utf-8")
-          print("V1.6 BUILD CODE PATCH OK: versionCode 12, versionName unchanged")
+          print("V1.6 BUILD CODE PATCH OK: versionCode 13, versionName unchanged")
           PY
           chmod +x ./gradlew
-      - name: Inspect materialized BLE transport and automatic path
+      - name: Verify V1.6 corrected source
         run: |
           set -euo pipefail
+          MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
           NAV="app/src/main/java/it/motolink/app/V16Navigation.kt"
-          MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
-          echo '===== BLE transport anchors ====='
-          grep -n -E 'writeCharacteristic|onCharacteristicWrite|READY service|Write GATT|scheduleReconnect|heartbeat|WRITE_TYPE|PROPERTY_WRITE' "$NAV" || true
-          echo '===== context around writeCharacteristic ====='
-          LINE=$(grep -n 'writeCharacteristic' "$NAV" | head -1 | cut -d: -f1 || true)
-          if [ -n "$LINE" ]; then START=$(( LINE > 80 ? LINE-80 : 1 )); END=$(( LINE+120 )); sed -n "${START},${END}p" "$NAV"; fi
-          echo '===== V1.6 START connection path ====='
-          grep -n -E 'continueStartAfterConnectionProfile|BikeConnectionType\.AUTOMATIC|startV16Ble|continueV16HotspotStart' "$MAIN" || true
-          LINE=$(grep -n 'private fun continueStartAfterConnectionProfile' "$MAIN" | head -1 | cut -d: -f1 || true)
-          if [ -n "$LINE" ]; then START=$(( LINE > 20 ? LINE-20 : 1 )); END=$(( LINE+100 )); sed -n "${START},${END}p" "$MAIN"; fi
-      - name: Verify V1.6 profile UI source
-        run: |
-          set -euo pipefail
-          MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
           STORE="app/src/main/java/it/motolink/app/BikeProfileStore.kt"
+
           grep -F 'text = "Connessione:"' "$MAIN"
-          grep -F 'listOf("Automatico", "Hotspot", "QrCode", "BLE")' "$MAIN"
-          grep -F '"Automatico" -> "AUTOMATIC"' "$MAIN"
+          grep -F 'listOf("Hotspot", "QrCode", "BLE")' "$MAIN"
+          ! grep -F 'listOf("Automatico", "Hotspot", "QrCode", "BLE")' "$MAIN"
+          grep -F 'BikeConnectionType.AUTOMATIC -> showV16LegacyAutomaticMigrationChoice(profile)' "$MAIN"
+          ! grep -F 'BikeConnectionType.AUTOMATIC -> startV16BleNavigation(profile, automatic = true)' "$MAIN"
+          grep -F 'private fun showV16LegacyAutomaticMigrationChoice(profile: BikeProfile)' "$MAIN"
+          grep -F 'Scegli Hotspot, QrCode oppure BLE.' "$MAIN"
           grep -F '"Hotspot", "QrCode" -> "HOTSPOT_EASYCONN"' "$MAIN"
           grep -F '"BLE" -> "BLE_NAV"' "$MAIN"
           grep -F 'private fun showBikeProfileMenu(index: Int)' "$MAIN"
@@ -107,7 +100,14 @@ jobs:
           ! grep -F 'hint = "Descrizione (facoltativa)"' "$MAIN"
           ! grep -F 'V16ConnectionModeDialog.show' "$MAIN"
           test ! -f app/src/main/java/it/motolink/app/V16ConnectionModeDialog.kt
-          grep -F 'versionCode = 12' app/build.gradle.kts
+
+          grep -F 'val writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT' "$NAV"
+          grep -F 'attendo 750 ms prima del heartbeat 0x5A di verifica' "$NAV"
+          grep -F 'READY verificato dopo ACK heartbeat 0x5A status=0' "$NAV"
+          grep -F 'sessione fermata senza loop di riconnessione' "$NAV"
+          grep -F 'if (!transportVerified)' "$NAV"
+
+          grep -F 'versionCode = 13' app/build.gradle.kts
           grep -F 'versionName = "1.6"' app/build.gradle.kts
       - name: Compile release APK
         run: ./gradlew assembleRelease --stacktrace
@@ -118,7 +118,7 @@ jobs:
           test -f "$APK"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
           echo "$BADGING" | head -n 4
-          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='12' versionName='1.6'"
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='13' versionName='1.6'"
           sha256sum "$APK" > MotoLink_V1.6_UNSIGNED.sha256
       - name: Stage local-signing tools
         run: |
