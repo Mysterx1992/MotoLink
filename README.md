@@ -99,6 +99,7 @@ Moto sulle quali l'app è stata testata:
 |---|---|---|---|---|---|
 | _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
 | _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento QR Code_ |
+| _Voge_ | _Valico 625 dsx_ | _20025_ | _TFT / BLE_ | ✅ Testata | _App testata e funzionante con collegamento Bluetooth_ |
 | _CFMOTO_ | _700 MT Stradale_ | _2024_ | _TFT / EasyConn_ | ✅ Testata | _Connessione P2P/EasyConn e avvio video verificati fisicamente nella lineage V1.5/V1.5.1_ |
 
 > [!WARNING]
