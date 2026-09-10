@@ -77,6 +77,26 @@ jobs:
           print("V1.6 BUILD CODE PATCH OK: versionCode 12, versionName unchanged")
           PY
           chmod +x ./gradlew
+      - name: Inspect materialized BLE transport
+        run: |
+          set -euo pipefail
+          NAV="app/src/main/java/it/motolink/app/V16Navigation.kt"
+          echo '===== BLE transport anchors ====='
+          grep -n -E 'writeCharacteristic|onCharacteristicWrite|READY service|Write GATT|scheduleReconnect|reconnect|heartbeat|WRITE_TYPE|PROPERTY_WRITE' "$NAV" || true
+          echo '===== context around writeCharacteristic ====='
+          LINE=$(grep -n 'writeCharacteristic' "$NAV" | head -1 | cut -d: -f1 || true)
+          if [ -n "$LINE" ]; then
+            START=$(( LINE > 80 ? LINE-80 : 1 ))
+            END=$(( LINE+120 ))
+            sed -n "${START},${END}p" "$NAV"
+          fi
+          echo '===== context around onCharacteristicWrite ====='
+          LINE=$(grep -n 'onCharacteristicWrite' "$NAV" | head -1 | cut -d: -f1 || true)
+          if [ -n "$LINE" ]; then
+            START=$(( LINE > 80 ? LINE-80 : 1 ))
+            END=$(( LINE+120 ))
+            sed -n "${START},${END}p" "$NAV"
+          fi
       - name: Verify V1.6 profile UI source
         run: |
           set -euo pipefail
