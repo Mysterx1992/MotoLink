@@ -81,6 +81,17 @@ jobs:
           python3 tools/apply_v16_ble_transport_and_auto_removal.py
           python3 - <<'PY'
           from pathlib import Path
+          p = Path("app/src/main/java/it/motolink/app/V16Navigation.kt")
+          s = p.read_text(encoding="utf-8")
+          old = "main.postDelayed(heartbeat, HEARTBEAT_INTERVAL_MS)"
+          if s.count(old) != 1:
+              raise SystemExit(f"BLE HEARTBEAT INTERVAL FIX FAIL: expected once, found {s.count(old)}")
+          s = s.replace(old, "main.postDelayed(heartbeat, 1000L)", 1)
+          p.write_text(s, encoding="utf-8")
+          print("BLE HEARTBEAT INTERVAL FIX OK: 1000 ms")
+          PY
+          python3 - <<'PY'
+          from pathlib import Path
           p = Path("app/build.gradle.kts")
           s = p.read_text(encoding="utf-8")
           if s.count("versionCode = 11") != 1:
@@ -118,6 +129,8 @@ jobs:
           grep -F 'READY verificato dopo ACK heartbeat 0x5A status=0' "$NAV"
           grep -F 'sessione fermata senza loop di riconnessione' "$NAV"
           grep -F 'private var transportVerified = false' "$NAV"
+          grep -F 'main.postDelayed(heartbeat, 1000L)' "$NAV"
+          ! grep -F 'HEARTBEAT_INTERVAL_MS' "$NAV"
 
           grep -F 'versionCode = 13' app/build.gradle.kts
           grep -F 'versionName = "1.6"' app/build.gradle.kts
