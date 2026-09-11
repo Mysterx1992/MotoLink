@@ -1,5 +1,26 @@
 # Changelog MotoLink
 
+## v1.6 vc16 candidate — 2026-09-11
+
+### Stato
+
+- **Candidata tecnica, non release pubblica.** `main` e la release V1.5.1 restano invariati.
+- Deriva dalla V1.6 vc15 (`versionCode 15`) e porta la candidata a `versionCode 16`, mantenendo `versionName 1.6`.
+
+### Rotonde VOGE / Google Maps
+
+- Reverse engineering statico di VOGE Global 1.1.7: `roadFlag=2` identifica il pedaggio/casello; la rotonda OEM usa `roadFlag=4`.
+- Confermato che l'encoder MotoLink vc15 possiede già `annularDegrees` e lo scrive nel byte 16 del frame navigazione `0x6A`; vc16 alimenta finalmente quel campo.
+- Aggiunto classificatore locale TensorFlow Lite per le icone reali di Google Maps, limitato alla sola determinazione del settore di uscita della rotonda.
+- Le classi rotonda 16-settori del modello OpenDash/KTM-Nav-GEN3 vengono convertite nei 12 settori `annularDegrees` VOGE.
+- Se il classificatore non raggiunge la confidenza minima, MotoLink non inventa l'uscita: invia `roadFlag=4`, `annularDegrees=0` e registra il fallback nel Log.
+- Parser vc15 delle manovre non-rotonda, UUID BLE, heartbeat `0x5A`, frame `0x6A–0x6E`, pacing e recovery BLE restano invariati.
+
+### Provenienza modello
+
+- Modello OpenDash / KTM-Nav-GEN3 MIT, commit pinned `ceafaf1fa899cdbb646051f1f517372eb21759fa`, Git blob `e0104c6dcd104f05ee3fe08eb9922c036d60c9da`.
+- Attribuzione completa in `THIRD_PARTY_NOTICES.md`.
+
 ## v1.5.1 — 2026-09-08
 
 ### Novità e correzioni
