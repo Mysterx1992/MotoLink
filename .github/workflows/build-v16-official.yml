@@ -1,4 +1,4 @@
-name: Build MotoLink V1.6 vc16 Candidate
+name: Build MotoLink V1.6 vc17 Candidate
 
 on:
   push:
@@ -93,6 +93,7 @@ jobs:
           python3 tools/apply_v16_maps_maneuver_fix.py
           python3 tools/apply_v16_vc15_roundabout_ble_stability.py
           python3 tools/apply_v16_vc16_voge_roundabout.py
+          python3 tools/apply_v16_vc17_valico900_adaptive_write.py
 
           mkdir -p app/src/main/res/raw
           curl --fail --location --retry 3 --silent --show-error \
@@ -100,7 +101,7 @@ jobs:
             --output app/src/main/res/raw/maneuver_model.tflite
           test "$(stat -c%s app/src/main/res/raw/maneuver_model.tflite)" = "3391124"
           test "$(git hash-object app/src/main/res/raw/maneuver_model.tflite)" = "e0104c6dcd104f05ee3fe08eb9922c036d60c9da"
-          echo "VC16 MODEL PIN OK: OpenDash maneuver_model.tflite"
+          echo "VC17 MODEL PIN OK: OpenDash maneuver_model.tflite"
 
           python3 - <<'PY'
           from pathlib import Path
@@ -108,12 +109,12 @@ jobs:
           s = p.read_text(encoding="utf-8")
           if s.count("versionCode = 11") != 1:
               raise SystemExit("V1.6 BUILD CODE PATCH FAIL: expected versionCode 11 once")
-          s = s.replace("versionCode = 11", "versionCode = 16", 1)
+          s = s.replace("versionCode = 11", "versionCode = 17", 1)
           p.write_text(s, encoding="utf-8")
-          print("V1.6 BUILD CODE PATCH OK: versionCode 16, versionName unchanged")
+          print("V1.6 BUILD CODE PATCH OK: versionCode 17, versionName unchanged")
           PY
           chmod +x ./gradlew
-      - name: Verify V1.6 vc16 corrected source
+      - name: Verify V1.6 vc17 corrected source
         run: |
           set -euo pipefail
           MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
@@ -137,10 +138,16 @@ jobs:
           ! grep -F 'V16ConnectionModeDialog.show' "$MAIN"
           test ! -f app/src/main/java/it/motolink/app/V16ConnectionModeDialog.kt
 
-          grep -F 'val writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT' "$NAV"
+          grep -F 'private var writeTypeMode = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT' "$NAV"
+          grep -F 'private var noResponseFallbackTried = false' "$NAV"
+          grep -F 'TX properties=0x${tx.properties.toString(16)} write=$supportsWrite noResponse=$supportsNoResponse mode=DEFAULT' "$NAV"
+          grep -F 'heartbeat DEFAULT rifiutato status=3; ritento una volta con WRITE_TYPE_NO_RESPONSE' "$NAV"
+          grep -F 'fallback trasporto attivato WRITE_TYPE_NO_RESPONSE' "$NAV"
+          grep -F 'READY con WRITE_TYPE_NO_RESPONSE; nessun ACK ATT richiesto' "$NAV"
+          grep -F 'val writeType = synchronized(this) { writeTypeMode }' "$NAV"
+          grep -F 'PROPERTY_WRITE_NO_RESPONSE' "$NAV"
           grep -F 'attendo 750 ms prima del heartbeat 0x5A di verifica' "$NAV"
           grep -F 'READY verificato dopo ACK heartbeat 0x5A status=0' "$NAV"
-          grep -F 'sessione fermata senza loop di riconnessione' "$NAV"
           grep -F 'private var transportVerified = false' "$NAV"
           grep -F 'main.postDelayed(heartbeat, 1000L)' "$NAV"
           ! grep -F 'HEARTBEAT_INTERVAL_MS' "$NAV"
@@ -176,7 +183,7 @@ jobs:
           grep -F 'scheduleReconnect("Timeout callback GATT", forceFreshScan = true, minDelayMs = 6000L)' "$NAV"
 
           grep -F 'implementation("org.tensorflow:tensorflow-lite:2.14.0")' app/build.gradle.kts
-          grep -F 'versionCode = 16' app/build.gradle.kts
+          grep -F 'versionCode = 17' app/build.gradle.kts
           grep -F 'versionName = "1.6"' app/build.gradle.kts
       - name: Compile release APK
         run: ./gradlew assembleRelease --stacktrace
@@ -187,14 +194,14 @@ jobs:
           test -f "$APK"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
           echo "$BADGING" | head -n 4
-          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='16' versionName='1.6'"
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='17' versionName='1.6'"
           sha256sum "$APK" > MotoLink_V1.6_UNSIGNED.sha256
       - name: Stage local-signing tools
         run: |
           mkdir -p out/signing-tools/lib
-          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_vc16_UNSIGNED.apk
-          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation_vc16.kt
-          cp app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt out/V16ManeuverClassifier_vc16.kt
+          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_vc17_UNSIGNED.apk
+          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation_vc17.kt
+          cp app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt out/V16ManeuverClassifier_vc17.kt
           cp MotoLink_V1.6_UNSIGNED.sha256 out/
           cp THIRD_PARTY_NOTICES.md out/
           cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" out/signing-tools/
@@ -203,7 +210,7 @@ jobs:
           cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/signing-tools/lib/
       - uses: actions/upload-artifact@v4
         with:
-          name: MotoLink_V1.6_vc16_UNSIGNED_AND_SIGNING_TOOLS
+          name: MotoLink_V1.6_vc17_UNSIGNED_AND_SIGNING_TOOLS
           path: out/
           if-no-files-found: error
           retention-days: 2
