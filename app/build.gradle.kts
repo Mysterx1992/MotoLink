@@ -40,6 +40,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
+    // V1.6 vc16: local maneuver-icon classifier used only for Google Maps roundabout exit sectors.
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+
     // V1.2 fallback: Google Code Scanner remains the first choice. CameraX is loaded
     // only when Play services cannot provide its scanner UI on a specific phone.
     implementation("androidx.activity:activity-ktx:1.13.0")
