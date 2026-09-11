@@ -91,15 +91,16 @@ jobs:
           print("BLE HEARTBEAT INTERVAL FIX OK: 1000 ms")
           PY
           python3 tools/apply_v16_maps_maneuver_fix.py
+          python3 tools/apply_v16_vc15_roundabout_ble_stability.py
           python3 - <<'PY'
           from pathlib import Path
           p = Path("app/build.gradle.kts")
           s = p.read_text(encoding="utf-8")
           if s.count("versionCode = 11") != 1:
               raise SystemExit("V1.6 BUILD CODE PATCH FAIL: expected versionCode 11 once")
-          s = s.replace("versionCode = 11", "versionCode = 14", 1)
+          s = s.replace("versionCode = 11", "versionCode = 15", 1)
           p.write_text(s, encoding="utf-8")
-          print("V1.6 BUILD CODE PATCH OK: versionCode 14, versionName unchanged")
+          print("V1.6 BUILD CODE PATCH OK: versionCode 15, versionName unchanged")
           PY
           chmod +x ./gradlew
       - name: Verify V1.6 corrected source
@@ -141,7 +142,19 @@ jobs:
           grep -F 'GOOGLE_MAPS_NOTIFICATION_$sourceKind' "$NAV"
           grep -F 'source=${model.source} maneuver=${model.maneuver}' "$NAV"
 
-          grep -F 'versionCode = 14' app/build.gradle.kts
+          grep -F 'private fun looksLikeRoundaboutGlyph(bitmap: Bitmap, bg: Int): Boolean' "$NAV"
+          grep -F 'MAPS NAV V1.6 ICON DIAG: manovra non classificata fp=' "$NAV"
+          grep -F 'roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 2 else 0' "$NAV"
+          grep -F 'NavManeuver.STRAIGHT, NavManeuver.ROUNDABOUT -> 1' "$NAV"
+
+          grep -F 'private var reconnectAttempt = 0' "$NAV"
+          grep -F 'gatt != null && txChar != null && transportVerified' "$NAV"
+          grep -F 'callback GATT obsoleto ignorato' "$NAV"
+          grep -F 'recovery -> nuova scansione BLE prima di connectGatt' "$NAV"
+          grep -F 'istruzione reale disponibile ma canale TFT non ancora verificato' "$NAV"
+          grep -F 'scheduleReconnect("Timeout callback GATT", forceFreshScan = true, minDelayMs = 6000L)' "$NAV"
+
+          grep -F 'versionCode = 15' app/build.gradle.kts
           grep -F 'versionName = "1.6"' app/build.gradle.kts
       - name: Compile release APK
         run: ./gradlew assembleRelease --stacktrace
@@ -152,12 +165,13 @@ jobs:
           test -f "$APK"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
           echo "$BADGING" | head -n 4
-          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='14' versionName='1.6'"
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='15' versionName='1.6'"
           sha256sum "$APK" > MotoLink_V1.6_UNSIGNED.sha256
       - name: Stage local-signing tools
         run: |
           mkdir -p out/signing-tools/lib
-          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_UNSIGNED.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_vc15_UNSIGNED.apk
+          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation_vc15.kt
           cp MotoLink_V1.6_UNSIGNED.sha256 out/
           cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" out/signing-tools/
           cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" out/signing-tools/
@@ -165,7 +179,7 @@ jobs:
           cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/signing-tools/lib/
       - uses: actions/upload-artifact@v4
         with:
-          name: MotoLink_V1.6_OFFICIAL_UNSIGNED_AND_SIGNING_TOOLS
+          name: MotoLink_V1.6_vc15_UNSIGNED_AND_SIGNING_TOOLS
           path: out/
           if-no-files-found: error
           retention-days: 2
