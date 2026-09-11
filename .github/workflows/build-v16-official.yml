@@ -1,4 +1,4 @@
-name: Build MotoLink V1.6 Official Artifact
+name: Build MotoLink V1.6 vc16 Candidate
 
 on:
   push:
@@ -92,23 +92,34 @@ jobs:
           PY
           python3 tools/apply_v16_maps_maneuver_fix.py
           python3 tools/apply_v16_vc15_roundabout_ble_stability.py
+          python3 tools/apply_v16_vc16_voge_roundabout.py
+
+          mkdir -p app/src/main/res/raw
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/Pavanayi1/KTM-Nav-GEN3/ceafaf1fa899cdbb646051f1f517372eb21759fa/app/src/main/res/raw/maneuver_model.tflite" \
+            --output app/src/main/res/raw/maneuver_model.tflite
+          test "$(stat -c%s app/src/main/res/raw/maneuver_model.tflite)" = "3391124"
+          test "$(git hash-object app/src/main/res/raw/maneuver_model.tflite)" = "e0104c6dcd104f05ee3fe08eb9922c036d60c9da"
+          echo "VC16 MODEL PIN OK: OpenDash maneuver_model.tflite"
+
           python3 - <<'PY'
           from pathlib import Path
           p = Path("app/build.gradle.kts")
           s = p.read_text(encoding="utf-8")
           if s.count("versionCode = 11") != 1:
               raise SystemExit("V1.6 BUILD CODE PATCH FAIL: expected versionCode 11 once")
-          s = s.replace("versionCode = 11", "versionCode = 15", 1)
+          s = s.replace("versionCode = 11", "versionCode = 16", 1)
           p.write_text(s, encoding="utf-8")
-          print("V1.6 BUILD CODE PATCH OK: versionCode 15, versionName unchanged")
+          print("V1.6 BUILD CODE PATCH OK: versionCode 16, versionName unchanged")
           PY
           chmod +x ./gradlew
-      - name: Verify V1.6 corrected source
+      - name: Verify V1.6 vc16 corrected source
         run: |
           set -euo pipefail
           MAIN="app/src/main/java/it/motolink/app/MainActivity.kt"
           NAV="app/src/main/java/it/motolink/app/V16Navigation.kt"
           STORE="app/src/main/java/it/motolink/app/BikeProfileStore.kt"
+          ML="app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt"
 
           grep -F 'text = "Connessione:"' "$MAIN"
           grep -F 'listOf("Hotspot", "QrCode", "BLE")' "$MAIN"
@@ -144,8 +155,18 @@ jobs:
 
           grep -F 'private fun looksLikeRoundaboutGlyph(bitmap: Bitmap, bg: Int): Boolean' "$NAV"
           grep -F 'MAPS NAV V1.6 ICON DIAG: manovra non classificata fp=' "$NAV"
-          grep -F 'roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 2 else 0' "$NAV"
+          grep -F 'V16ManeuverClassifier.classifyRoundaboutSector(context, it)' "$NAV"
+          grep -F 'roundaboutSector != null -> "ML_ICON"' "$NAV"
+          grep -F 'roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 4 else 0' "$NAV"
+          grep -F 'annularDegrees = if (maneuver == NavManeuver.ROUNDABOUT) (roundaboutSector ?: 0) else 0' "$NAV"
+          ! grep -F 'roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 2 else 0' "$NAV"
           grep -F 'NavManeuver.STRAIGHT, NavManeuver.ROUNDABOUT -> 1' "$NAV"
+          grep -F 'private const val CONFIDENCE = 0.40f' "$ML"
+          grep -F 'in 26..41 -> code - 25' "$ML"
+          grep -F 'in 42..57 -> code - 41' "$ML"
+          grep -F 'section16 * 12.0 / 16.0' "$ML"
+          test -s app/src/main/res/raw/maneuver_model.tflite
+          test "$(git hash-object app/src/main/res/raw/maneuver_model.tflite)" = "e0104c6dcd104f05ee3fe08eb9922c036d60c9da"
 
           grep -F 'private var reconnectAttempt = 0' "$NAV"
           grep -F 'gatt != null && txChar != null && transportVerified' "$NAV"
@@ -154,7 +175,8 @@ jobs:
           grep -F 'istruzione reale disponibile ma canale TFT non ancora verificato' "$NAV"
           grep -F 'scheduleReconnect("Timeout callback GATT", forceFreshScan = true, minDelayMs = 6000L)' "$NAV"
 
-          grep -F 'versionCode = 15' app/build.gradle.kts
+          grep -F 'implementation("org.tensorflow:tensorflow-lite:2.14.0")' app/build.gradle.kts
+          grep -F 'versionCode = 16' app/build.gradle.kts
           grep -F 'versionName = "1.6"' app/build.gradle.kts
       - name: Compile release APK
         run: ./gradlew assembleRelease --stacktrace
@@ -165,21 +187,23 @@ jobs:
           test -f "$APK"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
           echo "$BADGING" | head -n 4
-          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='15' versionName='1.6'"
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='16' versionName='1.6'"
           sha256sum "$APK" > MotoLink_V1.6_UNSIGNED.sha256
       - name: Stage local-signing tools
         run: |
           mkdir -p out/signing-tools/lib
-          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_vc15_UNSIGNED.apk
-          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation_vc15.kt
+          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_vc16_UNSIGNED.apk
+          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation_vc16.kt
+          cp app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt out/V16ManeuverClassifier_vc16.kt
           cp MotoLink_V1.6_UNSIGNED.sha256 out/
+          cp THIRD_PARTY_NOTICES.md out/
           cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" out/signing-tools/
           cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" out/signing-tools/
           cp "$ANDROID_HOME/build-tools/36.0.0/aapt2" out/signing-tools/
           cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/signing-tools/lib/
       - uses: actions/upload-artifact@v4
         with:
-          name: MotoLink_V1.6_vc15_UNSIGNED_AND_SIGNING_TOOLS
+          name: MotoLink_V1.6_vc16_UNSIGNED_AND_SIGNING_TOOLS
           path: out/
           if-no-files-found: error
           retention-days: 2
