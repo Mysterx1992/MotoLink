@@ -1,0 +1,131 @@
+name: Build MotoLink V1.6 vc18 Roundabout Encoder Fix
+
+on:
+  push:
+    branches: [ "build/v1.6-vc18-roundabout-fix" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android 36 build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Materialize exact vc17 source lineage
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/build-v16-official.yml').read_text(encoding='utf-8')
+          marker = '      - name: Materialize verified V1.6 source delta\n        run: |\n'
+          if workflow.count(marker) != 1:
+              raise SystemExit(f'VC18 lineage extraction FAIL: materialize marker count={workflow.count(marker)}')
+          start = workflow.index(marker) + len(marker)
+          end = workflow.find('\n      - name:', start)
+          if end < 0:
+              raise SystemExit('VC18 lineage extraction FAIL: next step not found')
+          block = workflow[start:end]
+          out = []
+          for line in block.splitlines():
+              if line.startswith('          '):
+                  out.append(line[10:])
+              elif line.strip() == '':
+                  out.append('')
+              else:
+                  raise SystemExit(f'VC18 lineage extraction FAIL: unexpected indentation: {line!r}')
+          script = '\n'.join(out) + '\n'
+          Path('/tmp/materialize_vc17.sh').write_text(script, encoding='utf-8')
+          print('VC18 lineage extraction OK: reusing exact vc17 materialization block')
+          PY
+          bash /tmp/materialize_vc17.sh
+
+      - name: Apply vc18 roundabout encoder fix
+        run: |
+          set -euo pipefail
+          python3 tools/apply_v16_vc18_roundabout_encoder_fix.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/build.gradle.kts')
+          s = p.read_text(encoding='utf-8')
+          if s.count('versionCode = 17') != 1:
+              raise SystemExit(f'VC18 version bump FAIL: expected versionCode 17 once, found {s.count("versionCode = 17")}')
+          s = s.replace('versionCode = 17', 'versionCode = 18', 1)
+          p.write_text(s, encoding='utf-8')
+          print('VC18 version bump OK: versionCode 18, versionName remains 1.6')
+          PY
+
+      - name: Verify vc18 corrected source
+        run: |
+          set -euo pipefail
+          NAV="app/src/main/java/it/motolink/app/V16Navigation.kt"
+          ML="app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt"
+
+          grep -F 'p[14] = m.roadFlag.coerceIn(0, 4).toByte()' "$NAV"
+          ! grep -F 'p[14] = (if (m.maneuver == NavManeuver.ROUNDABOUT) 2 else m.roadFlag)' "$NAV"
+          grep -F 'p[16] = m.annularDegrees.coerceIn(0, 255).toByte()' "$NAV"
+          grep -F 'roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 4 else 0' "$NAV"
+          grep -F 'annularDegrees = if (maneuver == NavManeuver.ROUNDABOUT) (roundaboutSector ?: 0) else 0' "$NAV"
+          ! grep -F 'roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 2 else 0' "$NAV"
+          grep -F 'NavManeuver.STRAIGHT, NavManeuver.ROUNDABOUT -> 1' "$NAV"
+
+          grep -F 'private var writeTypeMode = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT' "$NAV"
+          grep -F 'heartbeat DEFAULT rifiutato status=3; ritento una volta con WRITE_TYPE_NO_RESPONSE' "$NAV"
+          grep -F 'fallback trasporto attivato WRITE_TYPE_NO_RESPONSE' "$NAV"
+          grep -F 'READY con WRITE_TYPE_NO_RESPONSE; nessun ACK ATT richiesto' "$NAV"
+          grep -F 'PROPERTY_WRITE_NO_RESPONSE' "$NAV"
+          grep -F 'main.postDelayed(heartbeat, 1000L)' "$NAV"
+
+          grep -F 'V16ManeuverClassifier.classifyRoundaboutSector(context, it)' "$NAV"
+          grep -F 'private const val CONFIDENCE = 0.40f' "$ML"
+          grep -F 'section16 * 12.0 / 16.0' "$ML"
+          test -s app/src/main/res/raw/maneuver_model.tflite
+          test "$(git hash-object app/src/main/res/raw/maneuver_model.tflite)" = "e0104c6dcd104f05ee3fe08eb9922c036d60c9da"
+
+          grep -F 'versionCode = 18' app/build.gradle.kts
+          grep -F 'versionName = "1.6"' app/build.gradle.kts
+
+      - name: Compile release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Verify unsigned identity
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "$APK"
+          BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
+          echo "$BADGING" | head -n 4
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='18' versionName='1.6'"
+          sha256sum "$APK" > MotoLink_V1.6_vc18_UNSIGNED.sha256
+
+      - name: Stage local-signing tools
+        run: |
+          mkdir -p out/signing-tools/lib
+          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_vc18_ROUNDABOUT_ENCODER_FIX_UNSIGNED.apk
+          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation_vc18.kt
+          cp app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt out/V16ManeuverClassifier_vc18.kt
+          cp tools/apply_v16_vc18_roundabout_encoder_fix.py out/
+          cp MotoLink_V1.6_vc18_UNSIGNED.sha256 out/
+          cp THIRD_PARTY_NOTICES.md out/
+          cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/aapt2" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/signing-tools/lib/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.6_vc18_ROUNDABOUT_ENCODER_FIX_UNSIGNED_AND_SIGNING_TOOLS
+          path: out/
+          if-no-files-found: error
+          retention-days: 2
