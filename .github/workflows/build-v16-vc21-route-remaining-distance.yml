@@ -1,0 +1,141 @@
+name: Build MotoLink V1.6 vc21 Route Remaining Distance
+
+on:
+  push:
+    branches: [ "build/v1.6-vc21-route-remaining-distance" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android 36 build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Materialize exact vc20 source lineage
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/build-v16-vc20-zero-transition-guard.yml').read_text(encoding='utf-8')
+          names = [
+              'Materialize exact vc19 source lineage',
+              'Apply vc20 zero transition guard',
+          ]
+          out = []
+          for name in names:
+              marker = f'      - name: {name}\n        run: |\n'
+              if workflow.count(marker) != 1:
+                  raise SystemExit(f'VC21 lineage extraction FAIL {name}: count={workflow.count(marker)}')
+              start = workflow.index(marker) + len(marker)
+              end = workflow.find('\n      - name:', start)
+              if end < 0:
+                  raise SystemExit(f'VC21 lineage extraction FAIL {name}: next step not found')
+              block = workflow[start:end]
+              for line in block.splitlines():
+                  if line.startswith('          '):
+                      out.append(line[10:])
+                  elif line.strip() == '':
+                      out.append('')
+                  else:
+                      raise SystemExit(f'VC21 lineage extraction FAIL {name}: unexpected indentation {line!r}')
+              out.append('')
+          Path('/tmp/materialize_vc20.sh').write_text('\n'.join(out) + '\n', encoding='utf-8')
+          print('VC21 lineage extraction OK: reusing exact vc20 materialization')
+          PY
+          bash /tmp/materialize_vc20.sh
+
+      - name: Apply vc21 route remaining distance fix
+        run: |
+          set -euo pipefail
+          python3 tools/apply_v16_vc21_route_remaining_distance.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/build.gradle.kts')
+          s = p.read_text(encoding='utf-8')
+          if s.count('versionCode = 20') != 1:
+              raise SystemExit(f'VC21 version bump FAIL: expected versionCode 20 once, found {s.count("versionCode = 20")}')
+          s = s.replace('versionCode = 20', 'versionCode = 21', 1)
+          p.write_text(s, encoding='utf-8')
+          print('VC21 version bump OK: versionCode 21, versionName remains 1.6')
+          PY
+
+      - name: Verify vc21 corrected source
+        run: |
+          set -euo pipefail
+          NAV="app/src/main/java/it/motolink/app/V16Navigation.kt"
+
+          # OEM 0x6A route fields: current-turn distance bytes 2..4; route time 5..6; route distance 7..9.
+          grep -F 'putBe(p, 2, (m.distanceMeters ?: 0).coerceIn(0, 0xFFFFFF), 3)' "$NAV"
+          grep -F 'putBe(p, 5, (m.routeRemainTimeSeconds ?: 0).coerceIn(0, 0xFFFF), 2)' "$NAV"
+          grep -F 'putBe(p, 7, (m.routeRemainDistanceMeters ?: 0).coerceIn(0, 0xFFFFFF), 3)' "$NAV"
+
+          # vc21 fills route summary instead of leaving route remaining distance null/zero.
+          grep -F 'val routeSummary = instructionFields.asSequence().mapNotNull(::routeSummaryFrom).firstOrNull()' "$NAV"
+          grep -F 'routeRemainDistanceMeters = routeSummary?.distanceMeters' "$NAV"
+          grep -F 'routeRemainTimeSeconds = routeSummary?.timeSeconds' "$NAV"
+          grep -F 'duration · remaining distance · ETA' "$NAV"
+          grep -F 'lastRouteRemainDistanceMeters' "$NAV"
+          grep -F 'routeRemain=${model.routeRemainDistanceMeters ?: -1}m' "$NAV"
+
+          # vc20 zero-transition guard remains frozen.
+          grep -F 'if (model.distanceMeters == 0)' "$NAV"
+          grep -F 'ZERO TRANSITION GUARD: distance=0 soppressa' "$NAV"
+
+          # vc19 roundabout correction remains frozen.
+          grep -F 'p[14] = m.roadFlag.coerceIn(0, 4).toByte()' "$NAV"
+          grep -F 'p[16] = m.annularDegrees.coerceIn(0, 255).toByte()' "$NAV"
+          grep -F 'p[10] = (m.directionOverride ?: directionCode(m.maneuver)).coerceIn(0, 9).toByte()' "$NAV"
+
+          # vc17 Valico 900 adaptive transport remains frozen.
+          grep -F 'heartbeat DEFAULT rifiutato status=3; ritento una volta con WRITE_TYPE_NO_RESPONSE' "$NAV"
+          grep -F 'fallback trasporto attivato WRITE_TYPE_NO_RESPONSE' "$NAV"
+          grep -F 'PROPERTY_WRITE_NO_RESPONSE' "$NAV"
+
+          grep -F 'versionCode = 21' app/build.gradle.kts
+          grep -F 'versionName = "1.6"' app/build.gradle.kts
+
+      - name: Compile release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Verify unsigned identity
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "$APK"
+          BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
+          echo "$BADGING" | head -n 4
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
+          sha256sum "$APK" > MotoLink_V1.6_vc21_UNSIGNED.sha256
+
+      - name: Stage local-signing tools
+        run: |
+          mkdir -p out/signing-tools/lib
+          cp app/build/outputs/apk/release/app-release-unsigned.apk out/MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED.apk
+          cp app/src/main/java/it/motolink/app/V16Navigation.kt out/GENERATED_V16Navigation_vc21.kt
+          cp app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt out/V16ManeuverClassifier_vc21.kt
+          cp tools/apply_v16_vc21_route_remaining_distance.py out/
+          cp MotoLink_V1.6_vc21_UNSIGNED.sha256 out/
+          cp THIRD_PARTY_NOTICES.md out/
+          cp "$ANDROID_HOME/build-tools/36.0.0/apksigner" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/zipalign" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/aapt2" out/signing-tools/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" out/signing-tools/lib/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED_AND_SIGNING_TOOLS
+          path: out/
+          if-no-files-found: error
+          retention-days: 2
