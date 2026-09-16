@@ -19,10 +19,8 @@ jobs:
       - name: Use preinstalled Android SDK and install exact components
         run: |
           set -euo pipefail
-          echo "ANDROID_HOME=$ANDROID_HOME"
           SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)
           test -n "$SDKMANAGER"
-          echo "sdkmanager=$SDKMANAGER"
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "platform-tools"
       - uses: gradle/actions/setup-gradle@v4
 
@@ -64,24 +62,24 @@ jobs:
           p.write_text(s.replace('versionCode = 20','versionCode = 21',1), encoding='utf-8')
           PY
 
-      - name: Compile exact release unsigned APK
+      - name: Compile release unsigned APK
         run: ./gradlew assembleRelease --stacktrace
 
-      - name: Verify frozen unsigned SHA-256 and identity
+      - name: Record identity and stage diagnostic artifact
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release-unsigned.apk
           test -f "$APK"
           ACTUAL=$(sha256sum "$APK" | awk '{print $1}')
           echo "unsigned_sha256=$ACTUAL"
-          test "$ACTUAL" = "e271bd723cc7ee962ae0d291074087776c44771558a4395d8455040fa6188dac"
           "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
           mkdir -p out
-          cp "$APK" out/MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED.apk
+          cp "$APK" out/MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED_DIAGNOSTIC.apk
+          printf '%s\n' "$ACTUAL" > out/unsigned.sha256
 
       - uses: actions/upload-artifact@v4
         with:
-          name: vc21-exact-unsigned-rebuild
-          path: out/MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED.apk
+          name: vc21-unsigned-diagnostic-20260916
+          path: out/
           if-no-files-found: error
           retention-days: 1
