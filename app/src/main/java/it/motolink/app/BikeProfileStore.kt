@@ -37,6 +37,9 @@ data class BikeProfile(
     val description: String? = null,
     val photoUri: String? = null,
     val catalogLabel: String? = null,
+    val connectionType: String = "HOTSPOT_EASYCONN",
+    val bleAddress: String? = null,
+    val bleName: String? = null,
     val savedAtMs: Long = System.currentTimeMillis(),
     val profileId: String = UUID.randomUUID().toString()
 ) {
@@ -160,6 +163,42 @@ object BikeProfileStore {
         return saveAll(context, list)
     }
 
+    fun updateConnection(
+        context: Context,
+        index: Int,
+        connectionType: String,
+        formatOverride: String? = null,
+        bleAddress: String? = null,
+        bleName: String? = null,
+        clearBle: Boolean = false
+    ): BikeProfile? {
+        val list = loadAll(context).toMutableList()
+        val old = list.getOrNull(index) ?: return null
+        val updated = old.copy(
+            connectionType = connectionType,
+            format = formatOverride ?: old.format,
+            bleAddress = if (clearBle) null else (bleAddress ?: old.bleAddress),
+            bleName = if (clearBle) null else (bleName ?: old.bleName)
+        )
+        list[index] = updated
+        if (!saveAll(context, list)) return null
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_ACTIVE_INDEX, index).apply()
+        return updated
+    }
+
+    fun replaceAt(context: Context, index: Int, profile: BikeProfile): Boolean {
+        if (profile.displayName.trim().isEmpty()) return false
+        val list = loadAll(context).toMutableList()
+        val old = list.getOrNull(index) ?: return false
+        list[index] = profile.copy(profileId = old.profileId, savedAtMs = old.savedAtMs)
+        if (!saveAll(context, list)) return false
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_ACTIVE_INDEX, index)
+            .remove(KEY_ACTIVE)
+            .apply()
+        return true
+    }
+
     fun clearPhoto(context: Context, index: Int): Boolean {
         val list = loadAll(context).toMutableList()
         val old = list.getOrNull(index) ?: return false
@@ -189,6 +228,7 @@ object BikeProfileStore {
     }
 
     private fun sameIdentity(a: BikeProfile, b: BikeProfile): Boolean {
+        if (a.bleAddress != null && b.bleAddress != null && a.bleAddress.equals(b.bleAddress, true)) return true
         if (a.machineId != null && b.machineId != null && a.machineId == b.machineId) return true
         if (a.ssid != null && b.ssid != null && a.ssid == b.ssid) return true
         if (a.host != null && b.host != null && a.port == b.port && a.host == b.host) return true
@@ -216,6 +256,9 @@ object BikeProfileStore {
         .put("description", profile.description)
         .put("photoUri", profile.photoUri)
         .put("catalogLabel", profile.catalogLabel)
+        .put("connectionType", profile.connectionType)
+        .put("bleAddress", profile.bleAddress)
+        .put("bleName", profile.bleName)
         .put("savedAtMs", profile.savedAtMs)
         .put("profileId", profile.profileId)
 
@@ -240,6 +283,10 @@ object BikeProfileStore {
         description = obj.optNullableString("description"),
         photoUri = obj.optNullableString("photoUri"),
         catalogLabel = obj.optNullableString("catalogLabel"),
+        connectionType = obj.optNullableString("connectionType") ?:
+            if (obj.optString("format").equals("BLE_NAV", true)) "BLE_NAV" else "HOTSPOT_EASYCONN",
+        bleAddress = obj.optNullableString("bleAddress"),
+        bleName = obj.optNullableString("bleName"),
         savedAtMs = obj.optLong("savedAtMs", 0L),
         profileId = obj.optString("profileId").trim().takeIf { it.isNotEmpty() }
             ?: legacyProfileId(obj)

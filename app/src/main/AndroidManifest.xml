@@ -28,6 +28,14 @@
     <!-- V1.2: requested only if Google Code Scanner fails and MotoLink falls back to its internal scanner. -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- V1.6: dedicated BLE navigation channel on compatible motorcycle TFTs. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
 
     <application
         android:name=".TrofeoLinkApp"
@@ -84,6 +92,16 @@
             android:name=".MirrorService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+
+        <service
+            android:name=".MapsNavigationListenerService"
+            android:label="MotoLink navigazione"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name=".LogShareProvider"

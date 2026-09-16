@@ -1,5 +1,16 @@
 # Changelog MotoLink
 
+## V1.6
+
+- Modalità BLE turn-by-turn per TFT VOGE compatibili.
+- Fallback adattivo WRITE_TYPE_NO_RESPONSE.
+- Classificazione locale delle uscite di rotonda.
+- Encoding VOGE direction/roadFlag/annularDegrees aggiornato.
+- Zero Transition Guard per gli aggiornamenti transitori a 0 m.
+- Tempo e distanza restanti del percorso valorizzati quando disponibili da Google Maps.
+- Core mirroring EasyConn/H264 preservato.
+
+
 ## v1.5.1 — 2026-09-08
 
 ### Novità e correzioni
