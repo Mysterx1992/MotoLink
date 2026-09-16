@@ -1,0 +1,184 @@
+name: Materialize MotoLink V1.6 official source to main
+
+on:
+  push:
+    branches: [ "build/v1.6-vc21-route-remaining-distance" ]
+    paths: [ ".github/workflows/materialize-v16-official-to-main.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-source:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_UNSIGNED_SHA256: e271bd723cc7ee962ae0d291074087776c44771558a4395d8455040fa6188dac
+      EXPECTED_MODEL_BLOB: e0104c6dcd104f05ee3fe08eb9922c036d60c9da
+    steps:
+      - name: Checkout vc21 lineage
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android 36 build tools
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Materialize exact tested vc21 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/build-v16-vc21-route-remaining-distance.yml').read_text(encoding='utf-8')
+          names = [
+              'Materialize exact vc20 source lineage',
+              'Apply vc21 route remaining distance fix',
+          ]
+          out = []
+          for name in names:
+              marker = f'      - name: {name}\n        run: |\n'
+              if workflow.count(marker) != 1:
+                  raise SystemExit(f'V1.6 materialization FAIL {name}: count={workflow.count(marker)}')
+              start = workflow.index(marker) + len(marker)
+              end = workflow.find('\n      - name:', start)
+              if end < 0:
+                  raise SystemExit(f'V1.6 materialization FAIL {name}: next step not found')
+              block = workflow[start:end]
+              for line in block.splitlines():
+                  if line.startswith('          '):
+                      out.append(line[10:])
+                  elif line.strip() == '':
+                      out.append('')
+                  else:
+                      raise SystemExit(f'V1.6 materialization FAIL {name}: unexpected indentation {line!r}')
+              out.append('')
+          Path('/tmp/materialize_vc21.sh').write_text('\n'.join(out) + '\n', encoding='utf-8')
+          print('Exact vc21 materializer extracted')
+          PY
+          bash /tmp/materialize_vc21.sh
+
+      - name: Verify frozen vc21 source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAV="app/src/main/java/it/motolink/app/V16Navigation.kt"
+          ML="app/src/main/java/it/motolink/app/V16ManeuverClassifier.kt"
+          grep -F 'versionCode = 21' app/build.gradle.kts
+          grep -F 'versionName = "1.6"' app/build.gradle.kts
+          grep -F 'implementation("org.tensorflow:tensorflow-lite:2.14.0")' app/build.gradle.kts
+          grep -F 'ZERO TRANSITION GUARD: distance=0 soppressa' "$NAV"
+          grep -F 'routeRemain=${model.routeRemainDistanceMeters ?: -1}m' "$NAV"
+          grep -F 'heartbeat DEFAULT rifiutato status=3; ritento una volta con WRITE_TYPE_NO_RESPONSE' "$NAV"
+          grep -F 'p[14] = m.roadFlag.coerceIn(0, 4).toByte()' "$NAV"
+          grep -F 'p[16] = m.annularDegrees.coerceIn(0, 255).toByte()' "$NAV"
+          grep -F 'p[10] = (m.directionOverride ?: directionCode(m.maneuver)).coerceIn(0, 9).toByte()' "$NAV"
+          grep -F 'data class RoundaboutEncoding' "$ML"
+          test -s app/src/main/res/raw/maneuver_model.tflite
+          test "$(git hash-object app/src/main/res/raw/maneuver_model.tflite)" = "$EXPECTED_MODEL_BLOB"
+
+      - name: Build and bind exact unsigned APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew assembleRelease --stacktrace
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -f "$APK"
+          echo "$EXPECTED_UNSIGNED_SHA256  $APK" | sha256sum -c -
+          BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
+          echo "$BADGING" | head -n4
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
+
+      - name: Save exact materialized app tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -C . -czf /tmp/motolink-v16-app.tgz app/src app/build.gradle.kts
+          cp THIRD_PARTY_NOTICES.md /tmp/THIRD_PARTY_NOTICES.md
+
+      - name: Overlay vc21 source onto current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout -B publish-v1.6-main origin/main
+          rm -rf app/src
+          tar -C . -xzf /tmp/motolink-v16-app.tgz
+          cp /tmp/THIRD_PARTY_NOTICES.md THIRD_PARTY_NOTICES.md
+          mkdir -p docs
+          cat > docs/RELEASE_NOTES_V1.6.md <<'EOF'
+          # MotoLink V1.6
+
+          MotoLink V1.6 porta nella release pubblica la nuova modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo invariato il mirroring EasyConn/QR/Hotspot già disponibile.
+
+          ## Novità principali
+
+          - nuovo profilo di connessione **BLE**, dedicato alla navigazione turn-by-turn e separato dal mirroring video;
+          - trasporto BLE VOGE con heartbeat, coda serializzata e fallback adattivo `WRITE_TYPE_NO_RESPONSE` per i TFT che rifiutano la scrittura DEFAULT;
+          - interpretazione locale delle indicazioni Google Maps, incluse le uscite di rotonda, con modello TensorFlow Lite eseguito sul dispositivo;
+          - encoding VOGE aggiornato per direzione, `roadFlag`, settore anulare e campi di percorso;
+          - **Zero Transition Guard** per evitare che un aggiornamento transitorio a 0 m sovrascriva la manovra successiva;
+          - compilazione dei campi VOGE di **tempo e chilometraggio restanti** del percorso quando Google Maps li espone nella notifica;
+          - miglioramenti di stabilità e recovery BLE senza modificare il core EasyConn/H264 già validato;
+          - Garage e scelta profilo aggiornati per Hotspot, QR Code e BLE.
+
+          ## Compatibilità e limiti
+
+          La modalità BLE invia indicazioni di navigazione e **non effettua mirroring video**. La resa grafica finale delle manovre dipende dal firmware del TFT: su alcuni display una rotonda può essere rappresentata come freccia dell'uscita anziché con un'icona circolare dedicata.
+
+          Il collegamento mirroring tramite Hotspot/QR continua a usare il percorso EasyConn previsto dal relativo profilo moto.
+
+          ## APK ufficiale
+
+          Scaricare `MotoLink_V1.6.apk` dagli asset di questa release. L'APK mantiene la firma permanente MotoLink ed è installabile come aggiornamento delle release ufficiali precedenti firmate con la stessa identità.
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('CHANGELOG.md')
+          s=p.read_text(encoding='utf-8') if p.exists() else '# Changelog\n'
+          marker='## V1.6\n'
+          if marker not in s:
+              block='''\n## V1.6\n\n- Aggiunta modalità BLE turn-by-turn per TFT VOGE compatibili.\n- Aggiunto fallback adattivo WRITE_TYPE_NO_RESPONSE.\n- Aggiunta classificazione locale delle uscite di rotonda.\n- Corretto l’encoding VOGE di direzione, roadFlag e annularDegrees.\n- Aggiunto Zero Transition Guard per gli aggiornamenti a 0 m.\n- Aggiunti tempo e distanza restanti del percorso nel frame VOGE quando disponibili da Google Maps.\n- Preservato il core mirroring EasyConn/H264 validato.\n\n'''
+              if s.startswith('#'):
+                  first_nl=s.find('\n')
+                  s=s[:first_nl+1]+block+s[first_nl+1:]
+              else:
+                  s=block+s
+              p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Rebuild main overlay and verify exact unsigned identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf app/build
+          ./gradlew assembleRelease --stacktrace
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          echo "$EXPECTED_UNSIGNED_SHA256  $APK" | sha256sum -c -
+          BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
+
+      - name: Commit and push official V1.6 source to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "MotoLink Release Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add app/src app/build.gradle.kts THIRD_PARTY_NOTICES.md CHANGELOG.md docs/RELEASE_NOTES_V1.6.md
+          if git diff --cached --quiet; then
+            echo 'No source changes to publish'
+          else
+            git commit -m 'Publish MotoLink V1.6 official source'
+            git push origin HEAD:main
+          fi
+          echo "PUBLIC_MAIN_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "Published main: $(git rev-parse HEAD)"
