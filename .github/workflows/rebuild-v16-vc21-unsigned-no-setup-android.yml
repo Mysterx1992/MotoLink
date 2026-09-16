@@ -1,4 +1,4 @@
-name: Rebuild exact MotoLink V1.6 vc21 unsigned
+name: Verify exact MotoLink V1.6 vc21 signed reconstruction
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  rebuild:
+  verify-exact-signed-apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,30 +56,41 @@ jobs:
           python3 tools/apply_v16_vc21_route_remaining_distance.py
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('app/build.gradle.kts')
-          s=p.read_text(encoding='utf-8')
-          if s.count('versionCode = 20') != 1: raise SystemExit('versionCode 20 not unique')
-          p.write_text(s.replace('versionCode = 20','versionCode = 21',1), encoding='utf-8')
+          p = Path('app/build.gradle.kts')
+          s = p.read_text(encoding='utf-8')
+          if s.count('versionCode = 20') != 1:
+              raise SystemExit('versionCode 20 not unique')
+          p.write_text(s.replace('versionCode = 20', 'versionCode = 21', 1), encoding='utf-8')
           PY
 
-      - name: Compile release unsigned APK
+      - name: Compile vc21 unsigned payloads
         run: ./gradlew assembleRelease --stacktrace
 
-      - name: Record identity and stage diagnostic artifact
+      - name: Reconstruct exact frozen signed APK
         run: |
           set -euo pipefail
-          APK=app/build/outputs/apk/release/app-release-unsigned.apk
-          test -f "$APK"
-          ACTUAL=$(sha256sum "$APK" | awk '{print $1}')
-          echo "unsigned_sha256=$ACTUAL"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
           mkdir -p out
-          cp "$APK" out/MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED_DIAGNOSTIC.apk
-          printf '%s\n' "$ACTUAL" > out/unsigned.sha256
+          cat .github/release-assets/v1.6/vc21-blueprint.b64.part* | base64 -d > /tmp/vc21-blueprint.mlbp.xz
+          echo "2280c98db7a1e1d7721a7923aea05639892efa63db298672f5b4fc3b6982149d  /tmp/vc21-blueprint.mlbp.xz" | sha256sum -c -
+          python3 .github/release-assets/v1.6/reconstruct_signed_apk.py \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            /tmp/vc21-blueprint.mlbp.xz \
+            out/MotoLink_V1.6.apk
+          echo "cedba0a0f8cc9beacacbf8c8c85258a72bb89223061511f75b298bfc120b3f9e  out/MotoLink_V1.6.apk" | sha256sum -c -
 
-      - uses: actions/upload-artifact@v4
+      - name: Verify package, version and MotoLink signing certificate
+        run: |
+          set -euo pipefail
+          APK=out/MotoLink_V1.6.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | tee /tmp/badging.txt
+          grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'" /tmp/badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK" | tee /tmp/apksigner.txt
+          grep -Fi "Signer #1 certificate SHA-256 digest: 9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100" /tmp/apksigner.txt
+
+      - name: Upload exact verified APK
+        uses: actions/upload-artifact@v4
         with:
-          name: vc21-unsigned-diagnostic-20260916
-          path: out/
+          name: MotoLink-V1.6-vc21-EXACT-SIGNED-VERIFIED
+          path: out/MotoLink_V1.6.apk
           if-no-files-found: error
           retention-days: 1
