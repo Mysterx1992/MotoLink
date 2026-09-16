@@ -1,0 +1,85 @@
+name: Rebuild exact MotoLink V1.6 vc21 unsigned
+
+on:
+  push:
+    branches: [ "ops/rebuild-v16-vc21-unsigned-20260916" ]
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Use preinstalled Android SDK and install exact components
+        run: |
+          set -euo pipefail
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          command -v sdkmanager
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Materialize exact vc20 source lineage
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/build-v16-vc20-zero-transition-guard.yml').read_text(encoding='utf-8')
+          names = ['Materialize exact vc19 source lineage','Apply vc20 zero transition guard']
+          out = []
+          for name in names:
+              marker = f'      - name: {name}\n        run: |\n'
+              if workflow.count(marker) != 1:
+                  raise SystemExit(f'VC21 lineage extraction FAIL {name}: count={workflow.count(marker)}')
+              start = workflow.index(marker) + len(marker)
+              end = workflow.find('\n      - name:', start)
+              if end < 0:
+                  raise SystemExit(f'VC21 lineage extraction FAIL {name}: next step not found')
+              block = workflow[start:end]
+              for line in block.splitlines():
+                  if line.startswith('          '): out.append(line[10:])
+                  elif line.strip() == '': out.append('')
+                  else: raise SystemExit(f'unexpected indentation {line!r}')
+              out.append('')
+          Path('/tmp/materialize_vc20.sh').write_text('\n'.join(out) + '\n', encoding='utf-8')
+          PY
+          bash /tmp/materialize_vc20.sh
+
+      - name: Apply exact vc21 patch and version bump
+        run: |
+          set -euo pipefail
+          python3 tools/apply_v16_vc21_route_remaining_distance.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/build.gradle.kts')
+          s=p.read_text(encoding='utf-8')
+          if s.count('versionCode = 20') != 1: raise SystemExit('versionCode 20 not unique')
+          p.write_text(s.replace('versionCode = 20','versionCode = 21',1), encoding='utf-8')
+          PY
+
+      - name: Compile exact release unsigned APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Verify frozen unsigned SHA-256 and identity
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -f "$APK"
+          ACTUAL=$(sha256sum "$APK" | awk '{print $1}')
+          echo "unsigned_sha256=$ACTUAL"
+          test "$ACTUAL" = "e271bd723cc7ee962ae0d291074087776c44771558a4395d8455040fa6188dac"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
+          mkdir -p out
+          cp "$APK" out/MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vc21-exact-unsigned-rebuild
+          path: out/MotoLink_V1.6_vc21_ROUTE_REMAINING_DISTANCE_UNSIGNED.apk
+          if-no-files-found: error
+          retention-days: 1
