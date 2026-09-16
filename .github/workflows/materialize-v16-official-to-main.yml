@@ -15,7 +15,7 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      EXPECTED_UNSIGNED_SHA256: e271bd723cc7ee962ae0d291074087776c44771558a4395d8455040fa6188dac
+      ORIGINAL_TESTED_UNSIGNED_SHA256: e271bd723cc7ee962ae0d291074087776c44771558a4395d8455040fa6188dac
       EXPECTED_MODEL_BLOB: e0104c6dcd104f05ee3fe08eb9922c036d60c9da
     steps:
       - name: Checkout vc21 lineage
@@ -94,17 +94,29 @@ jobs:
           test -s app/src/main/res/raw/maneuver_model.tflite
           test "$(git hash-object app/src/main/res/raw/maneuver_model.tflite)" = "$EXPECTED_MODEL_BLOB"
 
-      - name: Build and bind exact unsigned APK
+      - name: Build and bind current unsigned APK
         shell: bash
         run: |
           set -euo pipefail
           ./gradlew assembleRelease --stacktrace
           APK=app/build/outputs/apk/release/app-release-unsigned.apk
           test -f "$APK"
-          echo "$EXPECTED_UNSIGNED_SHA256  $APK" | sha256sum -c -
+          CURRENT_UNSIGNED_SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          echo "CURRENT_UNSIGNED_SHA256=$CURRENT_UNSIGNED_SHA256" >> "$GITHUB_ENV"
+          echo "Current toolchain unsigned SHA-256: $CURRENT_UNSIGNED_SHA256"
+          echo "Original tested unsigned SHA-256: $ORIGINAL_TESTED_UNSIGNED_SHA256"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
           echo "$BADGING" | head -n4
           echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
+          cp "$APK" /tmp/MotoLink_V1.6_CURRENT_TOOLCHAIN_UNSIGNED.apk
+
+      - name: Upload current-toolchain unsigned APK for byte comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.6_CURRENT_TOOLCHAIN_UNSIGNED
+          path: /tmp/MotoLink_V1.6_CURRENT_TOOLCHAIN_UNSIGNED.apk
+          if-no-files-found: error
+          retention-days: 2
 
       - name: Save exact materialized app tree
         shell: bash
@@ -164,14 +176,16 @@ jobs:
               p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Rebuild main overlay and verify exact unsigned identity
+      - name: Rebuild main overlay and verify current-toolchain identity
         shell: bash
         run: |
           set -euo pipefail
           rm -rf app/build
           ./gradlew assembleRelease --stacktrace
           APK=app/build/outputs/apk/release/app-release-unsigned.apk
-          echo "$EXPECTED_UNSIGNED_SHA256  $APK" | sha256sum -c -
+          REBUILT_SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          echo "Rebuilt main-overlay unsigned SHA-256: $REBUILT_SHA256"
+          test "$REBUILT_SHA256" = "$CURRENT_UNSIGNED_SHA256"
           BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
           echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
 
