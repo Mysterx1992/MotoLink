@@ -1,0 +1,63 @@
+name: Rebuild MotoLink V1.6 unsigned for exact release
+
+on:
+  push:
+    branches: [ "automation/publish-v1.6" ]
+    paths: [ ".github/workflows/rebuild-v16-unsigned-for-exact-release.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fc212a223710a297aa27113a676420bef32b975b
+          fetch-depth: 1
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Prepare Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+          test -x "$ANDROID_HOME/build-tools/36.0.0/aapt2"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build frozen V1.6 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'versionCode = 21' app/build.gradle.kts
+          grep -F 'versionName = "1.6"' app/build.gradle.kts
+          rm -rf app/build
+          ./gradlew assembleRelease --stacktrace
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -f "$APK"
+          BADGING="$($ANDROID_HOME/build-tools/36.0.0/aapt2 dump badging "$APK")"
+          echo "$BADGING" | grep -F "package: name='it.motolink.app' versionCode='21' versionName='1.6'"
+          sha256sum "$APK" | tee /tmp/unsigned.sha256
+          cp "$APK" /tmp/MotoLink_V1.6_vc21_REBUILT_UNSIGNED.apk
+
+      - name: Upload unsigned reconstruction input
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1.6_vc21_REBUILT_UNSIGNED
+          path: |
+            /tmp/MotoLink_V1.6_vc21_REBUILT_UNSIGNED.apk
+            /tmp/unsigned.sha256
+          retention-days: 7
+          if-no-files-found: error
