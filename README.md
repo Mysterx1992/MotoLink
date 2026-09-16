@@ -3,10 +3,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6.apk">
-    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.6-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.6">
-  </a>
-  &nbsp;
   <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
     <img src="https://img.shields.io/badge/RELEASE-Ultima%20versione-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="Ultima release MotoLink">
   </a>
@@ -29,6 +25,8 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ## 🆕 MotoLink V1.6
 
+Il sorgente MotoLink V1.6 è pubblicato su `main`. La Release GitHub binaria V1.6 con APK ufficiale è in fase di chiusura.
+
 MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo il mirroring EasyConn tramite i profili Hotspot/QR.
 
 ### Novità principali
@@ -44,27 +42,14 @@ MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibi
 
 La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono mostrare la freccia dell'uscita invece di un'icona circolare dedicata per le rotonde.
 
-### Aggiornamento
-
-Chi utilizza già una release ufficiale firmata con l'identità permanente MotoLink può installare `MotoLink_V1.6.apk` come aggiornamento.
-
-> [!NOTE]
-> Se sul telefono è installata una vecchia build MotoLink firmata con una firma differente, Android può richiedere una disinstallazione una tantum prima dell'installazione della release ufficiale.
-
 ---
 
 ## Scarica MotoLink
 
-### APK ufficiale V1.6
-
-<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6.apk">
-  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.6.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.6">
-</a>
-
-**Pagina dell'ultima release:**  
+**Pagina dell'ultima release pubblicata:**  
 https://github.com/Mysterx1992/MotoLink/releases/latest
 
-**Versioni precedenti:**  
+**Tutte le versioni:**  
 https://github.com/Mysterx1992/MotoLink/releases
 
 > [!NOTE]
@@ -199,7 +184,8 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Release pubblica | ✅ `v1.6` |
+| Sorgente V1.6 su `main` | ✅ Pubblicato |
+| Release binaria V1.6 | ⏳ In chiusura |
 | Mirroring EasyConn | ✅ Implementato |
 | Navigazione BLE turn-by-turn | ✅ Implementata |
 | Garage / profili moto | ✅ Implementato |
