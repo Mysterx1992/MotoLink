@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5.1/MotoLink_V1.5.1.apk">
-    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.5.1-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.5.1">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6.apk">
+    <img src="https://img.shields.io/badge/SCARICA-MotoLink%20V1.6-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Scarica MotoLink V1.6">
   </a>
   &nbsp;
   <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
@@ -27,22 +27,26 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.5.1
+## 🆕 MotoLink V1.6
 
-La V1.5.1 è un aggiornamento di stabilità della V1.5, con particolare attenzione alla Modalità tasca/prossimità e alla prevenzione del blocco automatico del telefono durante il mirroring.
+MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo il mirroring EasyConn tramite i profili Hotspot/QR.
 
-### Novità e correzioni principali
+### Novità principali
 
-- **Prossimità più affidabile all’avvio:** se l’armamento arriva prima che MediaProjection e il video siano realmente pronti, MotoLink conserva la richiesta e la applica automaticamente appena la sessione è pronta.
-- **Modalità tasca mantenuta attiva:** listener di prossimità e wake-lock dedicato restano armati fino a STOP/teardown della sessione.
-- **Anti auto-lock durante il mirroring:** MotoLink mantiene il telefono sveglio rispetto al normale timeout di inattività; il tasto Power manuale resta utilizzabile.
-- **Diagnostica blocco schermo migliorata:** il Log distingue il percorso di prossimità, l’anti-auto-lock attivo e i possibili blocchi manuali/policy OEM.
-- **Doppio Volume Giù invariato** come comando manuale di blackout/riattivazione.
-- **Core validato preservato:** EasyConn, H264, clock, percorsi rete e geometrie display già validate restano invariati da questo bugfix.
+- **Profilo BLE dedicato** alla navigazione turn-by-turn, separato dal mirroring video.
+- **Trasporto BLE VOGE** con heartbeat, coda serializzata e fallback adattivo `WRITE_TYPE_NO_RESPONSE`.
+- **Indicazioni Google Maps locali**, comprese le uscite di rotonda, tramite classificatore TensorFlow Lite eseguito sul dispositivo.
+- **Encoding VOGE aggiornato** per direzione, `roadFlag`, settore anulare e campi di percorso.
+- **Zero Transition Guard** per evitare che aggiornamenti transitori a 0 m sovrascrivano la manovra successiva.
+- **Tempo e chilometraggio restanti** valorizzati quando Google Maps li espone nella notifica.
+- **Recovery BLE migliorato**, mantenendo il core EasyConn/H264 già validato.
+- **Garage aggiornato** per i profili Hotspot, QR Code e BLE.
+
+La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono mostrare la freccia dell'uscita invece di un'icona circolare dedicata per le rotonde.
 
 ### Aggiornamento
 
-Chi utilizza già una release ufficiale firmata con l'identità permanente MotoLink può installare `MotoLink_V1.5.1.apk` come aggiornamento.
+Chi utilizza già una release ufficiale firmata con l'identità permanente MotoLink può installare `MotoLink_V1.6.apk` come aggiornamento.
 
 > [!NOTE]
 > Se sul telefono è installata una vecchia build MotoLink firmata con una firma differente, Android può richiedere una disinstallazione una tantum prima dell'installazione della release ufficiale.
@@ -51,10 +55,10 @@ Chi utilizza già una release ufficiale firmata con l'identità permanente MotoL
 
 ## Scarica MotoLink
 
-### APK ufficiale V1.5.1
+### APK ufficiale V1.6
 
-<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.5.1/MotoLink_V1.5.1.apk">
-  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.5.1.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.5.1">
+<a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6.apk">
+  <img src="https://img.shields.io/badge/⬇%20DOWNLOAD%20DIRETTO-MotoLink_V1.6.apk-39FF14?style=for-the-badge&logo=android&logoColor=000000" alt="Download diretto MotoLink V1.6">
 </a>
 
 **Pagina dell'ultima release:**  
@@ -89,17 +93,17 @@ Gli screenshot originali dell'app sono disponibili in [`docs/screenshots`](docs/
 
 ## Compatibilità moto
 
-MotoLink è progettata per lavorare con display moto compatibili con il flusso di mirroring supportato dall'app.
+MotoLink è progettata per lavorare con display moto compatibili con i flussi supportati dall'app: mirroring EasyConn/Hotspot/QR e, sui modelli compatibili, navigazione BLE turn-by-turn.
 
-La compatibilità reale può dipendere da modello della moto, display/T-Box, firmware, versione Android e implementazione EasyConn/Carbit presente sul display.
+La compatibilità reale può dipendere da modello della moto, display/T-Box, firmware, versione Android e implementazione EasyConn/Carbit/BLE presente sul display.
 
 Moto sulle quali l'app è stata testata:
 
 | Marca | Modello | Anno / versione | Display / sistema | Stato | Note |
 |---|---|---|---|---|---|
 | _Voge_ | _Trofeo_ | _2023_ | _TFT / EasyConn_ | ✅ Testata | _App implementata per questo specifico modello_ |
-| _Voge_ | _Valico 900_ | _2026_ | _TFT / EasyConn_ | ✅ Testata | _App testata e funzionante con collegamento QR Code_ |
-| _Voge_ | _Valico 625 dsx_ | _20025_ | _TFT / BLE_ | ✅ Testata | _App testata e funzionante con collegamento Bluetooth_ |
+| _Voge_ | _Valico 900_ | _2026_ | _TFT / BLE / EasyConn dove disponibile_ | ✅ Testata | _Navigazione BLE fisicamente verificata; QR/EasyConn disponibile sulle configurazioni compatibili_ |
+| _Voge_ | _Valico 625 DSX_ | _2025_ | _TFT / BLE_ | ✅ Testata | _Navigazione turn-by-turn BLE fisicamente verificata_ |
 | _CFMOTO_ | _700 MT Stradale_ | _2024_ | _TFT / EasyConn_ | ✅ Testata | _Connessione P2P/EasyConn e avvio video verificati fisicamente nella lineage V1.5/V1.5.1_ |
 
 > [!WARNING]
@@ -109,15 +113,19 @@ Moto sulle quali l'app è stata testata:
 
 ## Cosa fa MotoLink
 
-### 🏍️ Connessione e mirroring
+### 🏍️ Connessione, mirroring e BLE
 
-MotoLink gestisce il collegamento con il display moto compatibile e permette di avviare il mirroring direttamente dalla Home.
+MotoLink gestisce il collegamento con il display moto compatibile. I profili Hotspot/QR vengono utilizzati per il mirroring EasyConn; il profilo BLE è dedicato alla navigazione turn-by-turn sui TFT VOGE compatibili.
 
 ### 🏠 Garage e profili moto
 
 Il Garage permette di salvare e gestire fino a tre profili moto. Ogni profilo può mantenere le proprie impostazioni e regolazioni di Adattamento.
 
-Al primo START, se non esiste ancora un profilo, MotoLink permette di scegliere HOTSPOT oppure QR CODE e guida l'utente nella creazione completa del profilo prima di continuare automaticamente la connessione.
+Al primo START, se non esiste ancora un profilo, MotoLink permette di scegliere **Hotspot, QR Code oppure BLE** e guida l'utente nella creazione del profilo prima di continuare la connessione.
+
+### 🧭 Navigazione BLE
+
+Con un profilo BLE compatibile MotoLink legge le indicazioni di navigazione esposte da Google Maps tramite il Notification Listener autorizzato dall'utente e le converte nel protocollo turn-by-turn del TFT. La modalità BLE non effettua mirroring video.
 
 ### ⭐ App preferite
 
@@ -165,7 +173,9 @@ Le funzioni tecniche possono richiedere:
 
 | Accesso / conferma | Quando viene usato | Perché serve |
 |---|---|---|
-| **Connessione moto / Wi-Fi** | Collegamento alla moto | Comunicazione con il TFT tramite Wi-Fi / Wi-Fi Direct. |
+| **Connessione moto / Wi-Fi** | Collegamento Hotspot/QR | Comunicazione con il TFT tramite Wi-Fi / Wi-Fi Direct. |
+| **Dispositivi Bluetooth vicini** | Profilo BLE | Scansione, connessione e comunicazione turn-by-turn con TFT BLE compatibili. |
+| **Accesso alle notifiche** | Navigazione BLE con Google Maps | Lettura delle indicazioni di navigazione esposte dalla notifica di Google Maps. |
 | **Fotocamera** | Solo quando serve il fallback scanner QR interno | Lettura del QR della moto. |
 | **MediaProjection / condivisione schermo** | Avvio mirroring | Autorizzazione Android alla cattura dello schermo o di una singola app. |
 | **Mostra sopra altre app** | Quando richiesto | Modalità tasca / schermo nero e pannello di Adattamento. |
@@ -189,8 +199,9 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Release pubblica | ✅ `v1.5.1` |
-| Mirroring | ✅ Implementato |
+| Release pubblica | ✅ `v1.6` |
+| Mirroring EasyConn | ✅ Implementato |
+| Navigazione BLE turn-by-turn | ✅ Implementata |
 | Garage / profili moto | ✅ Implementato |
 | App preferite | ✅ Implementato |
 | Adattamento display | ✅ Implementato |
@@ -233,6 +244,6 @@ Per i termini completi consulta [`LICENSE`](LICENSE).
 ---
 
 <p align="center">
-  <strong>MotoLink V1.5.1</strong><br>
-  Mirroring • Connessione • Supporto
+  <strong>MotoLink V1.6</strong><br>
+  Mirroring • BLE Turn-by-Turn • Connessione • Supporto
 </p>
