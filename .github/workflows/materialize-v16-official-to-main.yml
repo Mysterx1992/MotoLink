@@ -13,6 +13,8 @@ jobs:
   publish-source:
     runs-on: ubuntu-latest
     env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       EXPECTED_UNSIGNED_SHA256: e271bd723cc7ee962ae0d291074087776c44771558a4395d8455040fa6188dac
       EXPECTED_MODEL_BLOB: e0104c6dcd104f05ee3fe08eb9922c036d60c9da
     steps:
@@ -26,10 +28,16 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-
-      - name: Install Android 36 build tools
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - name: Prepare Android SDK 36 without deprecated setup action
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+          test -x "$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
 
       - uses: gradle/actions/setup-gradle@v4
 
