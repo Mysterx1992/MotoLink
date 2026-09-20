@@ -1,0 +1,64 @@
+name: Build MotoLink V1.6.1 proximity hotfix
+
+on:
+  push:
+    branches:
+      - "hotfix/v1.6.1-proximity-vc22"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build vc22 debug hotfix without Actions artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout hotfix
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android API 36
+        run: sdkmanager "platforms;android-36" "platform-tools"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Verify APK identity and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$SRC"
+          cp "$SRC" MotoLink_V1.6.1_VC22_PROXIMITY_HOTFIX_DEBUG.apk
+          sha256sum MotoLink_V1.6.1_VC22_PROXIMITY_HOTFIX_DEBUG.apk | tee SHA256SUMS_V1.6.1_VC22.txt
+          ls -lh MotoLink_V1.6.1_VC22_PROXIMITY_HOTFIX_DEBUG.apk
+
+      - name: Publish prerelease asset directly
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v1.6.1-proximity-hotfix-vc22-debug"
+          APK="MotoLink_V1.6.1_VC22_PROXIMITY_HOTFIX_DEBUG.apk"
+          SUM="SHA256SUMS_V1.6.1_VC22.txt"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$SUM" --clobber
+          else
+            gh release create "$TAG" "$APK" "$SUM"               --target "$GITHUB_SHA"               --prerelease               --title "MotoLink V1.6.1 vc22 proximity hotfix (debug test)"               --notes "Hotfix isolata: con Modalità tasca NO il percorso proximity viene disarmato completamente. Build debug: se la V1.6 installata usa una firma diversa, Android richiederà disinstallazione/reinstallazione. Nessun artifact Actions viene caricato."
+          fi
