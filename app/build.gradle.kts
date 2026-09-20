@@ -17,9 +17,22 @@ android {
         versionName = "1.6.1"
     }
 
+    signingConfigs {
+        create("motolinkRelease") {
+            val keystorePath = System.getenv("MOTOLINK_KEYSTORE_PATH")
+            if (!keystorePath.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("MOTOLINK_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("MOTOLINK_KEY_ALIAS")
+                keyPassword = System.getenv("MOTOLINK_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("motolinkRelease")
         }
     }
 
