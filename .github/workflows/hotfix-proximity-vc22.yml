@@ -1,9 +1,6 @@
 name: Build MotoLink V1.6.1 proximity hotfix
 
 on:
-  push:
-    branches:
-      - "hotfix/v1.6.1-proximity-vc22"
   workflow_dispatch:
 
 permissions:
