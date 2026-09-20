@@ -266,12 +266,12 @@ class MainActivity : Activity() {
             setHeaderStatus("Pronto", activeProfile?.displayName ?: "", C_GREEN)
             setState(
                 "Sistema pronto",
-                activeProfile?.let { "Profilo moto salvato · START per connettere" } ?: "La prossimità è sempre attiva",
+                activeProfile?.let { "Profilo moto salvato · START per connettere" } ?: "START per connettere",
                 C_GREEN,
                 "LAN"
             )
         }
-        AppLog.add("MotoLink V1.6 GUI pronta; BLE navigazione integrato; core EasyConn/H264 V1.5.1 preservato")
+        AppLog.add("MotoLink V1.6.1 GUI pronta; hotfix prossimità OFF; BLE/EasyConn/H264 preservati")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -1412,7 +1412,7 @@ class MainActivity : Activity() {
             } else {
                 pocketModeForPendingStart = false
                 AppLog.add(
-                    "MODALITÀ TASCA: autorizzazione non concessa; proseguo comunque con il solo proximity nativo"
+                    "MODALITÀ TASCA: autorizzazione non concessa; prossimità disattivata per questa sessione"
                 )
             }
             prepareBikeNetworkThenProjection()
@@ -1890,17 +1890,23 @@ class MainActivity : Activity() {
         startForegroundService(serviceIntent)
         AppLog.markMirrorSessionStarted()
 
-        // The native proximity wake-lock is always armed. The transparent Gate workaround
-        // is enabled only when the rider chose Pocket Mode and Android granted SAW.
-        val gateAllowed = pocketModeForPendingStart &&
+        // V1.6.1 hotfix: Pocket Mode OFF must disable the whole proximity path.
+        // Never acquire PROXIMITY_SCREEN_OFF_WAKE_LOCK or keep TYPE_PROXIMITY armed
+        // when the rider selected NO. ACTION_PROX_RELEASE also clears any stale hold.
+        val proximityEnabled = pocketModeForPendingStart
+        val gateAllowed = proximityEnabled &&
             (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this))
         AppLog.add(
-            "MODALITÀ TASCA SESSIONE: scelta=${if (pocketModeForPendingStart) "SI" else "NO"} " +
-                "gateAllowed=$gateAllowed; proximity nativo sempre armato"
+            "MODALITÀ TASCA SESSIONE: scelta=${if (proximityEnabled) "SI" else "NO"} " +
+                "proximity=${if (proximityEnabled) "ON" else "OFF"} gateAllowed=$gateAllowed"
         )
         startService(Intent(this, MirrorService::class.java).apply {
-            action = MirrorService.ACTION_PROX_ARM
-            putExtra(MirrorService.EXTRA_PROX_GATE_ALLOWED, gateAllowed)
+            if (proximityEnabled) {
+                action = MirrorService.ACTION_PROX_ARM
+                putExtra(MirrorService.EXTRA_PROX_GATE_ALLOWED, gateAllowed)
+            } else {
+                action = MirrorService.ACTION_PROX_RELEASE
+            }
         })
 
         setRunSelection(RunSelection.START)
@@ -3247,7 +3253,11 @@ class MainActivity : Activity() {
 
     private fun showInstalledReleaseNotes() {
         val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.6" }.getOrDefault("1.6")
-        val notes = if (version == "1.6") {
+        val notes = if (version == "1.6.1") {
+            "• Hotfix Modalità tasca: con scelta NO il sensore di prossimità non spegne più lo schermo.\n" +
+                "• Il listener TYPE_PROXIMITY e il wake-lock PROXIMITY_SCREEN_OFF restano disarmati quando la funzione è OFF.\n" +
+                "• EasyConn, H264, BLE, navigazione e clock non sono stati modificati."
+        } else if (version == "1.6") {
             "• Nuova configurazione del profilo con scelta tra Hotspot, QrCode e Bluetooth BLE.\n" +
                 "• Aggiunto il supporto alla navigazione Bluetooth BLE sul display della moto per i modelli compatibili.\n" +
                 "• Migliorata la gestione della connessione e della riconnessione alla moto.\n" +
