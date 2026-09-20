@@ -1,0 +1,108 @@
+name: Build MotoLink V1.6.1 vc22 official signed hotfix
+
+on:
+  push:
+    branches:
+      - "hotfix/v1.6.1-proximity-vc22"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build official signed vc22 proximity hotfix
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout hotfix
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android API 36 from runner SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "platform-tools" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore official MotoLink keystore from GitHub secret
+        id: signing
+        env:
+          MOTOLINK_KEYSTORE_B64: ${{ secrets.MOTOLINK_KEYSTORE_B64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$MOTOLINK_KEYSTORE_B64"
+          KEYSTORE="$RUNNER_TEMP/MotoLink_Release_Keystore.jks"
+          printf '%s' "$MOTOLINK_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          echo "keystore_path=$KEYSTORE" >> "$GITHUB_OUTPUT"
+
+      - name: Build signed release APK
+        env:
+          MOTOLINK_KEYSTORE_PATH: ${{ steps.signing.outputs.keystore_path }}
+          MOTOLINK_KEYSTORE_PASSWORD: ${{ secrets.MOTOLINK_KEYSTORE_PASSWORD }}
+          MOTOLINK_KEY_ALIAS: ${{ secrets.MOTOLINK_KEY_ALIAS }}
+          MOTOLINK_KEY_PASSWORD: ${{ secrets.MOTOLINK_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$MOTOLINK_KEYSTORE_PASSWORD"
+          test -n "$MOTOLINK_KEY_ALIAS"
+          test -n "$MOTOLINK_KEY_PASSWORD"
+          chmod +x ./gradlew
+          rm -rf app/build
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Verify official identity and signing certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$APK" | tee /tmp/badging.txt
+          grep -F "package: name='it.motolink.app' versionCode='22' versionName='1.6.1'" /tmp/badging.txt
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK" | tee /tmp/apksigner.txt
+          grep -Fi "Signer #1 certificate SHA-256 digest: 9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100" /tmp/apksigner.txt
+
+          cp "$APK" MotoLink_V1.6.1_VC22_PROXIMITY_HOTFIX_OFFICIAL.apk
+          sha256sum MotoLink_V1.6.1_VC22_PROXIMITY_HOTFIX_OFFICIAL.apk | tee SHA256SUMS_V1.6.1_VC22_OFFICIAL.txt
+
+      - name: Publish official prerelease directly
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v1.6.1-proximity-hotfix-vc22-official"
+          APK="MotoLink_V1.6.1_VC22_PROXIMITY_HOTFIX_OFFICIAL.apk"
+          SUM="SHA256SUMS_V1.6.1_VC22_OFFICIAL.txt"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$SUM" --clobber
+          else
+            gh release create "$TAG" "$APK" "$SUM"               --target "$GITHUB_SHA"               --prerelease               --title "MotoLink V1.6.1 vc22 proximity hotfix OFFICIAL"               --notes "Hotfix proximity firmata con identità MotoLink ufficiale. Gate obbligatorio: package it.motolink.app, versionCode 22, versionName 1.6.1, certificate SHA-256 9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100. Nessun Actions artifact."
+          fi
+
+      - name: Destroy temporary keystore
+        if: always()
+        shell: bash
+        run: |
+          KEYSTORE="$RUNNER_TEMP/MotoLink_Release_Keystore.jks"
+          if [ -f "$KEYSTORE" ]; then
+            shred -u "$KEYSTORE" 2>/dev/null || rm -f "$KEYSTORE"
+          fi
