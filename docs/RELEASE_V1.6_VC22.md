@@ -5,8 +5,9 @@
 - Package: `it.motolink.app`
 - Version name: `1.6`
 - Version code: `22`
-- APK ufficiale preparato: `MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk`
-- SHA-256 APK: `8e5516a3c655eb1314aa57dfa5ab65328db8447cbf01018892004e4f00487067`
+- APK ufficiale: `MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk`
+- Download: https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk
+- SHA-256 APK: `dc3933db1738b31abf42b9fe449a50a6ed19653bb5812b6e6f89d73cbb5d8acf`
 - Certificato MotoLink SHA-256: `9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100`
 
 ## Fix vc22
