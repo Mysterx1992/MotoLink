@@ -25,7 +25,7 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ## 🆕 MotoLink V1.6
 
-Il sorgente MotoLink **V1.6 vc22** è pubblicato su `main`. La vc22 include il fix della Modalità tasca: quando è disattivata, MotoLink non arma più il sensore di prossimità né il `PROXIMITY_SCREEN_OFF_WAKE_LOCK`.
+MotoLink **V1.6 vc22** è pubblicata come release stabile. La vc22 include il fix della Modalità tasca: quando è disattivata, MotoLink non arma più il sensore di prossimità né il `PROXIMITY_SCREEN_OFF_WAKE_LOCK`.
 
 MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo il mirroring EasyConn tramite i profili Hotspot/QR.
 
@@ -45,6 +45,11 @@ La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono m
 ---
 
 ## Scarica MotoLink
+
+**APK ufficiale V1.6 vc22:**  
+https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk
+
+**SHA-256:** `dc3933db1738b31abf42b9fe449a50a6ed19653bb5812b6e6f89d73cbb5d8acf`
 
 **Pagina dell'ultima release pubblicata:**  
 https://github.com/Mysterx1992/MotoLink/releases/latest
@@ -185,7 +190,7 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 |---|---|
 | Applicazione Android | ✅ Disponibile |
 | Sorgente V1.6 vc22 su `main` | ✅ Pubblicato |
-| Release binaria V1.6 vc22 | ⏳ APK ufficiale firmato pronto; asset Release da pubblicare |
+| Release binaria V1.6 vc22 | ✅ Pubblicata e firmata ufficialmente |
 | Mirroring EasyConn | ✅ Implementato |
 | Navigazione BLE turn-by-turn | ✅ Implementata |
 | Garage / profili moto | ✅ Implementato |
