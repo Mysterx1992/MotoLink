@@ -1,0 +1,30 @@
+name: Refresh MotoLink V1.6 vc22 draft release
+
+on:
+  push:
+    branches:
+      - "release/v1.6-vc22"
+    paths:
+      - ".github/workflows/refresh-v16-vc22-draft-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+
+      - name: Refresh draft release target and notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release edit v1.6 \
+            --target "$GITHUB_SHA" \
+            --title "MotoLink V1.6 vc22" \
+            --notes-file docs/RELEASE_V1.6_VC22.md
