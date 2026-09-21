@@ -51,7 +51,7 @@ jobs:
           chmod 600 "$RUNNER_TEMP/motolink-v16-handoff-private.pem"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/signing-handoff/v16-vc22-public-cert.pem
+          git add -f .github/signing-handoff/v16-vc22-public-cert.pem
           git commit -m "Publish one-time V1.6 vc22 signing handoff certificate"
           git push origin HEAD:release/v1.6-vc22
 
