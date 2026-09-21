@@ -266,12 +266,12 @@ class MainActivity : Activity() {
             setHeaderStatus("Pronto", activeProfile?.displayName ?: "", C_GREEN)
             setState(
                 "Sistema pronto",
-                activeProfile?.let { "Profilo moto salvato · START per connettere" } ?: "START per connettere",
+                activeProfile?.let { "Profilo moto salvato · START per connettere" } ?: "La prossimità è sempre attiva",
                 C_GREEN,
                 "LAN"
             )
         }
-        AppLog.add("MotoLink V1.6 vc22 GUI pronta; proximity OFF hotfix; BLE/EasyConn/H264 preservati")
+        AppLog.add("MotoLink V1.6 GUI pronta; BLE navigazione integrato; core EasyConn/H264 V1.5.1 preservato")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -1412,7 +1412,7 @@ class MainActivity : Activity() {
             } else {
                 pocketModeForPendingStart = false
                 AppLog.add(
-                    "MODALITÀ TASCA: autorizzazione non concessa; prossimità disattivata per questa sessione"
+                    "MODALITÀ TASCA: autorizzazione non concessa; proseguo comunque con il solo proximity nativo"
                 )
             }
             prepareBikeNetworkThenProjection()
@@ -1890,22 +1890,17 @@ class MainActivity : Activity() {
         startForegroundService(serviceIntent)
         AppLog.markMirrorSessionStarted()
 
-        // V1.6 vc22: Pocket Mode OFF disables the complete proximity path.
-        // ACTION_PROX_RELEASE also clears any listener/wake-lock left by a previous state.
-        val proximityEnabled = pocketModeForPendingStart
-        val gateAllowed = proximityEnabled &&
+        // The native proximity wake-lock is always armed. The transparent Gate workaround
+        // is enabled only when the rider chose Pocket Mode and Android granted SAW.
+        val gateAllowed = pocketModeForPendingStart &&
             (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(this))
         AppLog.add(
-            "MODALITÀ TASCA SESSIONE: scelta=${if (proximityEnabled) "SI" else "NO"} " +
-                "proximity=${if (proximityEnabled) "ON" else "OFF"} gateAllowed=$gateAllowed"
+            "MODALITÀ TASCA SESSIONE: scelta=${if (pocketModeForPendingStart) "SI" else "NO"} " +
+                "gateAllowed=$gateAllowed; proximity nativo sempre armato"
         )
         startService(Intent(this, MirrorService::class.java).apply {
-            if (proximityEnabled) {
-                action = MirrorService.ACTION_PROX_ARM
-                putExtra(MirrorService.EXTRA_PROX_GATE_ALLOWED, gateAllowed)
-            } else {
-                action = MirrorService.ACTION_PROX_RELEASE
-            }
+            action = MirrorService.ACTION_PROX_ARM
+            putExtra(MirrorService.EXTRA_PROX_GATE_ALLOWED, gateAllowed)
         })
 
         setRunSelection(RunSelection.START)
@@ -3256,7 +3251,6 @@ class MainActivity : Activity() {
             "• Nuova configurazione del profilo con scelta tra Hotspot, QrCode e Bluetooth BLE.\n" +
                 "• Aggiunto il supporto alla navigazione Bluetooth BLE sul display della moto per i modelli compatibili.\n" +
                 "• Migliorata la gestione della connessione e della riconnessione alla moto.\n" +
-                "• Corretto il sensore di prossimità: con Modalità tasca disattivata non spegne più lo schermo.\n" +
                 "• Il comando 2x Volume Giù funziona anche quando la Modalità tasca è disattivata.\n" +
                 "• Miglioramenti generali di stabilità e affidabilità."
         } else {
