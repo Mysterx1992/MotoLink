@@ -288,7 +288,10 @@ class MirrorService : Service() {
                 }
             }
             ACTION_PROX_RELEASE -> {
+                // V1.6 vc22: OFF is authoritative for the complete proximity path.
+                proximityGateAllowed = false
                 proximityArmRequested = false
+                AppLog.add("PROX POLICY: DISABILITATA COMPLETAMENTE (listener + wake lock)")
                 releaseProximityScreenOff()
             }
             ACTION_PROX_SNAPSHOT -> {
@@ -353,7 +356,11 @@ class MirrorService : Service() {
     }
 
     private fun armProximityScreenOff() {
-        proximityArmRequested = true
+        if (!proximityArmRequested) {
+            AppLog.add("PROX ARM ignorato: policy sessione OFF")
+            releaseProximityScreenOff()
+            return
+        }
         if (projection == null || !projectionReadyForProximity) {
             AppLog.add("PROX V1.5.1 PENDING: mirroring non ancora pronto; richiesta conservata")
             return
