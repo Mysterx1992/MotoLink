@@ -1,0 +1,24 @@
+name: Cleanup obsolete V1.6 debug prerelease
+
+on:
+  push:
+    branches:
+      - "release/v1.6-vc22"
+    paths:
+      - ".github/workflows/cleanup-v16-debug-prerelease.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove obsolete debug prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete v1.6.1-proximity-hotfix-vc22-debug             --repo Mysterx1992/MotoLink             --yes             --cleanup-tag || true
