@@ -25,7 +25,7 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ## 🆕 MotoLink V1.6
 
-Il sorgente MotoLink V1.6 è pubblicato su `main`. La Release GitHub binaria V1.6 con APK ufficiale è in fase di chiusura.
+Il sorgente MotoLink **V1.6 vc22** è pubblicato su `main`. La vc22 include il fix della Modalità tasca: quando è disattivata, MotoLink non arma più il sensore di prossimità né il `PROXIMITY_SCREEN_OFF_WAKE_LOCK`.
 
 MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo il mirroring EasyConn tramite i profili Hotspot/QR.
 
@@ -38,7 +38,7 @@ MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibi
 - **Zero Transition Guard** per evitare che aggiornamenti transitori a 0 m sovrascrivano la manovra successiva.
 - **Tempo e chilometraggio restanti** valorizzati quando Google Maps li espone nella notifica.
 - **Recovery BLE migliorato**, mantenendo il core EasyConn/H264 già validato.
-- **Garage aggiornato** per i profili Hotspot, QR Code e BLE.
+- **Garage aggiornato** per i profili Hotspot, QR Code e BLE.\n- **Hotfix prossimità vc22:** con Modalità tasca OFF il listener `TYPE_PROXIMITY` e il wake-lock di prossimità vengono disarmati; il sensore non deve più spegnere lo schermo.
 
 La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono mostrare la freccia dell'uscita invece di un'icona circolare dedicata per le rotonde.
 
@@ -122,7 +122,7 @@ MotoLink include strumenti per adattare manualmente l'immagine alla geometria de
 
 ### 📱 Modalità tasca
 
-Durante il mirroring MotoLink mette a disposizione la gestione tramite sensore di prossimità e il comando con **doppio Volume Giù** per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
+Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, la vc22 mantiene il percorso di prossimità completamente disarmato. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
 
 ### 🧰 Log MotoLink
 
@@ -184,8 +184,8 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Sorgente V1.6 su `main` | ✅ Pubblicato |
-| Release binaria V1.6 | ⏳ In chiusura |
+| Sorgente V1.6 vc22 su `main` | ✅ Pubblicato |
+| Release binaria V1.6 vc22 | ⏳ APK ufficiale firmato pronto; asset Release da pubblicare |
 | Mirroring EasyConn | ✅ Implementato |
 | Navigazione BLE turn-by-turn | ✅ Implementata |
 | Garage / profili moto | ✅ Implementato |
