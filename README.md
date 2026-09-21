@@ -38,7 +38,7 @@ MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibi
 - **Zero Transition Guard** per evitare che aggiornamenti transitori a 0 m sovrascrivano la manovra successiva.
 - **Tempo e chilometraggio restanti** valorizzati quando Google Maps li espone nella notifica.
 - **Recovery BLE migliorato**, mantenendo il core EasyConn/H264 già validato.
-- **Garage aggiornato** per i profili Hotspot, QR Code e BLE.\n- **Hotfix prossimità vc22:** con Modalità tasca OFF il listener `TYPE_PROXIMITY` e il wake-lock di prossimità vengono disarmati; il sensore non deve più spegnere lo schermo.
+- **Garage aggiornato** per i profili Hotspot, QR Code e BLE.\n- **Hotfix prossimità vc22:** con Modalità tasca OFF `armProximityScreenOff()` termina prima di registrare `TYPE_PROXIMITY` o acquisire il wake-lock di prossimità; il sensore non deve più spegnere lo schermo.
 
 La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono mostrare la freccia dell'uscita invece di un'icona circolare dedicata per le rotonde.
 
@@ -122,7 +122,7 @@ MotoLink include strumenti per adattare manualmente l'immagine alla geometria de
 
 ### 📱 Modalità tasca
 
-Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, la vc22 mantiene il percorso di prossimità completamente disarmato. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
+Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, la vc22 impedisce l'armamento del listener e del wake-lock di prossimità. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
 
 ### 🧰 Log MotoLink
 
