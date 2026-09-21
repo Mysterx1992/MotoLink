@@ -11,17 +11,11 @@
 
 ## Fix vc22
 
-Con **Modalità tasca = NO** MotoLink non deve più lasciare attivo il percorso di prossimità.
+La patch firmata vc22 è volutamente minimale. In `MirrorService.armProximityScreenOff()` il gate che decide se proseguire con l'armamento usa `proximityGateAllowed`.
 
-Il flusso vc22:
+Quando **Modalità tasca = NO**, `proximityGateAllowed=false`: il metodo termina prima della registrazione del listener `TYPE_PROXIMITY` e prima dell'acquisizione del `PROXIMITY_SCREEN_OFF_WAKE_LOCK`. In questo modo il sensore non deve più spegnere lo schermo quando la funzione è disattivata.
 
-1. invia `ACTION_PROX_RELEASE` invece di `ACTION_PROX_ARM`;
-2. azzera la policy proximity della sessione;
-3. deregistra il listener `TYPE_PROXIMITY`;
-4. rilascia qualsiasi `PROXIMITY_SCREEN_OFF_WAKE_LOCK` residuo;
-5. impedisce a chiamate interne successive di riarmare la prossimità mentre la policy sessione è OFF.
-
-Con **Modalità tasca = SI** il comportamento di prossimità resta disponibile.
+Quando **Modalità tasca = SI** e il gate è disponibile, il comportamento di prossimità resta invariato.
 
 ## Scope preservato
 
