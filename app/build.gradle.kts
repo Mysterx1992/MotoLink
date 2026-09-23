@@ -13,8 +13,8 @@ android {
         applicationId = "it.motolink.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 23
-        versionName = "1.6-vc23-test"
+        versionCode = 24
+        versionName = "1.6-vc24-test"
     }
 
     buildTypes {
