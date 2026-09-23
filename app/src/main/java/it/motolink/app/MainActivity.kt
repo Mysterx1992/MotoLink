@@ -214,6 +214,7 @@ class MainActivity : Activity() {
             onVersionClick = { showInstalledReleaseNotes() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
+            onCreditsDonateClick = { openPayPalDonation() }
             onOnboardingFinished = {
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                     .putBoolean(PREF_ONBOARDING_COMPLETE, true)
@@ -3313,6 +3314,21 @@ class MainActivity : Activity() {
                     AppLog.add("ASSISTENTE IA: richiesta fallita ${error.javaClass.simpleName}")
                 }
             }
+        }
+    }
+
+    private fun openPayPalDonation() {
+        val donationUrl = "https://www.paypal.com/donate/?hosted_button_id=N7BM2VCKWWKNN"
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(donationUrl)))
+            AppLog.add("CREDITI: apertura pagina PayPal Sostieni MotoLink")
+        } catch (t: Throwable) {
+            AppLog.add("CREDITI: apertura PayPal fallita: ${t.javaClass.simpleName}: ${t.message.orEmpty()}")
+            NeonDialogs.showInfo(
+                this,
+                "Sostieni MotoLink",
+                "Impossibile aprire la pagina PayPal su questo dispositivo."
+            )
         }
     }
 
