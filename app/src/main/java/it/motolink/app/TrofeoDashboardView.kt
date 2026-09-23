@@ -194,7 +194,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.CREDITS,
             title = "CREDITI · Donazioni",
             body = "Sotto le sezioni Autore e Community trovi il pulsante ufficiale PayPal per sostenere MotoLink.\n\nLa donazione è completamente volontaria: non sblocca funzioni e non limita l'app. Toccando il pulsante si apre la pagina PayPal esterna.\n\nHai completato la guida. Premi FINE per tornare alla HOME.",
-            target = GuideTarget(125f, 1205f, 690f, 120f)
+            target = GuideTarget(125f, 1245f, 690f, 120f)
         )
     )
 
@@ -1227,15 +1227,15 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         bodyHost.addView(authorCard(), lp(140f, 195f, 663f, 530f))
         bodyHost.addView(communityCard(), lp(140f, 745f, 663f, 455f))
 
-        // Official PayPal Donate button: deliberately outside both cards with a real gap.
-        bodyHost.addView(payPalDonateButton(), lp(140f, 1225f, 663f, 85f))
-
         bodyHost.addView(
             text("© 2026 Emanuele. Tutti i diritti riservati.", 21f, 0xFF9D9D9D.toInt(), false).apply {
                 gravity = Gravity.CENTER
             },
-            lp(165f, 1320f, 615f, 40f)
+            lp(165f, 1210f, 615f, 35f)
         )
+
+        // Official PayPal Donate button: last element of the page, outside both cards.
+        bodyHost.addView(payPalDonateButton(), lp(140f, 1260f, 663f, 90f))
     }
 
     private fun authorCard(): View {
@@ -1264,6 +1264,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     private fun payPalDonateButton(): View {
         val web = WebView(context).apply {
             setBackgroundColor(Color.TRANSPARENT)
+            elevation = pxH(6f).toFloat()
             isVerticalScrollBarEnabled = false
             isHorizontalScrollBarEnabled = false
             settings.javaScriptEnabled = true
