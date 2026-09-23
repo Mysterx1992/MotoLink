@@ -1,0 +1,33 @@
+name: Assemble vc24 encrypted signing payload
+
+on:
+  push:
+    branches:
+      - "test/v1.6-vc23-paypal-donations"
+    paths:
+      - ".github/signing-handoff/vc24-parts/READY"
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: test/v1.6-vc23-paypal-donations
+          fetch-depth: 0
+
+      - name: Assemble encrypted payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/signing-handoff/vc24-parts/part* > .github/signing-handoff/vc24-paypal-signing.cms.b64
+          test -s .github/signing-handoff/vc24-paypal-signing.cms.b64
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f .github/signing-handoff/vc24-paypal-signing.cms.b64
+          git commit -m "Assemble encrypted vc24 signing payload"
+          git push origin HEAD:test/v1.6-vc23-paypal-donations
