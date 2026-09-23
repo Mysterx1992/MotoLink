@@ -3247,19 +3247,21 @@ class MainActivity : Activity() {
     }
 
     private fun showInstalledReleaseNotes() {
-        val version = runCatching { packageManager.getPackageInfo(packageName, 0).versionName ?: "1.6" }.getOrDefault("1.6")
-        val notes = if (version == "1.6") {
-            "• Nuova configurazione del profilo con scelta tra Hotspot, QrCode e Bluetooth BLE.\n" +
-                "• Aggiunto il supporto alla navigazione Bluetooth BLE sul display della moto per i modelli compatibili.\n" +
-                "• Migliorata la gestione della connessione e della riconnessione alla moto.\n" +
-                "• Il comando 2x Volume Giù funziona anche quando la Modalità tasca è disattivata.\n" +
+        val version = runCatching {
+            packageManager.getPackageInfo(packageName, 0).versionName ?: "1.6"
+        }.getOrDefault("1.6")
+        val displayVersion = if (version.startsWith("V", ignoreCase = true)) version else "V$version"
+        val notes =
+            "NOVITÀ $displayVersion\n\n" +
+                "• Aggiunto in Crediti il pulsante ufficiale PayPal Donazioni per sostenere volontariamente MotoLink.\n" +
+                "• Il pulsante Donazioni è separato dalle sezioni Autore e Community e apre la pagina PayPal esterna.\n" +
+                "• Corretto il comportamento della Modalità tasca: quando è disattivata il proximity non deve spegnere lo schermo.\n" +
+                "• Nuova configurazione del profilo con scelta tra Hotspot, QrCode e Bluetooth BLE.\n" +
+                "• Supporto alla navigazione Bluetooth BLE sui modelli compatibili e miglioramenti alla gestione connessione/riconnessione.\n" +
                 "• Miglioramenti generali di stabilità e affidabilità."
-        } else {
-            "Nessuna nota locale disponibile per questa versione."
-        }
         NeonDialogs.showInfo(
             activity = this,
-            title = "MotoLink $version",
+            title = "MotoLink $displayVersion",
             message = notes
         )
     }
