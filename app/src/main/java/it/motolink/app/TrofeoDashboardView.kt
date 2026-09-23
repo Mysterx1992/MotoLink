@@ -24,6 +24,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.min
@@ -1215,8 +1217,13 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     private fun buildCredits() {
         bodyHost.addView(sectionTitle("Crediti"), lp(58f, 47f, 824f, 135f))
         bodyHost.addView(authorCard(), lp(140f, 205f, 663f, 580f))
-        bodyHost.addView(communityCard(), lp(140f, 805f, 663f, 535f))
-        bodyHost.addView(text("© 2026 Emanuele. Tutti i diritti riservati.", 21f, 0xFF9D9D9D.toInt(), false).apply { gravity = Gravity.CENTER }, lp(165f, 1355f, 615f, 45f))
+        bodyHost.addView(communityCard(), lp(140f, 805f, 663f, 455f))
+
+        // PayPal Donate stays outside both the Autore and Community cards.
+        // The WebView renders the exact official PayPal button supplied by the user.
+        bodyHost.addView(payPalDonateButton(), lp(140f, 1270f, 663f, 70f))
+
+        bodyHost.addView(text("© 2026 Emanuele. Tutti i diritti riservati.", 21f, 0xFF9D9D9D.toInt(), false).apply { gravity = Gravity.CENTER }, lp(165f, 1340f, 615f, 40f))
     }
 
     private fun authorCard(): View {
@@ -1239,17 +1246,66 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             setLineSpacing(pxH(7f).toFloat(), 1f)
         }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
 
-        val donateButton = actionButton(IconKind.STAR, "Sostieni MotoLink con PayPal") {
-            onCreditsDonateClick?.invoke()
-        }
-        donateButton.background = roundedBg(0xFF071006.toInt(), GREEN, 34f, 1.3f)
-        col.addView(
-            donateButton,
-            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, pxH(92f)).apply {
-                topMargin = pxH(18f)
-            }
-        )
         return col
+    }
+
+    private fun payPalDonateButton(): View {
+        val web = WebView(context).apply {
+            setBackgroundColor(Color.TRANSPARENT)
+            isVerticalScrollBarEnabled = false
+            isHorizontalScrollBarEnabled = false
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addJavascriptInterface(
+                object {
+                    @JavascriptInterface
+                    fun donate() {
+                        post { onCreditsDonateClick?.invoke() }
+                    }
+                },
+                "MotoLink"
+            )
+        }
+
+        val html = """
+            <!doctype html>
+            <html>
+            <head>
+              <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+              <style>
+                html, body { margin:0; padding:0; width:100%; height:100%; background:transparent; overflow:hidden; }
+                body { display:flex; align-items:center; justify-content:center; }
+                form { margin:0; padding:0; }
+                input[type=image] { display:block; margin:auto; }
+              </style>
+            </head>
+            <body>
+              <form action="https://www.paypal.com/donate" method="post" target="_top"
+                    onsubmit="MotoLink.donate(); return false;">
+                <input type="hidden" name="hosted_button_id" value="N7BM2VCKWWKNN" />
+                <input type="image"
+                       src="https://www.paypalobjects.com/it_IT/IT/i/btn/btn_donateCC_LG.gif"
+                       border="0"
+                       name="submit"
+                       title="PayPal - The safer, easier way to pay online!"
+                       alt="Fai una donazione con il pulsante PayPal" />
+                <img alt="" border="0"
+                     src="https://www.paypal.com/it_IT/i/scr/pixel.gif"
+                     width="1" height="1" />
+              </form>
+            </body>
+            </html>
+        """.trimIndent()
+
+        web.loadDataWithBaseURL(
+            "https://www.paypal.com/",
+            html,
+            "text/html",
+            "UTF-8",
+            null
+        )
+        return web
     }
 
     private fun communityCard(): View {
