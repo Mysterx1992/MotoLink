@@ -1,0 +1,27 @@
+name: Cleanup vc23 temporary artifacts
+
+on:
+  push:
+    branches:
+      - "test/v1.6-vc23-paypal-donations"
+    paths:
+      - ".github/workflows/vc23-cleanup-temp-artifacts.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete temporary vc23 artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method DELETE repos/Mysterx1992/MotoLink/actions/artifacts/10759878480
+          gh api --method DELETE repos/Mysterx1992/MotoLink/actions/artifacts/10760389702
+          echo "Temporary vc23 artifacts deleted."
