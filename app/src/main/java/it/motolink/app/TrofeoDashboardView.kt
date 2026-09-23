@@ -95,7 +95,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.HOME,
             title = "HOME · Navigazione",
-            body = "HOME\nLa schermata principale: avvio del mirroring, stato della connessione e accesso rapido alle app preferite.\n\nGARAGE\nGestisci i profili delle tue moto e le relative impostazioni personali.\n\nPREFERITE\nScegli le app che vuoi avere sempre a portata di mano.\n\nSUPPORTO\nConsulta il Log tecnico o chiedi aiuto all’Assistente MotoLink.\n\nIMPOSTAZIONI\nPersonalizza il comportamento dell’app e del mirroring.\n\nCREDITI\nInformazioni sul progetto e accesso alla community MotoLink.",
+            body = "HOME\nLa schermata principale: avvio del mirroring, stato della connessione e accesso rapido alle app preferite.\n\nGARAGE\nGestisci i profili delle tue moto e le relative impostazioni personali.\n\nPREFERITE\nScegli le app che vuoi avere sempre a portata di mano.\n\nSUPPORTO\nConsulta il Log tecnico o chiedi aiuto all’Assistente MotoLink.\n\nIMPOSTAZIONI\nPersonalizza il comportamento dell’app e del mirroring.\n\nCREDITI\nInformazioni sul progetto, community ufficiale e possibilità di sostenere MotoLink con una donazione volontaria PayPal.",
             target = GuideTarget(35f, 1500f, 870f, 150f)
         ),
         GuideStep(
@@ -186,9 +186,15 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         ),
         GuideStep(
             Page.CREDITS,
-            title = "CREDITI · Community",
-            body = "In CREDITI trovi le informazioni sul progetto MotoLink e il collegamento alla community ufficiale.\n\nUsa Entra nel gruppo per aprire il gruppo WhatsApp MotoLink Mirroring dedicato a supporto, test e confronto tra utenti.\n\nHai completato la guida. Premi FINE per tornare alla HOME.",
-            target = GuideTarget(125f, 190f, 690f, 1165f)
+            title = "CREDITI · Autore e Community",
+            body = "In CREDITI trovi le informazioni sul progetto MotoLink e il collegamento alla community ufficiale.\n\nUsa Entra nel gruppo per aprire il gruppo WhatsApp MotoLink Mirroring dedicato a supporto, test e confronto tra utenti.",
+            target = GuideTarget(125f, 185f, 690f, 1025f)
+        ),
+        GuideStep(
+            Page.CREDITS,
+            title = "CREDITI · Donazioni",
+            body = "Sotto le sezioni Autore e Community trovi il pulsante ufficiale PayPal per sostenere MotoLink.\n\nLa donazione è completamente volontaria: non sblocca funzioni e non limita l'app. Toccando il pulsante si apre la pagina PayPal esterna.\n\nHai completato la guida. Premi FINE per tornare alla HOME.",
+            target = GuideTarget(125f, 1205f, 690f, 120f)
         )
     )
 
@@ -1216,14 +1222,20 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
 
     private fun buildCredits() {
         bodyHost.addView(sectionTitle("Crediti"), lp(58f, 47f, 824f, 135f))
-        bodyHost.addView(authorCard(), lp(140f, 205f, 663f, 580f))
-        bodyHost.addView(communityCard(), lp(140f, 805f, 663f, 455f))
 
-        // PayPal Donate stays outside both the Autore and Community cards.
-        // The WebView renders the exact official PayPal button supplied by the user.
-        bodyHost.addView(payPalDonateButton(), lp(140f, 1270f, 663f, 70f))
+        // Two independent cards only: Autore and Community.
+        bodyHost.addView(authorCard(), lp(140f, 195f, 663f, 530f))
+        bodyHost.addView(communityCard(), lp(140f, 745f, 663f, 455f))
 
-        bodyHost.addView(text("© 2026 Emanuele. Tutti i diritti riservati.", 21f, 0xFF9D9D9D.toInt(), false).apply { gravity = Gravity.CENTER }, lp(165f, 1340f, 615f, 40f))
+        // Official PayPal Donate button: deliberately outside both cards with a real gap.
+        bodyHost.addView(payPalDonateButton(), lp(140f, 1225f, 663f, 85f))
+
+        bodyHost.addView(
+            text("© 2026 Emanuele. Tutti i diritti riservati.", 21f, 0xFF9D9D9D.toInt(), false).apply {
+                gravity = Gravity.CENTER
+            },
+            lp(165f, 1320f, 615f, 40f)
+        )
     }
 
     private fun authorCard(): View {
@@ -1276,8 +1288,8 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
               <style>
                 html, body { margin:0; padding:0; width:100%; height:100%; background:transparent; overflow:hidden; }
                 body { display:flex; align-items:center; justify-content:center; }
-                form { margin:0; padding:0; }
-                input[type=image] { display:block; margin:auto; }
+                form { margin:0; padding:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+                input[type=image] { display:block; margin:auto; width:auto; height:88vh; max-width:92vw; object-fit:contain; }
               </style>
             </head>
             <body>
@@ -1730,9 +1742,12 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     @Suppress("DEPRECATION")
-    private fun appVersionName(): String = runCatching {
-        context.packageManager.getPackageInfo(context.packageName, 0).versionName
-    }.getOrNull()?.takeIf { it.isNotBlank() } ?: "—"
+    private fun appVersionName(): String {
+        val raw = runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull()?.takeIf { it.isNotBlank() } ?: return "—"
+        return if (raw.startsWith("V", ignoreCase = true)) raw else "V$raw"
+    }
 
     private fun icon(kind: IconKind, color: Int, visualScale: Float = 1.12f): View =
         if (kind == IconKind.WALLPAPER) {
