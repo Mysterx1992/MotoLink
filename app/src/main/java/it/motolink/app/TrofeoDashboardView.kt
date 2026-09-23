@@ -78,6 +78,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onVersionClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
+    var onCreditsDonateClick: (() -> Unit)? = null
 
     private data class GuideTarget(val x: Float, val y: Float, val w: Float, val h: Float)
     private data class GuideStep(
@@ -1237,6 +1238,17 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             gravity = Gravity.TOP
             setLineSpacing(pxH(7f).toFloat(), 1f)
         }, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+
+        val donateButton = actionButton(IconKind.STAR, "Sostieni MotoLink con PayPal") {
+            onCreditsDonateClick?.invoke()
+        }
+        donateButton.background = roundedBg(0xFF071006.toInt(), GREEN, 34f, 1.3f)
+        col.addView(
+            donateButton,
+            LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, pxH(92f)).apply {
+                topMargin = pxH(18f)
+            }
+        )
         return col
     }
 
