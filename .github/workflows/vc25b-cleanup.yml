@@ -1,0 +1,18 @@
+name: Cleanup vc25 final temporary artifact
+on:
+  push:
+    branches:
+      - "test/v1.6-vc23-paypal-donations"
+    paths:
+      - ".github/workflows/vc25b-cleanup.yml"
+permissions:
+  actions: write
+  contents: read
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete vc25 final artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method DELETE repos/Mysterx1992/MotoLink/actions/artifacts/10768225760
