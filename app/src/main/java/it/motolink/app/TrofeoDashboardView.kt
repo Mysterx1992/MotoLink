@@ -193,7 +193,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.CREDITS,
             title = "CREDITI · Donazioni",
-            body = "Sotto le sezioni Autore e Community trovi il pulsante ufficiale PayPal per sostenere MotoLink.\n\nLa donazione è completamente volontaria: non sblocca funzioni e non limita l'app. Toccando il pulsante si apre la pagina PayPal esterna.\n\nHai completato la guida. Premi FINE per tornare alla HOME.",
+            body = "Sotto le sezioni Autore e Community trovi il pulsante ufficiale PayPal per sostenere MotoLink.\n\nLa donazione è completamente volontaria: non sblocca funzioni e non limita l'app. Le donazioni verranno utilizzate esclusivamente per migliorare MotoLink: sviluppo, test, compatibilità, manutenzione, correzione bug e stabilità dell'app. Toccando il pulsante si apre la pagina PayPal esterna.\n\nHai completato la guida. Premi FINE per tornare alla HOME.",
             target = GuideTarget(125f, 1245f, 690f, 120f)
         )
     )
