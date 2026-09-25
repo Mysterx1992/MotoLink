@@ -9,7 +9,7 @@ La vc28 modifica esclusivamente il recovery di trasporto/sessione e il reattach 
 - Branch autorevole: `release/v1.6-vc28`
 - Stato: **scope frozen / physical validation pending**
 
-- CI Android compile gate: pending sul commit vc28 corrente.
+- CI Android compile gate: **PASS** — run `36166586336` sul commit sorgente vc28 `aed8afef0acd171851061313c40513009cf0a552`.
 
 ## File modificabili nella hotfix vc28
 
