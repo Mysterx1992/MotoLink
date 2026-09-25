@@ -134,9 +134,6 @@ jobs:
             echo "Certificato MotoLink SHA-256: 9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100"
           } >> "$RUNNER_TEMP/release-notes.md"
 
-          git tag -f v1.6 "$GITHUB_SHA"
-          git push --force origin refs/tags/v1.6
-
           gh release upload v1.6 "$APK" SHA256SUMS_V1.6_VC27.txt --clobber
           gh release edit v1.6 \
             --draft=false \
@@ -147,6 +144,9 @@ jobs:
 
           gh release delete-asset v1.6 MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk -y || true
           gh release delete-asset v1.6 SHA256SUMS_V1.6_VC22.txt -y || true
+
+          git tag -f v1.6 "$GITHUB_SHA"
+          git push --force origin refs/tags/v1.6 || echo "WARN: asset vc27 pubblicato ma tag v1.6 non riallineato"
 
       - name: Destroy temporary keystore
         if: always()
