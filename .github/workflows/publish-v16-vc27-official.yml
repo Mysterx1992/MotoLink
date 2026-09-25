@@ -42,81 +42,18 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Generate one-time vc27 signing handoff certificate
+      - name: Restore official MotoLink keystore from GitHub secret
+        id: signing
+        env:
+          MOTOLINK_KEYSTORE_B64: ${{ secrets.MOTOLINK_KEYSTORE_B64 }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .github/signing-handoff
-          openssl req -x509 -newkey rsa:4096 -nodes \
-            -keyout "$RUNNER_TEMP/motolink-vc27-handoff-private.pem" \
-            -out .github/signing-handoff/v16-vc27-public-cert.pem \
-            -subj "/CN=MotoLink-v1.6-vc27-one-time-handoff" \
-            -days 1
-          chmod 600 "$RUNNER_TEMP/motolink-vc27-handoff-private.pem"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f .github/signing-handoff/v16-vc27-public-cert.pem
-          git commit -m "Publish one-time V1.6 vc27 signing handoff certificate"
-          git push origin HEAD:release/v1.6-vc27
-
-      - name: Wait for encrypted signing payload
-        shell: bash
-        run: |
-          set -euo pipefail
-          PAYLOAD=".github/signing-handoff/v16-vc27-signing.cms.b64"
-          for i in $(seq 1 90); do
-            git fetch origin release/v1.6-vc27
-            if git cat-file -e "origin/release/v1.6-vc27:$PAYLOAD" 2>/dev/null; then
-              git show "origin/release/v1.6-vc27:$PAYLOAD" > "$RUNNER_TEMP/signing.cms.b64"
-              echo "Encrypted signing payload received."
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "Timed out waiting for encrypted signing payload." >&2
-          exit 1
-
-      - name: Decrypt signing backup locally on runner
-        shell: bash
-        run: |
-          set -euo pipefail
-          base64 --decode "$RUNNER_TEMP/signing.cms.b64" > "$RUNNER_TEMP/signing.cms"
-          openssl cms -decrypt -inform DER \
-            -in "$RUNNER_TEMP/signing.cms" \
-            -recip .github/signing-handoff/v16-vc27-public-cert.pem \
-            -inkey "$RUNNER_TEMP/motolink-vc27-handoff-private.pem" \
-            -out "$RUNNER_TEMP/signing-backup.zip"
-          mkdir -p "$RUNNER_TEMP/signing"
-          unzip -q "$RUNNER_TEMP/signing-backup.zip" -d "$RUNNER_TEMP/signing"
-          test -s "$RUNNER_TEMP/signing/MotoLink_Release_Keystore.jks"
-          test -s "$RUNNER_TEMP/signing/GITHUB_SECRETS.txt"
-
-      - name: Load signing credentials without printing them
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import os
-          p = Path(os.environ['RUNNER_TEMP']) / 'signing' / 'GITHUB_SECRETS.txt'
-          values = {}
-          for raw in p.read_text(encoding='utf-8').splitlines():
-              if '=' not in raw or raw.lstrip().startswith('#'):
-                  continue
-              k, v = raw.split('=', 1)
-              k = k.strip()
-              if k in {'MOTOLINK_KEYSTORE_PASSWORD','MOTOLINK_KEY_ALIAS','MOTOLINK_KEY_PASSWORD'}:
-                  values[k] = v.strip()
-          required = {'MOTOLINK_KEYSTORE_PASSWORD','MOTOLINK_KEY_ALIAS','MOTOLINK_KEY_PASSWORD'}
-          missing = required - values.keys()
-          if missing:
-              raise SystemExit('Missing required signing fields')
-          env = Path(os.environ['GITHUB_ENV'])
-          with env.open('a', encoding='utf-8') as f:
-              for k, v in values.items():
-                  print(f'::add-mask::{v}')
-                  f.write(f'{k}={v}\n')
-          PY
+          test -n "$MOTOLINK_KEYSTORE_B64"
+          KEYSTORE="$RUNNER_TEMP/MotoLink_Release_Keystore.jks"
+          printf '%s' "$MOTOLINK_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          echo "keystore_path=$KEYSTORE" >> "$GITHUB_OUTPUT"
 
       - name: Verify frozen vc27 source contract
         shell: bash
@@ -129,24 +66,32 @@ jobs:
           grep -F 'if (projection == null || !projectionReadyForProximity)' app/src/main/java/it/motolink/app/MirrorService.kt
           test -f docs/FROZEN_BASELINE_V1.6_VC27.md
 
-      - name: Build V1.6 vc27 unsigned release
+      - name: Build unsigned V1.6 vc27
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf app/build
           chmod +x ./gradlew
+          rm -rf app/build
           ./gradlew assembleRelease --stacktrace
           test -f app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Sign and verify official MotoLink identity
+        env:
+          MOTOLINK_KEYSTORE_PATH: ${{ steps.signing.outputs.keystore_path }}
+          MOTOLINK_KEYSTORE_PASSWORD: ${{ secrets.MOTOLINK_KEYSTORE_PASSWORD }}
+          MOTOLINK_KEY_ALIAS: ${{ secrets.MOTOLINK_KEY_ALIAS }}
+          MOTOLINK_KEY_PASSWORD: ${{ secrets.MOTOLINK_KEY_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
+          test -n "$MOTOLINK_KEYSTORE_PASSWORD"
+          test -n "$MOTOLINK_KEY_ALIAS"
+          test -n "$MOTOLINK_KEY_PASSWORD"
+
           BT="$ANDROID_HOME/build-tools/36.0.0"
           UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
           ALIGNED="$RUNNER_TEMP/MotoLink_V1.6_vc27_aligned.apk"
           APK="MotoLink_V1.6_VC27_EASYCONN_POCKETMODE_BUGFIX_OFFICIAL_SIGNED.apk"
-          KS="$RUNNER_TEMP/signing/MotoLink_Release_Keystore.jks"
 
           "$BT/aapt2" dump badging "$UNSIGNED" | tee "$RUNNER_TEMP/badging.txt"
           grep -F "package: name='it.motolink.app' versionCode='27' versionName='1.6'" "$RUNNER_TEMP/badging.txt"
@@ -155,7 +100,7 @@ jobs:
           export MOTOLINK_KS_PASS="$MOTOLINK_KEYSTORE_PASSWORD"
           export MOTOLINK_KEY_PASS="$MOTOLINK_KEY_PASSWORD"
           "$BT/apksigner" sign \
-            --ks "$KS" \
+            --ks "$MOTOLINK_KEYSTORE_PATH" \
             --ks-key-alias "$MOTOLINK_KEY_ALIAS" \
             --ks-pass env:MOTOLINK_KS_PASS \
             --key-pass env:MOTOLINK_KEY_PASS \
@@ -170,7 +115,7 @@ jobs:
           "$BT/aapt2" dump badging "$APK" | grep -F "package: name='it.motolink.app' versionCode='27' versionName='1.6'"
           sha256sum "$APK" | tee SHA256SUMS_V1.6_VC27.txt
 
-      - name: Publish stable V1.6 vc27 release
+      - name: Publish stable V1.6 vc27
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -178,6 +123,7 @@ jobs:
           set -euo pipefail
           APK="MotoLink_V1.6_VC27_EASYCONN_POCKETMODE_BUGFIX_OFFICIAL_SIGNED.apk"
           SHA="$(sha256sum "$APK" | awk '{print $1}')"
+
           cp docs/RELEASE_NOTES_V1.6.md "$RUNNER_TEMP/release-notes.md"
           {
             echo
@@ -187,6 +133,9 @@ jobs:
             echo "SHA-256: $SHA"
             echo "Certificato MotoLink SHA-256: 9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100"
           } >> "$RUNNER_TEMP/release-notes.md"
+
+          git tag -f v1.6 "$GITHUB_SHA"
+          git push --force origin refs/tags/v1.6
 
           gh release upload v1.6 "$APK" SHA256SUMS_V1.6_VC27.txt --clobber
           gh release edit v1.6 \
@@ -199,33 +148,11 @@ jobs:
           gh release delete-asset v1.6 MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk -y || true
           gh release delete-asset v1.6 SHA256SUMS_V1.6_VC22.txt -y || true
 
-      - name: Cleanup handoff material from release branch
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin release/v1.6-vc27
-          git checkout -B vc27-clean origin/release/v1.6-vc27
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -f .github/signing-handoff/v16-vc27-public-cert.pem .github/signing-handoff/v16-vc27-signing.cms.b64 || true
-          if ! git diff --cached --quiet; then
-            git commit -m "Clean V1.6 vc27 signing handoff material"
-            git push origin HEAD:release/v1.6-vc27
-          fi
-
-      - name: Cleanup sensitive runner material
+      - name: Destroy temporary keystore
         if: always()
         shell: bash
         run: |
-          set +e
-          for f in \
-            "$RUNNER_TEMP/motolink-vc27-handoff-private.pem" \
-            "$RUNNER_TEMP/signing.cms.b64" \
-            "$RUNNER_TEMP/signing.cms" \
-            "$RUNNER_TEMP/signing-backup.zip" \
-            "$RUNNER_TEMP/signing/MotoLink_Release_Keystore.jks" \
-            "$RUNNER_TEMP/signing/GITHUB_SECRETS.txt"; do
-            if [ -f "$f" ]; then shred -u "$f" 2>/dev/null || rm -f "$f"; fi
-          done
-          rm -rf "$RUNNER_TEMP/signing"
+          KEYSTORE="$RUNNER_TEMP/MotoLink_Release_Keystore.jks"
+          if [ -f "$KEYSTORE" ]; then
+            shred -u "$KEYSTORE" 2>/dev/null || rm -f "$KEYSTORE"
+          fi
