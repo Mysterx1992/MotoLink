@@ -25,7 +25,7 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ## 🆕 MotoLink V1.6
 
-MotoLink **V1.6 vc22** è pubblicata come release stabile. La vc22 include il fix della Modalità tasca: quando è disattivata, MotoLink non arma più il sensore di prossimità né il `PROXIMITY_SCREEN_OFF_WAKE_LOCK`.
+MotoLink **V1.6 vc27** è la baseline congelata corrente. La vc27 mantiene la correzione della Modalità tasca OFF e aggiunge due bugfix di stabilità: recovery EasyConn persistente sul Trofeo 500 durante il passaggio mirroring ↔ tachigrafo e ripristino del gate V1.5.1 `projectionReadyForProximity` per l'armamento della Modalità tasca.
 
 MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo il mirroring EasyConn tramite i profili Hotspot/QR.
 
@@ -39,7 +39,9 @@ MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibi
 - **Tempo e chilometraggio restanti** valorizzati quando Google Maps li espone nella notifica.
 - **Recovery BLE migliorato**, mantenendo il core EasyConn/H264 già validato.
 - **Garage aggiornato** per i profili Hotspot, QR Code e BLE.
-- **Hotfix prossimità vc22:** con Modalità tasca OFF `armProximityScreenOff()` termina prima di registrare `TYPE_PROXIMITY` o acquisire il wake-lock di prossimità; il sensore non deve più spegnere lo schermo.
+- **Hotfix prossimità vc22 preservata:** con Modalità tasca OFF non viene armato il percorso proximity.
+- **Bugfix EasyConn vc26/vc27:** il recovery non termina quando il TFT chiude temporaneamente 10920/10921 durante il passaggio alla schermata tachigrafo; PXC, link moto gestito e Wi-Fi della sessione vengono usati come segnali di trasporto ancora vivo.
+- **Bugfix Modalità tasca vc27:** ripristinato il gate V1.5.1 `projectionReadyForProximity`, così il wake-lock di prossimità viene armato solo quando MediaProjection/video sono realmente pronti.
 
 La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono mostrare la freccia dell'uscita invece di un'icona circolare dedicata per le rotonde.
 
@@ -47,10 +49,11 @@ La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono m
 
 ## Scarica MotoLink
 
-**APK ufficiale V1.6 vc22:**  
-https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk
+**Baseline corrente:** V1.6 vc27  
+**SHA-256 APK vc27 validato:** `a757654f02961ae7ebadeb4a776b0b3d759f263ab483cad5995548da771e564d`
 
-**SHA-256:** `dc3933db1738b31abf42b9fe449a50a6ed19653bb5812b6e6f89d73cbb5d8acf`
+**Pagina della release V1.6:**  
+https://github.com/Mysterx1992/MotoLink/releases/tag/v1.6
 
 **Pagina dell'ultima release pubblicata:**  
 https://github.com/Mysterx1992/MotoLink/releases/latest
@@ -128,7 +131,7 @@ MotoLink include strumenti per adattare manualmente l'immagine alla geometria de
 
 ### 📱 Modalità tasca
 
-Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, la vc22 impedisce l'armamento del listener e del wake-lock di prossimità. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
+Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, resta preservata la protezione vc22. Con Modalità tasca attiva, la vc27 ripristina il gate V1.5.1 e arma la prossimità solo quando MediaProjection/video sono realmente pronti. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
 
 ### 🧰 Log MotoLink
 
@@ -190,8 +193,8 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Sorgente V1.6 vc22 su `main` | ✅ Pubblicato |
-| Release binaria V1.6 vc22 | ✅ Pubblicata e firmata ufficialmente |
+| Sorgente V1.6 vc27 frozen baseline | ✅ Pubblicata |
+| Baseline binaria V1.6 vc27 | ✅ Firmata e congelata; SHA-256 documentato |
 | Mirroring EasyConn | ✅ Implementato |
 | Navigazione BLE turn-by-turn | ✅ Implementata |
 | Garage / profili moto | ✅ Implementato |
