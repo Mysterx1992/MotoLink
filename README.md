@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
-    <img src="https://img.shields.io/badge/RELEASE-Ultima%20versione-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="Ultima release MotoLink">
+  <a href="https://github.com/Mysterx1992/MotoLink/tree/release/v1.6-vc28">
+    <img src="https://img.shields.io/badge/MOTOLINK-V1.6%20vc28-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="MotoLink V1.6 vc28">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
@@ -51,7 +51,7 @@ La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono m
 
 ## Scarica MotoLink
 
-**Sorgente corrente:** V1.6 vc28 (`versionCode 28`)  
+**Sorgente corrente:** V1.6 vc28 (`versionCode 28`) — Android CI **PASS**  
 **Ultimo APK ufficiale firmato disponibile localmente:** V1.6 vc27  
 **SHA-256 APK vc27:** `a757654f02961ae7ebadeb4a776b0b3d759f263ab483cad5995548da771e564d`
 
