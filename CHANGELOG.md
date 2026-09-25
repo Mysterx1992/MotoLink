@@ -1,5 +1,16 @@
 # Changelog MotoLink
 
+## V1.6 vc27 — 2026-09-25
+
+### Bugfix e freeze
+
+- **Trofeo 500 / EasyConn:** il passaggio dalla schermata di mirroring al tachigrafo non viene più interpretato subito come perdita reale della rete moto quando il TFT chiude temporaneamente i canali media. Il recovery resta persistente usando PXC, link moto gestito/P2P o Wi-Fi della sessione come segnali di trasporto ancora vivo.
+- **Modalità tasca:** ripristinato il gate V1.5.1 `projectionReadyForProximity`, così il wake-lock di prossimità viene armato solo quando MediaProjection/video sono realmente pronti.
+- Preservata la protezione vc22 con Modalità tasca OFF.
+- Baseline vc27 congelata: future integrazioni devono produrre diff e verifica dei componenti EasyConn, proximity, MediaProjection e H264 prima della promozione.
+- Version name `1.6`, versionCode `27`.
+- APK vc27 validato SHA-256 `a757654f02961ae7ebadeb4a776b0b3d759f263ab483cad5995548da771e564d`.
+
 ## V1.6
 
 - Modalità BLE turn-by-turn per TFT VOGE compatibili.
