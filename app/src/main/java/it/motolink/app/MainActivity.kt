@@ -556,7 +556,7 @@ class MainActivity : Activity() {
             }
             line.contains("EC INIT OK") && runSelection == RunSelection.START -> {
                 if (recoveryActive) {
-                    if (recoveryPersistentMode && isBikeTransportAlive()) {
+                    if (recoveryPersistentMode && isBikeRecoveryTransportAlive()) {
                         setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
                         setState("Video in attesa", "Moto presente • attendo il flusso video", C_AMBER, "WIFI")
                     } else {
@@ -753,7 +753,7 @@ class MainActivity : Activity() {
         recoveryPersistentMode = true
         val generation = ++recoveryGeneration
         AppLog.add("RECOVERY CONTINUO V1.5: perdita canale [$reason]; rete moto e MediaProjection restano attive")
-        if (isBikeTransportAlive()) {
+        if (isBikeRecoveryTransportAlive()) {
   setHeaderStatus("Connesso", activeBikeLabel(), C_GREEN)
   setState("Video in attesa", "TFT fuori mirroring • riconnessione automatica continua", C_AMBER, "WIFI")
   armInitialRecoveryGrace(generation)
@@ -767,7 +767,7 @@ class MainActivity : Activity() {
         AppLog.add("RECOVERY CONTINUO V1.5: attendo reconnect naturale del TFT")
         mainHandler.postDelayed({
   if (!isRecoveryCurrent(generation)) return@postDelayed
-  if (!isBikeTransportAlive()) {
+  if (!isBikeRecoveryTransportAlive()) {
       finishRecoveryFailure(generation, "rete moto non più disponibile")
       return@postDelayed
   }
@@ -782,7 +782,7 @@ class MainActivity : Activity() {
 
     private fun scheduleRecoveryAttempt(generation: Long, attemptIndex: Int) {
         if (!isRecoveryCurrent(generation)) return
-        if (!isBikeTransportAlive()) {
+        if (!isBikeRecoveryTransportAlive()) {
   finishRecoveryFailure(generation, "rete moto non più disponibile")
   return
         }
@@ -794,7 +794,7 @@ class MainActivity : Activity() {
 
     private fun performRecoveryAttempt(generation: Long, attemptIndex: Int) {
         if (!isRecoveryCurrent(generation)) return
-        if (!isBikeTransportAlive()) {
+        if (!isBikeRecoveryTransportAlive()) {
   finishRecoveryFailure(generation, "rete moto non più disponibile")
   return
         }
@@ -866,6 +866,28 @@ class MainActivity : Activity() {
         val classicWifiAlive = ::bikeNetworkConnector.isInitialized && bikeNetworkConnector.isLinkAlive()
         val p2pAlive = ::wifiDirectBikeConnector.isInitialized && wifiDirectBikeConnector.isLinkAlive()
         return classicWifiAlive || p2pAlive
+    }
+
+    /**
+     * V1.6 vc27 frozen recovery contract.
+     *
+     * Losing 10920/10921 while the TFT leaves the mirroring page is not a real
+     * motorcycle-network loss. Recovery stays alive while any authoritative
+     * session signal remains: live PXC, an app-managed bike/P2P link, or the
+     * current Android default network still being Wi-Fi after EasyConn was
+     * resolved in this START session.
+     */
+    private fun isBikeRecoveryTransportAlive(): Boolean {
+        val pxcAlive = easyConnServers.hasLivePxcChannel()
+        val managedAlive = isBikeTransportAlive()
+        val defaultWifiAlive = isDefaultNetworkWifi()
+        val endpointCached = lastResolved != null
+        val alive = pxcAlive || managedAlive || (endpointCached && defaultWifiAlive)
+        AppLog.add(
+            "RECOVERY TRANSPORT V1.6: pxc=$pxcAlive managed=$managedAlive " +
+                "defaultWifi=$defaultWifiAlive endpointCached=$endpointCached -> alive=$alive"
+        )
+        return alive
     }
 
     private fun finishRecoveryFailure(generation: Long, reason: String = "trasporto moto non disponibile") {
