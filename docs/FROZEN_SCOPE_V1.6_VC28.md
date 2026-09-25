@@ -9,6 +9,8 @@ La vc28 modifica esclusivamente il recovery di trasporto/sessione e il reattach 
 - Branch autorevole: `release/v1.6-vc28`
 - Stato: **scope frozen / physical validation pending**
 
+- CI Android compile gate: pending sul commit vc28 corrente.
+
 ## File modificabili nella hotfix vc28
 
 - `app/src/main/java/it/motolink/app/MainActivity.kt`
