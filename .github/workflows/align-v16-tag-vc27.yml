@@ -1,0 +1,31 @@
+name: Align V1.6 tag to vc27
+
+on:
+  push:
+    branches:
+      - "release/v1.6-vc27"
+    paths:
+      - ".github/workflows/align-v16-tag-vc27.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout vc27
+        uses: actions/checkout@v4
+        with:
+          ref: release/v1.6-vc27
+          fetch-depth: 0
+
+      - name: Move v1.6 tag to frozen vc27
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f v1.6 "$GITHUB_SHA"
+          git push --force origin refs/tags/v1.6
