@@ -1,58 +1,63 @@
-# MotoLink V1.6 vc27 — Frozen Baseline
+# MotoLink V1.6 vc28 — Full TFT Recovery Hotfix
 
-MotoLink V1.6 vc27 consolida la V1.6 con due bugfix mirati emersi dai test fisici, senza modificare il core video oltre quanto necessario.
+MotoLink V1.6 vc28 nasce dal test fisico Trofeo 500 del 25/09/2026. La vc27 ha dimostrato di recuperare correttamente la chiusura temporanea dei soli canali media; il nuovo log ha però mostrato un secondo scenario: il TFT può chiudere nello stesso istante H264, Media e tutti i PXC e rendere non più raggiungibile il precedente endpoint EasyConn.
 
 ## Identità
 
 - Package: `it.motolink.app`
 - Version name: `1.6`
-- Version code: `27`
-- Baseline: **FROZEN**
-- APK ufficiale validato localmente: `MotoLink_V1.6_VC27_POCKET_MODE_V151_GATE_RESTORE_EASYCONN_FIX_OFFICIAL_SIGNED.apk`
-- SHA-256 APK: `a757654f02961ae7ebadeb4a776b0b3d759f263ab483cad5995548da771e564d`
-- Certificato MotoLink SHA-256: `9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100`
+- Version code: `28`
+- Branch: `release/v1.6-vc28`
+- Stato: **recovery hotfix source / physical validation pending**
 
-## Bugfix vc27
+## Evidenza fisica che ha motivato vc28
 
-### EasyConn / Trofeo 500 — reconnect persistente
+Nel test reale Trofeo 500:
+- prima dell'evento video e heartbeat PXC erano sani;
+- il TFT ha chiuso contemporaneamente `10920`, `10921`, PXC#1 e PXC#2;
+- i successivi tentativi al vecchio endpoint EasyConn sono arrivati a `EHOSTUNREACH (No route to host)`;
+- MediaProjection/encoder sono rimasti vivi ma senza consumer H264;
+- una successiva ricreazione della MainActivity poteva mostrare erroneamente “Sessione attiva”.
 
-Quando il TFT esce dalla schermata di mirroring e chiude temporaneamente i canali media `10920/10921`, MotoLink non deve interpretare immediatamente l'evento come perdita reale della rete moto.
+## Fix vc28
 
-Il recovery resta vivo se esiste almeno uno dei segnali di sessione:
-- PXC ancora attivo;
-- link moto gestito da MotoLink / Wi-Fi Direct ancora attivo;
-- endpoint EasyConn già risolto nella sessione corrente e rete Android ancora su Wi-Fi.
+### 1. Recovery trasporto completo
 
-Questo evita la terminazione prematura del recovery durante il passaggio navigatore → tachigrafo e consente al TFT di riaprire naturalmente EasyConn/H264 quando si torna al mirroring.
+Quando il trasporto di sessione non è più realmente vivo, MotoLink:
+1. mantiene MediaProjection e encoder attivi;
+2. invalida `lastResolved` e l'expected peer EasyConn;
+3. non considera più un generico default Wi-Fi come prova sufficiente della rete moto;
+4. riaggancia il trasporto del profilo:
+   - Hotspot: stessa Wi-Fi moto ricordata esclusivamente in RAM, con fallback rete locale;
+   - QR/classic Wi-Fi: nuova richiesta Android tramite il profilo salvato;
+   - WLAN Direct/P2P: nuova discovery/connessione P2P;
+5. rifà mDNS EasyConn o il direct init P2P;
+6. attende `10920` e un vero FIRST FRAME prima di dichiarare recovery completato.
 
-### Modalità tasca — ripristino gate V1.5.1
+### 2. Endpoint stale
 
-La V1.6 aveva sostituito il gate di armamento della prossimità `projectionReadyForProximity` con `proximityGateAllowed`. I test fisici hanno mostrato che, dopo permanenze prolungate con display spento per prossimità, il dispositivo poteva entrare nel keyguard reale e invalidare MediaProjection.
+Dopo un `EC INIT` fallito sul vecchio endpoint durante recovery, l'IP non viene più ritentato indefinitamente: viene invalidato e parte il percorso di rebind + rediscovery.
 
-La vc27 ripristina esattamente il gate della V1.5.1:
+### 3. Session reattach Home
 
-`projection == null || !projectionReadyForProximity`
+Se MainActivity viene ricreata mentre MirrorService è ancora vivo ma `H264FrameBus.hasActiveConsumer() == false`, la Home non mostra più “Sessione attiva”. Mostra invece “Mirroring da ripristinare” e START rimane utilizzabile per riavviare il recovery senza richiedere una nuova MediaProjection.
 
-La richiesta di Modalità tasca resta pendente finché MediaProjection e il percorso video non sono realmente pronti.
+## Componenti preservati dalla vc27
 
-## Contratto di freeze
-
-La vc27 è la baseline congelata per le integrazioni successive.
-
-Le modifiche future non devono alterare senza test dedicato:
-- recovery EasyConn / PXC / 10920 / 10921 / 10922;
-- Modalità tasca / proximity / anti-auto-lock;
+La vc28 non modifica:
+- gate Modalità tasca `projectionReadyForProximity`;
+- proximity / anti-auto-lock;
 - MediaProjection core;
-- encoder H264 e H264FrameBus;
-- clock EasyConn;
-- firma ufficiale MotoLink.
+- encoder H264 / H264FrameBus;
+- geometria/adattamento video;
+- protocollo EasyConn/PXC;
+- clock EasyConn.
 
-Ogni integrazione futura deve essere verificata contro questa baseline con diff e hash dei componenti critici prima della promozione.
+## Gate richiesto
 
-## Stato validazione
-
-- Fix sorgente: applicato.
-- Firma APK locale vc27: verificata.
-- APK v2/v3: PASS.
-- Gate fisico Modalità tasca prolungata: da completare sulla moto/telefono reale.
-- Gate fisico reconnect Trofeo 500: da completare con test navigatore → tachigrafo → navigatore.
+Test Trofeo 500:
+1. avvia mirroring;
+2. passa a tachigrafo/altro TFT fino a provocare anche la perdita PXC;
+3. attendi il ritorno/riaccensione del trasporto TFT;
+4. verifica che MotoLink riagganci rete + EasyConn e torni al FIRST FRAME senza nuovo consenso MediaProjection;
+5. verifica che la Home non dichiari “Sessione attiva” con consumer assente.
