@@ -1071,17 +1071,7 @@ class MainActivity : Activity() {
         NeonDialogs.showConfirm(
             activity = this,
             title = "Modalità tasca",
-            message = """
-                Attivare la Modalità tasca con il sensore di prossimità?
-
-                IMPORTANTE: durante il mirroring NON usare il blocco schermo o il tasto di accensione per bloccare il telefono. Il vero blocco schermo termina la cattura Android. MotoLink proverà a lasciare sul TFT una schermata con lucchetto; dopo lo sblocco premi START per autorizzare di nuovo la cattura.
-
-                Per tenere il telefono in tasca usa la Modalità tasca: il sensore di prossimità può oscurare il display senza bloccare il dispositivo. Su alcuni telefoni Android può essere necessario abilitare ‘Mostra sopra altre app’ per mantenere questa funzione quando MotoLink è in background.
-
-                MotoLink non crea overlay visibili sopra le altre app.
-
-                Se scegli NO, il mirroring parte normalmente e resta attivo il comportamento nativo del sensore di prossimità.
-            """.trimIndent(),
+            message = MotoLinkLocale.pocketModePrompt(),
             positiveText = "SÌ",
             negativeText = "NO",
             onPositive = {
@@ -3436,14 +3426,7 @@ class MainActivity : Activity() {
         NeonDialogs.showInfo(
             this,
             "Assistente MotoLink",
-            "Come usare la chat\n" +
-                "Scrivi direttamente nel campo in basso e premi Invia. L'Assistente è dedicato al supporto MotoLink e non ha accesso al codice sorgente, alle chiavi API o ai secret dell'app.\n\n" +
-                "Come allegare il Log\n" +
-                "Vai in Supporto > Log > Condividi e scegli Assistente. MotoLink prepara sul telefono un estratto tecnico, rimuove identificativi e secret e lo invia solo per quella richiesta.\n\n" +
-                "Privacy\n" +
-                "Durante una chat normale il Log non viene letto né inviato. MotoLink non salva chat o Log nel proprio database. Le richieste dell'Assistente vengono elaborate online.\n\n" +
-                "Se l'Assistente non sa rispondere\n" +
-                "Non deve inventare: può proporti il gruppo ufficiale MotoLink Mirroring e mostrarti il pulsante Apri gruppo WhatsApp."
+            MotoLinkLocale.assistantInfo()
         )
     }
 
@@ -3515,7 +3498,7 @@ class MainActivity : Activity() {
         NeonDialogs.showCustom(
             this,
             "Condividi Log",
-            "Scegli dove inviare il Log. Con Assistente, MotoLink filtra localmente identificativi e secret prima dell'invio. La scelta vale come consenso per questa singola richiesta.",
+            MotoLinkLocale.logShareMessage(),
             null,
             "ASSISTENTE",
             "ESTERNO",
