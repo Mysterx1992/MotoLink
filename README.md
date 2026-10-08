@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/tree/release/v1.6-vc28">
-    <img src="https://img.shields.io/badge/MOTOLINK-V1.6%20vc28-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="MotoLink V1.6 vc28">
+  <a href="https://github.com/Mysterx1992/MotoLink/tree/release/v1.7">
+    <img src="https://img.shields.io/badge/MOTOLINK-V1.7-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="MotoLink V1.7">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
@@ -23,53 +23,30 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.6
+## 🆕 MotoLink V1.7
 
-MotoLink **V1.6 vc28** è la sorgente corrente. Mantiene integralmente i fix vc27 già validati sulla Modalità tasca e aggiunge il recovery completo della rete TFT: se la moto chiude insieme H264, Media e PXC, MotoLink invalida l'endpoint EasyConn, riaggancia la rete moto/P2P, rifà la discovery e ripristina il mirroring senza riavviare MediaProjection.
+MotoLink **V1.7** aggiunge l'interfaccia multilingua automatica e migliora la navigazione Google Maps sui telefoni impostati in russo, mantenendo il recovery TFT/EasyConn e la Modalità tasca già consolidati.
 
-MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo il mirroring EasyConn tramite i profili Hotspot/QR.
+### Novità V1.7
 
-### Novità principali
-
-- **Profilo BLE dedicato** alla navigazione turn-by-turn, separato dal mirroring video.
-- **Trasporto BLE VOGE** con heartbeat, coda serializzata e fallback adattivo `WRITE_TYPE_NO_RESPONSE`.
-- **Indicazioni Google Maps locali**, comprese le uscite di rotonda, tramite classificatore TensorFlow Lite eseguito sul dispositivo.
-- **Encoding VOGE aggiornato** per direzione, `roadFlag`, settore anulare e campi di percorso.
-- **Zero Transition Guard** per evitare che aggiornamenti transitori a 0 m sovrascrivano la manovra successiva.
-- **Tempo e chilometraggio restanti** valorizzati quando Google Maps li espone nella notifica.
-- **Recovery BLE migliorato**, mantenendo il core EasyConn/H264 già validato.
-- **Garage aggiornato** per i profili Hotspot, QR Code e BLE.
-- **Hotfix prossimità vc22 preservata:** con Modalità tasca OFF non viene armato il percorso proximity.
-- **Bugfix EasyConn vc26/vc27 preservato:** se il TFT chiude temporaneamente 10920/10921 ma PXC resta vivo, MotoLink mantiene la sessione e attende la riapertura naturale.
-- **Bugfix Modalità tasca vc27 preservato:** ripristinato il gate V1.5.1 `projectionReadyForProximity`; nel log fisico successivo all'installazione non risultano nuovi keyguard causati dalla Modalità tasca.
-- **Recovery totale vc28:** se cadono anche i canali PXC/10922, MotoLink non martella più il vecchio IP: invalida l'endpoint, riaggancia la rete moto o WLAN Direct/P2P, rifà mDNS/EC INIT e mantiene MediaProjection/encoder vivi.
-- **Session reattach vc28:** se MainActivity viene ricreata mentre `consumer=false`, la Home mostra che il mirroring va ripristinato e lascia START disponibile invece di dichiarare falsamente “Sessione attiva”.
-
-La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono mostrare la freccia dell'uscita invece di un'icona circolare dedicata per le rotonde.
+- Lingua dell'interfaccia automatica in base alla lingua del telefono.
+- Traduzioni complete in Italiano, English, Русский e 中文; fallback inglese per le altre lingue.
+- Guida iniziale e avviso di sicurezza tradotti.
+- Google Maps: supporto alle notifiche russe, comprese unità cirilliche м/км, spazi Unicode, tempi e principali manovre testuali.
+- Navigazione BLE turn-by-turn migliorata sui telefoni in russo, inclusa VOGE Valico 625 DSX.
+- Il tasto Versione App mostra soltanto gli aggiornamenti della V1.7.
+- Recovery vc28, MediaProjection, H264 e Modalità tasca preservati.
 
 ---
 
 ## Scarica MotoLink
 
-**Sorgente corrente:** V1.6 vc28 (`versionCode 28`) — Android CI **PASS**  
-**Ultimo APK ufficiale firmato disponibile localmente:** V1.6 vc27  
-**SHA-256 APK vc27:** `a757654f02961ae7ebadeb4a776b0b3d759f263ab483cad5995548da771e564d`
+**[⬇️ Scarica direttamente MotoLink V1.7 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk)**
 
-> La vc28 modifica solo il recovery di rete/sessione e lo stato di reattach della Home. Modalità tasca, MediaProjection e pipeline H264 restano congelati dalla vc27.
+Versione corrente: **MotoLink V1.7** · `versionCode 30`  
+Package: `it.motolink.app`
 
-**Pagina della release V1.6:**  
-https://github.com/Mysterx1992/MotoLink/releases/tag/v1.6
-
-**Pagina dell'ultima release pubblicata:**  
-https://github.com/Mysterx1992/MotoLink/releases/latest
-
-**Tutte le versioni:**  
-https://github.com/Mysterx1992/MotoLink/releases
-
-> [!NOTE]
-> Nella pagina della Release scarica il file che termina in `.apk`. I file **Source code (zip)** e **Source code (tar.gz)** generati automaticamente da GitHub contengono il codice sorgente e non sono applicazioni installabili.
-
-Android può richiedere l'autorizzazione per installare app provenienti da questa fonte. È il normale controllo di sicurezza previsto per APK installati al di fuori di Google Play.
+Release: https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7
 
 ---
 
