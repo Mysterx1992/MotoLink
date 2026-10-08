@@ -1,0 +1,22 @@
+name: Cleanup incorrect vc29 test release
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - ".github/workflows/cleanup-vc29-test-release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove incorrect public test prerelease and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete v1.6-vc29-i18n-test -R Mysterx1992/MotoLink -y --cleanup-tag || true
