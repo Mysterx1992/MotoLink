@@ -1,4 +1,5 @@
 name: Build MotoLink vc29 i18n side-by-side test
+# Rebuild includes distinct TEST navigation-listener label.
 
 on:
   push:
