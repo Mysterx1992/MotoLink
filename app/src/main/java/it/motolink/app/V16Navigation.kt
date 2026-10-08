@@ -762,8 +762,16 @@ object VogeBleNavigationManager {
 }
 
 object GoogleMapsSourceAdapter {
-    private val distanceRegex = Regex("(?i)(?:\\btra\\s+|\\bfra\\s+|\\bin\\s+|\\bafter\\s+)?(\\d+(?:[.,]\\d+)?)\\s*(km|m|mi|ft)\\b")
+    // vc29 TEST RU: Maps localizes both the preposition and the distance unit.
+    // Russian notifications commonly use Cyrillic м/км and can contain NBSP/narrow-NBSP
+    // between the numeric value and the unit. Keep the parser deterministic and fail-closed.
+    private val distanceRegex = Regex(
+        "(?iu)(?:\\btra[\\s\\u00A0\\u202F]+|\\bfra[\\s\\u00A0\\u202F]+|\\bin[\\s\\u00A0\\u202F]+|\\bafter[\\s\\u00A0\\u202F]+|через[\\s\\u00A0\\u202F]+)?" +
+            "(\\d+(?:[.,]\\d+)?)[\\s\\u00A0\\u202F]*" +
+            "(km|км|километр(?:а|ов)?|m|м|метр(?:а|ов)?|mi|ft)(?![\\p{L}\\p{N}])"
+    )
     private val etaRegex = Regex("\\b([01]?\\d|2[0-3])[:.]([0-5]\\d)\\b")
+    private val cyrillicRegex = Regex("[\\u0400-\\u04FF]")
     private const val MAPS_PACKAGE = "com.google.android.apps.maps"
     private const val ICON_SAMPLE = 48
     private var lastUnknownIconFingerprint = ""
@@ -828,6 +836,7 @@ object GoogleMapsSourceAdapter {
             maneuver != NavManeuver.UNKNOWN -> "ICON"
             else -> "NONE"
         }
+        val sourceLocale = if (instructionFields.any(cyrillicRegex::containsMatchIn)) "RU" else "LATIN"
         if (maneuver == NavManeuver.ROUNDABOUT && roundaboutSector == null) {
             AppLog.add("MAPS NAV V1.6 ROUNDABOUT: flag OEM corretto ma settore uscita non classificato; annular=0")
         }
@@ -849,7 +858,7 @@ object GoogleMapsSourceAdapter {
             roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 4 else 0,
             annularDegrees = if (maneuver == NavManeuver.ROUNDABOUT) (roundaboutSector ?: 0) else 0,
             directionOverride = if (maneuver == NavManeuver.ROUNDABOUT) roundaboutEncoding?.directionCode else null,
-            source = "GOOGLE_MAPS_NOTIFICATION_$sourceKind",
+            source = "GOOGLE_MAPS_NOTIFICATION_${sourceLocale}_$sourceKind",
             rawInstruction = title
         )
     }
@@ -876,10 +885,13 @@ object GoogleMapsSourceAdapter {
     }
 
     private fun durationSeconds(text: String): Int? {
-        val hours = Regex("(?i)(\\d+)\\s*(?:h|hr|hrs|ora|ore|hour|hours)\\b")
-            .find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
-        val minutes = Regex("(?i)(\\d+)\\s*(?:min|minuto|minuti|minute|minutes)\\b")
-            .find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        val gap = "[\\s\\u00A0\\u202F]*"
+        val hours = Regex(
+            "(?iu)(\\d+)$gap(?:hours|hour|hrs|hr|ore|ora|часов|часа|час|ч)(?![\\p{L}\\p{N}])"
+        ).find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        val minutes = Regex(
+            "(?iu)(\\d+)$gap(?:minutes|minute|minuti|minuto|минуты|минута|минут|мин)(?![\\p{L}\\p{N}])"
+        ).find(text)?.groupValues?.getOrNull(1)?.toIntOrNull()
         if (hours == null && minutes == null) return null
         val seconds = (hours ?: 0) * 3600L + (minutes ?: 0) * 60L
         return seconds.coerceIn(0L, 0xFFFFL).toInt()
@@ -889,28 +901,64 @@ object GoogleMapsSourceAdapter {
         val m = distanceRegex.find(text) ?: return null
         val value = m.groupValues[1].replace(',', '.').toDoubleOrNull() ?: return null
         if (value < 0) return null
-        return when (m.groupValues[2].lowercase(Locale.US)) {
-            "m" -> value.roundToInt()
-            "km" -> (value * 1000.0).roundToInt()
-            "mi" -> (value * 1609.344).roundToInt()
-            "ft" -> (value * 0.3048).roundToInt()
+        val unit = m.groupValues[2].lowercase(Locale.ROOT)
+        return when {
+            unit == "m" || unit == "м" || unit.startsWith("метр") -> value.roundToInt()
+            unit == "km" || unit == "км" || unit.startsWith("километр") -> (value * 1000.0).roundToInt()
+            unit == "mi" -> (value * 1609.344).roundToInt()
+            unit == "ft" -> (value * 0.3048).roundToInt()
             else -> null
         }?.coerceIn(0, 0xFFFFFF)
     }
 
     private fun maneuverFrom(text: String): NavManeuver {
-        val s = text.lowercase(Locale.getDefault())
+        val s = text.lowercase(Locale.ROOT)
         return when {
-            listOf("inversione a u a sinistra", "inversione a sinistra", "u-turn left", "uturn left", "u turn left", "⤺", "↶").any(s::contains) -> NavManeuver.UTURN_LEFT
+            // U-turn: Russian Maps normally shows a generic "развернитесь"; on Russian
+            // right-hand traffic this corresponds to the left U-turn encoding used by VOGE.
+            listOf(
+                "inversione a u a sinistra", "inversione a sinistra", "u-turn left", "uturn left", "u turn left",
+                "развернитесь", "выполните разворот", "разворот", "⤺", "↶"
+            ).any(s::contains) -> NavManeuver.UTURN_LEFT
             listOf("inversione a u a destra", "inversione a destra", "u-turn right", "uturn right", "u turn right", "⤴", "↷").any(s::contains) -> NavManeuver.UTURN_RIGHT
-            listOf("rotatoria", "rotonda", "roundabout", "rotary").any(s::contains) -> NavManeuver.ROUNDABOUT
-            listOf("svolta bruscamente a sinistra", "gira bruscamente a sinistra", "sharp left", "hard left").any(s::contains) -> NavManeuver.SHARP_LEFT
-            listOf("svolta bruscamente a destra", "gira bruscamente a destra", "sharp right", "hard right").any(s::contains) -> NavManeuver.SHARP_RIGHT
-            listOf("leggermente a sinistra", "slight left", "mantieni la sinistra", "tieni la sinistra", "keep left", "stay left", "↖", "↙").any(s::contains) -> NavManeuver.SLIGHT_LEFT
-            listOf("leggermente a destra", "slight right", "mantieni la destra", "tieni la destra", "keep right", "stay right", "↗", "↘").any(s::contains) -> NavManeuver.SLIGHT_RIGHT
-            listOf("svolta a sinistra", "gira a sinistra", "turn left", "a sinistra", "←", "↰").any(s::contains) -> NavManeuver.LEFT
-            listOf("svolta a destra", "gira a destra", "turn right", "a destra", "→", "↱").any(s::contains) -> NavManeuver.RIGHT
-            listOf("prosegui dritto", "continua dritto", "vai dritto", "continue straight", "go straight", "prosegui", "continua su", "↑").any(s::contains) -> NavManeuver.STRAIGHT
+
+            listOf(
+                "rotatoria", "rotonda", "roundabout", "rotary",
+                "круговое движение", "круговом движении", "круговом перекрестке", "круговом перекрёстке",
+                "кольцевое движение", "кольцевом движении"
+            ).any(s::contains) -> NavManeuver.ROUNDABOUT
+
+            listOf(
+                "svolta bruscamente a sinistra", "gira bruscamente a sinistra", "sharp left", "hard left",
+                "резко поверните налево", "круто поверните налево"
+            ).any(s::contains) -> NavManeuver.SHARP_LEFT
+            listOf(
+                "svolta bruscamente a destra", "gira bruscamente a destra", "sharp right", "hard right",
+                "резко поверните направо", "круто поверните направо"
+            ).any(s::contains) -> NavManeuver.SHARP_RIGHT
+
+            listOf(
+                "leggermente a sinistra", "slight left", "mantieni la sinistra", "tieni la sinistra", "keep left", "stay left",
+                "держитесь левее", "плавно поверните налево", "↖", "↙"
+            ).any(s::contains) -> NavManeuver.SLIGHT_LEFT
+            listOf(
+                "leggermente a destra", "slight right", "mantieni la destra", "tieni la destra", "keep right", "stay right",
+                "держитесь правее", "плавно поверните направо", "↗", "↘"
+            ).any(s::contains) -> NavManeuver.SLIGHT_RIGHT
+
+            listOf(
+                "svolta a sinistra", "gira a sinistra", "turn left", "a sinistra",
+                "поверните налево", "сверните налево", "налево", "←", "↰"
+            ).any(s::contains) -> NavManeuver.LEFT
+            listOf(
+                "svolta a destra", "gira a destra", "turn right", "a destra",
+                "поверните направо", "сверните направо", "направо", "→", "↱"
+            ).any(s::contains) -> NavManeuver.RIGHT
+
+            listOf(
+                "prosegui dritto", "continua dritto", "vai dritto", "continue straight", "go straight", "prosegui", "continua su",
+                "двигайтесь прямо", "продолжайте движение прямо", "следуйте прямо", "прямо", "↑"
+            ).any(s::contains) -> NavManeuver.STRAIGHT
             else -> NavManeuver.UNKNOWN
         }
     }
@@ -1166,7 +1214,10 @@ object GoogleMapsSourceAdapter {
         bitmap
     }.getOrNull()
 
-    private fun clean(value: CharSequence?): String = value?.toString()?.replace(Regex("\\s+"), " ")?.trim().orEmpty()
+    private fun clean(value: CharSequence?): String = value?.toString()
+        ?.replace(Regex("[\\s\\u00A0\\u202F]+"), " ")
+        ?.trim()
+        .orEmpty()
 }
 
 class MapsNavigationListenerService : NotificationListenerService() {

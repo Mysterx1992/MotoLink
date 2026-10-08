@@ -350,7 +350,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
 
     fun updateAssistantConversation(question: String, answer: String, showWhatsApp: Boolean = false) {
         if (question.isNotBlank()) assistantQuestion = question.trim()
-        if (answer.isNotBlank()) assistantAnswer = cleanAssistantText(answer)
+        if (answer.isNotBlank()) assistantAnswer = cleanAssistantText(MotoLinkLocale.t(context, answer))
         assistantShowWhatsApp = showWhatsApp
         page = Page.SUPPORT
         supportTab = SupportTab.ASSISTANT
@@ -754,7 +754,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             background = roundedBg(0xF3060907.toInt(), if (bike.active) GREEN else 0xFF4B524D.toInt(), 30f, if (bike.active) 1.7f else 1f)
             isClickable = true
             isFocusable = true
-            contentDescription = "Profilo moto ${bike.name}"
+            contentDescription = MotoLinkLocale.t(context, "Profilo moto ${bike.name}")
             setOnClickListener { onBikeProfileClick?.invoke(index) }
         }
         val image = ImageView(context).apply {
@@ -803,7 +803,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             gravity = Gravity.CENTER
             isClickable = true
             isFocusable = true
-            contentDescription = "Opzioni profilo ${bike.name}"
+            contentDescription = MotoLinkLocale.t(context, "Opzioni profilo ${bike.name}")
             setOnClickListener { onBikeProfileMenuClick?.invoke(index) }
         }
         row.addView(menu, FrameLayout.LayoutParams(pxX(80f), LayoutParams.MATCH_PARENT, Gravity.END))
@@ -818,7 +818,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             setPadding(pxX(115f), 0, pxX(35f), 0)
             isClickable = true
             isFocusable = true
-            contentDescription = "Aggiungi una moto con QR"
+            contentDescription = MotoLinkLocale.t(context, "Aggiungi una moto con QR")
         }
         row.addView(icon(IconKind.QR, GREEN), LinearLayout.LayoutParams(pxX(112f), pxH(112f)))
         val texts = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL }
@@ -856,7 +856,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             background = roundedBg(0xF7060A07.toInt(), 0xFF53633E.toInt(), 30f, 1f)
             isClickable = true
             isFocusable = true
-            contentDescription = "Modifica app preferita ${fav.label}"
+            contentDescription = MotoLinkLocale.t(context, "Modifica app preferita ${fav.label}")
             setOnClickListener { onFavoriteReplaceClick?.invoke(index) ?: onFavoriteManageClick?.invoke() }
         }
         card.addView(ImageView(context).apply {
@@ -875,7 +875,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             background = roundedBg(0x00000000, GREEN, 23f, 1f)
             isClickable = true
             isFocusable = true
-            contentDescription = "Cambia ${fav.label}"
+            contentDescription = MotoLinkLocale.t(context, "Cambia ${fav.label}")
             setOnClickListener { onFavoriteReplaceClick?.invoke(index) ?: onFavoriteManageClick?.invoke() }
         }
         card.addView(change, FrameLayout.LayoutParams(pxX(160f), pxH(58f), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = pxH(316f) })
@@ -884,7 +884,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             background = roundedBg(0x08000000, 0xFFE4E4E4.toInt(), 28f, 1f)
             isClickable = true
             isFocusable = true
-            contentDescription = "Rimuovi ${fav.label}"
+            contentDescription = MotoLinkLocale.t(context, "Rimuovi ${fav.label}")
             setOnClickListener { onFavoriteRemoveClick?.invoke(index) }
         }
         remove.addView(icon(IconKind.CLOSE, 0xFFF1F1F1.toInt()), FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).apply {
@@ -1001,7 +1001,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         val info = FrameLayout(context).apply {
             isClickable = true
             isFocusable = true
-            contentDescription = "Come funziona l'Assistente"
+            contentDescription = MotoLinkLocale.t(context, "Come funziona l'Assistente")
             setOnClickListener { onAssistantInfoClick?.invoke() }
             addView(icon(IconKind.INFO, GREEN, 0.92f), FrameLayout.LayoutParams(pxX(48f), pxH(48f), Gravity.CENTER))
         }
@@ -1037,7 +1037,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         card.addView(View(context), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
         val composer = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val edit = EditText(context).apply {
-            hint = "Scrivi un messaggio…"
+            hint = MotoLinkLocale.t(context, "Scrivi un messaggio…")
             setTextColor(Color.WHITE)
             setHintTextColor(0xFF9EA6A1.toInt())
             textSize = 18f
@@ -1133,7 +1133,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
                 setImageResource(R.drawable.ic_whatsapp_brand)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
                 adjustViewBounds = false
-                contentDescription = "WhatsApp"
+                contentDescription = MotoLinkLocale.t(context, "WhatsApp")
             }
             iconSlot.addView(whatsapp, FrameLayout.LayoutParams(pxX(46f), pxH(46f), Gravity.CENTER))
         } else {
@@ -1194,13 +1194,13 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             background = roundedBg(0xF5070A08.toInt(), 0xFF4D5F40.toInt(), 30f, 1f)
             isClickable = true
             isFocusable = true
-            contentDescription = "Versione app"
+            contentDescription = MotoLinkLocale.t(context, "Versione app")
             setOnClickListener { onVersionClick?.invoke() }
         }
         val iconWrap = FrameLayout(context).apply { background = roundedBg(0xFF101410.toInt(), 0xFF465346.toInt(), 62f, 1f) }
         iconWrap.addView(icon(IconKind.INFO, GREEN), FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT).apply { leftMargin = pxX(21f); rightMargin = pxX(21f); topMargin = pxH(21f); bottomMargin = pxH(21f) })
         row.addView(iconWrap, FrameLayout.LayoutParams(pxX(126f), pxH(126f), Gravity.START or Gravity.CENTER_VERTICAL).apply { leftMargin = pxX(32f) })
-        row.addView(text("Versione app", 32f, Color.WHITE, true).apply { gravity = Gravity.CENTER_VERTICAL }, FrameLayout.LayoutParams(pxX(335f), LayoutParams.MATCH_PARENT).apply { leftMargin = pxX(193f) })
+        row.addView(text(MotoLinkLocale.t(context, "Versione app"), 32f, Color.WHITE, true).apply { gravity = Gravity.CENTER_VERTICAL }, FrameLayout.LayoutParams(pxX(335f), LayoutParams.MATCH_PARENT).apply { leftMargin = pxX(193f) })
         row.addView(text(appVersionName(), 25f, GREEN, false).apply { gravity = Gravity.CENTER_VERTICAL or Gravity.END; maxLines = 1; ellipsize = TextUtils.TruncateAt.START }, FrameLayout.LayoutParams(pxX(270f), LayoutParams.MATCH_PARENT, Gravity.END).apply { rightMargin = pxX(35f) })
         return row
     }
@@ -1455,7 +1455,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         val overlay = FrameLayout(context).apply {
             isClickable = true
             isFocusable = true
-            contentDescription = "Guida iniziale. Tocca lo schermo per continuare."
+            contentDescription = MotoLinkLocale.t(context, "Guida iniziale. Tocca lo schermo per continuare.")
             // Any normal tap on the overlay advances the tour. Child controls such as
             // SALTA, INDIETRO and AVANTI remain clickable and keep their dedicated action.
             setOnClickListener { guideNext() }
@@ -1468,7 +1468,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         )
 
         val skip = TextView(context).apply {
-            text = "SALTA"
+            text = MotoLinkLocale.t(context, "SALTA")
             setTextColor(GREEN)
             setTextSize(TypedValue.COMPLEX_UNIT_PX, fontPx(21f))
             typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -1535,11 +1535,12 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun guideTitleText(value: String): TextView = TextView(context).apply {
-        val styled = SpannableString(value)
-        val separator = value.indexOf(" · ")
+        val localized = MotoLinkLocale.t(context, value)
+        val styled = SpannableString(localized)
+        val separator = localized.indexOf(" · ")
         if (separator > 0) {
             styled.setSpan(ForegroundColorSpan(GREEN), 0, separator, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            styled.setSpan(ForegroundColorSpan(Color.WHITE), separator, value.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            styled.setSpan(ForegroundColorSpan(Color.WHITE), separator, localized.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         text = styled
         setTextColor(Color.WHITE)
@@ -1553,7 +1554,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun guideButton(label: String, primary: Boolean, click: () -> Unit): View = TextView(context).apply {
-        text = label
+        text = MotoLinkLocale.t(context, label)
         setTextColor(if (primary) Color.BLACK else Color.WHITE)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, fontPx(18f))
         typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -1619,7 +1620,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             val item = FrameLayout(context).apply {
                 isClickable = true
                 isFocusable = true
-                contentDescription = label
+                contentDescription = MotoLinkLocale.t(context, label)
                 setOnClickListener {
                     page = target
                     if (target != Page.SUPPORT) supportTab = SupportTab.LOG
@@ -1710,7 +1711,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun text(value: String, sizeRef: Float, color: Int, bold: Boolean): TextView = TextView(context).apply {
-        text = value
+        text = MotoLinkLocale.t(context, value)
         setTextColor(color)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, fontPx(sizeRef))
         typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
@@ -1718,12 +1719,13 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun accentedText(value: String, sizeRef: Float, color: Int, vararg accents: String): TextView = TextView(context).apply {
-        val styled = SpannableString(value)
+        val localized = MotoLinkLocale.t(context, value)
+        val styled = SpannableString(localized)
         accents.forEach { accent ->
-            var start = value.indexOf(accent)
+            var start = localized.indexOf(accent)
             while (start >= 0) {
                 styled.setSpan(ForegroundColorSpan(GREEN), start, start + accent.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                start = value.indexOf(accent, start + accent.length)
+                start = localized.indexOf(accent, start + accent.length)
             }
         }
         text = styled
@@ -1757,7 +1759,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
                 imageTintList = android.content.res.ColorStateList.valueOf(color)
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
                 adjustViewBounds = false
-                contentDescription = "Sfondo"
+                contentDescription = MotoLinkLocale.t(context, "Sfondo")
             }
         } else {
             LineIconView(context, kind, color, visualScale)

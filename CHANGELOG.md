@@ -1,5 +1,19 @@
 # Changelog MotoLink
 
+## V1.6 vc28 — 2026-09-25
+
+### Recovery rete/TFT completo
+
+- Corretto il caso fisico Trofeo 500 in cui il TFT chiude contemporaneamente `10920`, `10921` e i due canali PXC `10922`.
+- In caso di perdita totale, MotoLink invalida il vecchio endpoint EasyConn e non continua più a tentare indefinitamente l'IP non raggiungibile.
+- Per profili Hotspot riaggancia la stessa rete Wi-Fi moto ricordata solo in RAM; per QR/WLAN Direct riattiva il rispettivo trasporto.
+- Dopo il riaggancio rifà discovery mDNS / `EC INIT` e aspetta un vero FIRST FRAME prima di dichiarare il recovery completato.
+- MediaProjection, encoder H264 e Modalità tasca restano attivi/invariati durante il recovery.
+- Corretto il reattach della Home: una sessione con MirrorService vivo ma `consumer=false` non viene più mostrata come “Sessione attiva”; START resta disponibile per il recovery.
+- Il controllo di liveness non considera più un generico Wi-Fi Android come prova sufficiente della rete moto.
+- Version name `1.6`, versionCode `28`.
+- Fix vc27 Modalità tasca preservato senza modifiche.
+
 ## V1.6 vc27 — 2026-09-25
 
 ### Bugfix e freeze
