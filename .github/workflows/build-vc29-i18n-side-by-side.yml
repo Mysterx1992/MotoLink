@@ -1,5 +1,5 @@
 name: Build MotoLink vc29 i18n side-by-side test
-# Rebuild includes distinct TEST navigation-listener label.
+# Final rebuild includes full IT/EN/RU/ZH guide localization and distinct TEST listener label.
 
 on:
   push:
