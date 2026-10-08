@@ -1137,7 +1137,7 @@ class MainActivity : Activity() {
         if (runSelection != RunSelection.START) return
 
         val name = EditText(this).apply {
-            hint = "Nome moto (es. La mia Trofeo)"
+            hint = MotoLinkLocale.t(this@MainActivity, "Nome moto (es. La mia Trofeo)")
             setText(pendingV16QrProfileName.orEmpty())
             setTextColor(Color.WHITE)
             setHintTextColor(color(C_MUTED))
@@ -1148,7 +1148,7 @@ class MainActivity : Activity() {
 
         val connectionOptions = listOf("Hotspot", "QrCode", "BLE")
         val connectionLabel = TextView(this).apply {
-            text = "Connessione:"
+            text = MotoLinkLocale.t(this@MainActivity, "Connessione:")
             setTextColor(Color.WHITE)
             textSize = 16f
             setPadding((4 * resources.displayMetrics.density).toInt(), (2 * resources.displayMetrics.density).toInt(), 0, (4 * resources.displayMetrics.density).toInt())
@@ -1295,7 +1295,7 @@ class MainActivity : Activity() {
         if (runSelection != RunSelection.START) return
         val options = listOf("Hotspot", "QrCode", "BLE")
         val label = TextView(this).apply {
-            text = "Questo profilo era impostato su Automatico. Scegli la connessione da usare con questa moto."
+            text = MotoLinkLocale.t(this@MainActivity, "Questo profilo era impostato su Automatico. Scegli la connessione da usare con questa moto.")
             setTextColor(Color.WHITE)
             textSize = 15f
             setPadding(0, 0, 0, (10 * resources.displayMetrics.density).toInt())
@@ -3564,7 +3564,7 @@ class MainActivity : Activity() {
                 clipData = ClipData.newRawUri("MotoLink Log", uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            startActivity(Intent.createChooser(send, "Invia Log"))
+            startActivity(Intent.createChooser(send, MotoLinkLocale.t(this, "Invia Log")))
         } catch (t: Throwable) {
             AppLog.add("Condivisione Log fallita: ${t.message ?: t.javaClass.simpleName}")
             setState("Impossibile condividere il Log", "Riprova", C_DANGER, "!")
@@ -3585,12 +3585,21 @@ class MainActivity : Activity() {
 
     private fun setHeaderStatus(title: String, subtitle: String, colorHex: String) {
         if (!::dashboard.isInitialized) return
-        dashboard.updateHeader(title, subtitle, color(colorHex))
+        dashboard.updateHeader(
+            MotoLinkLocale.t(this, title),
+            MotoLinkLocale.t(this, subtitle),
+            color(colorHex)
+        )
     }
 
     private fun setState(title: String, subtitle: String, dotColor: String, right: String) {
         if (!::dashboard.isInitialized) return
-        dashboard.updateState(title, subtitle, color(dotColor), right)
+        dashboard.updateState(
+            MotoLinkLocale.t(this, title),
+            MotoLinkLocale.t(this, subtitle),
+            color(dotColor),
+            right
+        )
     }
 
     private fun color(hex: String): Int = Color.parseColor(hex)
