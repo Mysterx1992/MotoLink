@@ -34,6 +34,9 @@ MotoLink **V1.7** aggiunge l'interfaccia multilingua automatica e migliora la na
 - Guida iniziale e avviso di sicurezza tradotti.
 - Google Maps: supporto alle notifiche russe, comprese unità cirilliche м/км, spazi Unicode, tempi e principali manovre testuali.
 - Navigazione BLE turn-by-turn migliorata sui telefoni in russo, inclusa VOGE Valico 625 DSX.
+- Reader Google Maps esteso a `EXTRA_TEXT_LINES`, viste compatte/estese/heads-up e accessibility text.
+- Rotonde migliorate su tutte le lingue con riconoscimento visivo language-agnostic e codifica VOGE di settore/direzione d'uscita.
+- Diagnostica Maps privacy-safe per identificare i campi realmente esposti senza salvare strade o destinazioni.
 - Il tasto Versione App mostra soltanto gli aggiornamenti della V1.7.
 - Recovery vc28, MediaProjection, H264 e Modalità tasca preservati.
 
@@ -43,7 +46,7 @@ MotoLink **V1.7** aggiunge l'interfaccia multilingua automatica e migliora la na
 
 **[⬇️ Scarica direttamente MotoLink V1.7 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk)**
 
-Versione corrente: **MotoLink V1.7** · `versionCode 30`  
+Versione corrente: **MotoLink V1.7** · `versionCode 31`  
 Package: `it.motolink.app`
 
 Release: https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7
@@ -221,6 +224,6 @@ Per i termini completi consulta [`LICENSE`](LICENSE).
 ---
 
 <p align="center">
-  <strong>MotoLink V1.6</strong><br>
+  <strong>MotoLink V1.7</strong><br>
   Mirroring • BLE Turn-by-Turn • Connessione • Supporto
 </p>

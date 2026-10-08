@@ -24,26 +24,35 @@ object MotoLinkLocale {
 
     fun releaseNotes17(): String = when (language()) {
         "it" -> "• L'interfaccia segue automaticamente la lingua del telefono.\n" +
-            "• Traduzioni complete incluse: Italiano, English, Русский e 中文; per le altre lingue viene usato l'inglese.\n" +
-            "• Tradotte anche la Guida iniziale e l'avviso di sicurezza durante la guida.\n" +
-            "• Google Maps ora riconosce anche le notifiche russe, comprese unità cirilliche м/км, spazi Unicode, tempi e principali manovre testuali.\n" +
-            "• Migliorata quindi la navigazione BLE turn-by-turn sui telefoni impostati in russo, inclusa la VOGE Valico 625 DSX."
+            "• Traduzioni complete: Italiano, English, Русский e 中文; fallback inglese per le altre lingue.\n" +
+            "• Guida iniziale e avviso di sicurezza tradotti.\n" +
+            "• Google Maps: lettura più robusta delle notifiche, incluse TEXT_LINES, viste compatte/estese/heads-up e descrizioni accessibilità.\n" +
+            "• Migliorata l'estrazione della distanza alla prossima manovra sui telefoni in russo e sulle varianti di notifica Maps.\n" +
+            "• Rotonde migliorate per tutte le lingue: riconoscimento visivo indipendente dalla lingua e codifica VOGE di settore/direzione d'uscita.\n" +
+            "• Diagnostica Maps privacy-safe: registra solo struttura e presenza dei dati, non strade o destinazioni."
         "ru" -> "• Интерфейс автоматически использует язык телефона.\n" +
             "• Полные переводы: Italiano, English, Русский и 中文; для остальных языков используется английский.\n" +
-            "• Также переведены начальное руководство и предупреждение о безопасности.\n" +
-            "• Google Maps теперь распознаёт русские уведомления, включая кириллические единицы м/км, Unicode-пробелы, время и основные текстовые манёвры.\n" +
-            "• Улучшена BLE-навигация turn-by-turn на телефонах с русским языком, включая VOGE Valico 625 DSX."
+            "• Переведены начальное руководство и предупреждение о безопасности.\n" +
+            "• Google Maps: более надёжное чтение уведомлений, включая TEXT_LINES, компактные/расширенные/heads-up представления и accessibility-описания.\n" +
+            "• Улучшено извлечение расстояния до следующего манёвра на русских телефонах и других вариантах уведомлений Maps.\n" +
+            "• Круговые перекрёстки улучшены для всех языков: визуальное распознавание не зависит от языка, а сектор/направление выхода кодируются для VOGE.\n" +
+            "• Диагностика Maps сохраняет только техническую структуру и наличие данных, без улиц и пунктов назначения."
         "zh" -> "• 界面会自动使用手机系统语言。\n" +
-            "• 已提供完整翻译：Italiano、English、Русский 和 中文；其他语言默认使用英语。\n" +
-            "• 入门指南和骑行安全提示也已翻译。\n" +
-            "• Google Maps 现在可识别俄语通知，包括西里尔字母单位 м/км、Unicode 空格、时间和主要文字转向指令。\n" +
-            "• 因此改进了俄语手机上的 BLE 逐向导航，包括 VOGE Valico 625 DSX。"
-        else -> "• The interface now follows the phone system language automatically.\n" +
-            "• Full translations included: Italiano, English, Русский and 中文; other languages fall back to English.\n" +
-            "• The Getting Started guide and riding-safety notice are translated too.\n" +
-            "• Google Maps now recognizes Russian notifications, including Cyrillic м/км units, Unicode spaces, time values and common maneuver text.\n" +
-            "• BLE turn-by-turn navigation is therefore improved on Russian-language phones, including the VOGE Valico 625 DSX."
+            "• 完整翻译：Italiano、English、Русский 和 中文；其他语言默认使用英语。\n" +
+            "• 入门指南和骑行安全提示已翻译。\n" +
+            "• Google Maps：更稳健地读取通知，包括 TEXT_LINES、紧凑/扩展/heads-up 视图和无障碍描述。\n" +
+            "• 改进了俄语手机及其他 Maps 通知变体中的下一转向距离提取。\n" +
+            "• 所有语言的环岛识别均已改进：视觉识别与语言无关，并正确编码 VOGE 出口扇区和方向。\n" +
+            "• Maps 诊断仅记录技术结构和数据是否存在，不记录道路或目的地。"
+        else -> "• The interface follows the phone system language automatically.\n" +
+            "• Full translations: Italiano, English, Русский and 中文; other languages fall back to English.\n" +
+            "• The Getting Started guide and riding-safety notice are translated.\n" +
+            "• Google Maps: more robust notification reading, including TEXT_LINES, compact/expanded/heads-up views and accessibility descriptions.\n" +
+            "• Improved next-maneuver distance extraction on Russian phones and other Maps notification variants.\n" +
+            "• Roundabouts improved for every language: language-independent visual recognition plus VOGE exit-sector/direction encoding.\n" +
+            "• Privacy-safe Maps diagnostics record only structure/data presence, never roads or destinations."
     }
+
 
     fun assistantInfo(): String = when (language()) {
         "it" -> "Come usare la chat\nScrivi direttamente nel campo in basso e premi Invia. L'Assistente è dedicato al supporto MotoLink e non ha accesso al codice sorgente, alle chiavi API o ai secret dell'app.\n\nCome allegare il Log\nVai in Supporto > Log > Condividi e scegli Assistente. MotoLink prepara sul telefono un estratto tecnico, rimuove identificativi e secret e lo invia solo per quella richiesta.\n\nPrivacy\nDurante una chat normale il Log non viene letto né inviato. MotoLink non salva chat o Log nel proprio database. Le richieste dell'Assistente vengono elaborate online.\n\nSe l'Assistente non sa rispondere\nNon deve inventare: può proporti il gruppo ufficiale MotoLink Mirroring e mostrarti il pulsante Apri gruppo WhatsApp."
