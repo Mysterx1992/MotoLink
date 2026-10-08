@@ -252,7 +252,17 @@ object MotoLinkLocale {
         "Scegli quale preferita cambiare" to "Choose which favorite to change",
         "Rimuovi una preferita dalla barra" to "Remove a favorite from the bar",
         "Tocca l'app da rimuovere" to "Tap the app to remove",
-        "Tocca l'app da sostituire" to "Tap the app to replace"
+        "Tocca l'app da sostituire" to "Tap the app to replace",
+        "Configura la moto una sola volta: QR quando disponibile oppure profilo locale; poi basta START." to "Configure the motorcycle once: use QR when available or a local profile; after that just press START.",
+        "Android non ha restituito app avviabili. Chiudi e riapri MotoLink; se il problema resta, condividi il LOG." to "Android did not return any launchable apps. Close and reopen MotoLink; if the problem remains, share the LOG.",
+        "NAVIGAZIONE" to "NAVIGATION",
+        "AGGIUNGI" to "ADD",
+        "SOSTITUISCI" to "REPLACE",
+        "Questo profilo era impostato su Automatico. Scegli la connessione da usare con questa moto." to "This profile was set to Automatic. Choose the connection to use with this motorcycle.",
+        "Guida iniziale. Tocca lo schermo per continuare." to "Getting started guide. Tap the screen to continue.",
+        "SALTA" to "SKIP",
+        "Privacy: le domande sono elaborate online. MotoLink non salva chat o Log nel proprio database. Il Log viene inviato solo con Condividi > Assistente e viene filtrato prima dell'invio." to "Privacy: questions are processed online. MotoLink does not store chats or Logs in its database. The Log is sent only through Share > Assistant and is filtered before sending."
+
     )
 
     private val RU = mapOf(
@@ -402,7 +412,17 @@ object MotoLinkLocale {
         "Scegli quale preferita cambiare" to "Выберите, какое избранное изменить",
         "Rimuovi una preferita dalla barra" to "Удалить избранное с панели",
         "Tocca l'app da rimuovere" to "Нажмите приложение для удаления",
-        "Tocca l'app da sostituire" to "Нажмите приложение для замены"
+        "Tocca l'app da sostituire" to "Нажмите приложение для замены",
+        "Configura la moto una sola volta: QR quando disponibile oppure profilo locale; poi basta START." to "Настройте мотоцикл один раз: используйте QR, если он доступен, или локальный профиль; затем достаточно нажать START.",
+        "Android non ha restituito app avviabili. Chiudi e riapri MotoLink; se il problema resta, condividi il LOG." to "Android не вернул запускаемые приложения. Закройте и снова откройте MotoLink; если проблема останется, отправьте LOG.",
+        "NAVIGAZIONE" to "НАВИГАЦИЯ",
+        "AGGIUNGI" to "ДОБАВИТЬ",
+        "SOSTITUISCI" to "ЗАМЕНИТЬ",
+        "Questo profilo era impostato su Automatico. Scegli la connessione da usare con questa moto." to "Этот профиль был настроен на автоматическое подключение. Выберите тип подключения для этого мотоцикла.",
+        "Guida iniziale. Tocca lo schermo per continuare." to "Начальное руководство. Коснитесь экрана, чтобы продолжить.",
+        "SALTA" to "ПРОПУСТИТЬ",
+        "Privacy: le domande sono elaborate online. MotoLink non salva chat o Log nel proprio database. Il Log viene inviato solo con Condividi > Assistente e viene filtrato prima dell'invio." to "Конфиденциальность: вопросы обрабатываются онлайн. MotoLink не хранит чаты и журналы в своей базе данных. Журнал отправляется только через Поделиться > Помощник и фильтруется перед отправкой."
+
     )
 
     private val ZH = mapOf(
@@ -552,7 +572,17 @@ object MotoLinkLocale {
         "Scegli quale preferita cambiare" to "选择要更改的常用应用",
         "Rimuovi una preferita dalla barra" to "从栏中移除常用应用",
         "Tocca l'app da rimuovere" to "点击要移除的应用",
-        "Tocca l'app da sostituire" to "点击要替换的应用"
+        "Tocca l'app da sostituire" to "点击要替换的应用",
+        "Configura la moto una sola volta: QR quando disponibile oppure profilo locale; poi basta START." to "摩托车只需配置一次：有 QR 时使用 QR，否则使用本地配置；之后只需按 START。",
+        "Android non ha restituito app avviabili. Chiudi e riapri MotoLink; se il problema resta, condividi il LOG." to "Android 没有返回可启动的应用。请关闭并重新打开 MotoLink；如果问题仍存在，请分享 LOG。",
+        "NAVIGAZIONE" to "导航",
+        "AGGIUNGI" to "添加",
+        "SOSTITUISCI" to "替换",
+        "Questo profilo era impostato su Automatico. Scegli la connessione da usare con questa moto." to "此配置原先设置为自动连接。请选择此摩托车要使用的连接方式。",
+        "Guida iniziale. Tocca lo schermo per continuare." to "入门指南。点击屏幕继续。",
+        "SALTA" to "跳过",
+        "Privacy: le domande sono elaborate online. MotoLink non salva chat o Log nel proprio database. Il Log viene inviato solo con Condividi > Assistente e viene filtrato prima dell'invio." to "隐私：问题会在线处理。MotoLink 不会在自己的数据库中保存聊天或日志。日志仅在“分享 > 助手”时发送，并会在发送前进行过滤。"
+
     )
 
     private val EN_FALLBACK = mapOf(
