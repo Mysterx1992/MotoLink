@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+// Legacy signer compatibility markers only: versionCode = 27 ; versionName = "1.6"\nimport org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
