@@ -283,7 +283,7 @@ class MainActivity : Activity() {
                 "LAN"
             )
         }
-        AppLog.add("MotoLink V1.6 GUI pronta; BLE navigazione integrato; core EasyConn/H264 V1.5.1 preservato")
+        AppLog.add("MotoLink V1.7 GUI pronta; lingua sistema + BLE navigazione integrati; core EasyConn/H264 preservato")
         AppLog.add("DISPLAY MANUALE: funzione nascosta 2x Volume Giù entro 5000ms; " +
             "BLACK OVERLAY + TOUCH BLOCK; Accessibility=OFF; polling=OFF")
         dashboard.post { startFirstRunExperience() }
@@ -3422,23 +3422,13 @@ class MainActivity : Activity() {
 
     private fun showInstalledReleaseNotes() {
         val version = runCatching {
-            packageManager.getPackageInfo(packageName, 0).versionName ?: "1.6"
-        }.getOrDefault("1.6")
+            packageManager.getPackageInfo(packageName, 0).versionName ?: "1.7"
+        }.getOrDefault("1.7")
         val displayVersion = if (version.startsWith("V", ignoreCase = true)) version else "V$version"
-        val notes =
-            "NOVITÀ $displayVersion\n\n" +
-                "• Aggiunto in Crediti il pulsante ufficiale PayPal Donazioni per sostenere volontariamente MotoLink.\n" +
-                "• Il pulsante Donazioni è separato dalle sezioni Autore e Community e apre la pagina PayPal esterna.\n" +
-                "• Corretto il comportamento della Modalità tasca: quando è disattivata il proximity non deve spegnere lo schermo.\n" +
-                "• Nuova configurazione del profilo con scelta tra Hotspot, QrCode e Bluetooth BLE.\n" +
-                "• Supporto alla navigazione Bluetooth BLE sui modelli compatibili e miglioramenti alla gestione connessione/riconnessione.\n" +
-                "• Recovery vc28: se il TFT chiude completamente H264, Media e PXC, MotoLink riaggancia la rete moto, rifà discovery EasyConn e ripristina il mirroring senza riavviare MediaProjection.\n" +
-                "• Corretto il falso stato 'Sessione attiva' quando MirrorService è vivo ma il TFT non ha più un consumer H264.\n" +
-                "• Miglioramenti generali di stabilità e affidabilità."
         NeonDialogs.showInfo(
             activity = this,
             title = "MotoLink $displayVersion",
-            message = notes
+            message = MotoLinkLocale.releaseNotes17()
         )
     }
 
