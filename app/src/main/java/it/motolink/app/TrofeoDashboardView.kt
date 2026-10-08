@@ -350,7 +350,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
 
     fun updateAssistantConversation(question: String, answer: String, showWhatsApp: Boolean = false) {
         if (question.isNotBlank()) assistantQuestion = question.trim()
-        if (answer.isNotBlank()) assistantAnswer = cleanAssistantText(answer)
+        if (answer.isNotBlank()) assistantAnswer = cleanAssistantText(MotoLinkLocale.t(context, answer))
         assistantShowWhatsApp = showWhatsApp
         page = Page.SUPPORT
         supportTab = SupportTab.ASSISTANT
@@ -1535,11 +1535,12 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun guideTitleText(value: String): TextView = TextView(context).apply {
-        val styled = SpannableString(value)
-        val separator = value.indexOf(" · ")
+        val localized = MotoLinkLocale.t(context, value)
+        val styled = SpannableString(localized)
+        val separator = localized.indexOf(" · ")
         if (separator > 0) {
             styled.setSpan(ForegroundColorSpan(GREEN), 0, separator, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            styled.setSpan(ForegroundColorSpan(Color.WHITE), separator, value.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            styled.setSpan(ForegroundColorSpan(Color.WHITE), separator, localized.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
         text = styled
         setTextColor(Color.WHITE)
@@ -1553,7 +1554,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun guideButton(label: String, primary: Boolean, click: () -> Unit): View = TextView(context).apply {
-        text = label
+        text = MotoLinkLocale.t(context, label)
         setTextColor(if (primary) Color.BLACK else Color.WHITE)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, fontPx(18f))
         typeface = Typeface.create("sans-serif", Typeface.BOLD)
@@ -1619,7 +1620,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             val item = FrameLayout(context).apply {
                 isClickable = true
                 isFocusable = true
-                contentDescription = label
+                contentDescription = MotoLinkLocale.t(context, label)
                 setOnClickListener {
                     page = target
                     if (target != Page.SUPPORT) supportTab = SupportTab.LOG
