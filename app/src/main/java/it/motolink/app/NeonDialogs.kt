@@ -26,8 +26,8 @@ object NeonDialogs {
     private const val DANGER_SOFT = "#7A2A2A"
 
     fun showInfo(activity: Activity, title: String, message: String, positiveText: String = "OK", onPositive: (() -> Unit)? = null): Dialog {
-        val built = baseDialog(activity, title, message)
-        built.root.addView(buttonRow(activity, positiveText to {
+        val built = baseDialog(activity, MotoLinkLocale.t(activity, title), MotoLinkLocale.t(activity, message))
+        built.root.addView(buttonRow(activity, MotoLinkLocale.t(activity, positiveText) to {
             built.dialog.dismiss(); onPositive?.invoke()
         }))
         show(built.dialog, activity)
@@ -44,10 +44,10 @@ object NeonDialogs {
         onPositive: () -> Unit,
         onNegative: (() -> Unit)? = null,
     ) {
-        val built = baseDialog(activity, title, message)
+        val built = baseDialog(activity, MotoLinkLocale.t(activity, title), MotoLinkLocale.t(activity, message))
         built.root.addView(buttonRow(activity,
-            negativeText to { built.dialog.dismiss(); onNegative?.invoke() },
-            positiveText to { built.dialog.dismiss(); onPositive() },
+            MotoLinkLocale.t(activity, negativeText) to { built.dialog.dismiss(); onNegative?.invoke() },
+            MotoLinkLocale.t(activity, positiveText) to { built.dialog.dismiss(); onPositive() },
             danger = danger
         ))
         show(built.dialog, activity)
@@ -64,18 +64,18 @@ object NeonDialogs {
         onPositive: () -> Unit,
         onNegative: (() -> Unit)? = null,
     ): Dialog {
-        val built = baseDialog(activity, title, message)
+        val built = baseDialog(activity, MotoLinkLocale.t(activity, title), message?.let { MotoLinkLocale.t(activity, it) })
         contentView?.let {
             built.root.addView(it, built.root.childCount - 1, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(activity, 14) })
         }
         if (negativeText.isBlank()) {
-            built.root.addView(centeredSingleButtonRow(activity, positiveText, danger) {
+            built.root.addView(centeredSingleButtonRow(activity, MotoLinkLocale.t(activity, positiveText), danger) {
                 built.dialog.dismiss(); onPositive()
             })
         } else {
             built.root.addView(buttonRow(activity,
-                negativeText to { built.dialog.dismiss(); onNegative?.invoke() },
-                positiveText to { built.dialog.dismiss(); onPositive() },
+                MotoLinkLocale.t(activity, negativeText) to { built.dialog.dismiss(); onNegative?.invoke() },
+                MotoLinkLocale.t(activity, positiveText) to { built.dialog.dismiss(); onPositive() },
                 danger = danger
             ))
         }
@@ -104,7 +104,7 @@ object NeonDialogs {
             gravity = Gravity.CENTER
             setTextColor(Color.parseColor(GREEN))
             textSize = 23f
-            contentDescription = "Chiudi"
+            contentDescription = MotoLinkLocale.t(activity, "Chiudi")
             background = rounded(PANEL, GREEN_SOFT, 1, 18, activity)
             setOnClickListener { dialog.dismiss() }
         }, LinearLayout.LayoutParams(dp(activity, 44), dp(activity, 44)))
