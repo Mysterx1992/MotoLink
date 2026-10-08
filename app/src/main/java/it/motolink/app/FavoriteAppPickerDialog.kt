@@ -78,7 +78,7 @@ object FavoriteAppPickerDialog {
             gravity = Gravity.CENTER_VERTICAL
         }
         val title = TextView(activity).apply {
-            text = "SCEGLI UN'APP"
+            text = MotoLinkLocale.t(activity, "SCEGLI UN'APP")
             setTextColor(Color.parseColor(TEXT))
             textSize = 23f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -87,7 +87,7 @@ object FavoriteAppPickerDialog {
         titleRow.addView(title, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val close = TextView(activity).apply {
             text = "✕"
-            contentDescription = "Chiudi"
+            contentDescription = MotoLinkLocale.t(activity, "Chiudi")
             gravity = Gravity.CENTER
             setTextColor(Color.parseColor(GREEN))
             textSize = 24f
@@ -98,14 +98,14 @@ object FavoriteAppPickerDialog {
         root.addView(titleRow)
 
         root.addView(TextView(activity).apply {
-            text = "Scegli una scorciatoia per il mirroring"
+            text = MotoLinkLocale.t(activity, "Scegli una scorciatoia per il mirroring")
             setTextColor(Color.parseColor(MUTED))
             textSize = 13f
             setPadding(0, dp(activity, 2), 0, dp(activity, 12))
         })
 
         val search = EditText(activity).apply {
-            hint = "Cerca app"
+            hint = MotoLinkLocale.t(activity, "Cerca app")
             setHintTextColor(Color.parseColor("#65736B"))
             setTextColor(Color.WHITE)
             textSize = 16f
@@ -130,7 +130,7 @@ object FavoriteAppPickerDialog {
         root.addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
 
         val footer = TextView(activity).apply {
-            text = "Solo app avviabili · max 4 preferite"
+            text = MotoLinkLocale.t(activity, "Solo app avviabili · max 4 preferite")
             setTextColor(Color.parseColor("#728077"))
             textSize = 11f
             gravity = Gravity.CENTER
@@ -147,7 +147,7 @@ object FavoriteAppPickerDialog {
 
             if (filtered.isEmpty()) {
                 content.addView(TextView(activity).apply {
-                    text = "Nessuna app trovata"
+                    text = MotoLinkLocale.t(activity, "Nessuna app trovata")
                     setTextColor(Color.parseColor(MUTED))
                     textSize = 16f
                     gravity = Gravity.CENTER
@@ -196,7 +196,7 @@ object FavoriteAppPickerDialog {
         if (items.isEmpty()) return
 
         parent.addView(TextView(activity).apply {
-            text = title
+            text = MotoLinkLocale.t(activity, title)
             setTextColor(Color.parseColor(GREEN))
             textSize = 13f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
