@@ -139,7 +139,7 @@ object FavoriteAppsManageDialog {
             gravity = Gravity.CENTER_VERTICAL
         }
         titleRow.addView(TextView(activity).apply {
-            text = titleText
+            text = MotoLinkLocale.t(activity, titleText)
             setTextColor(Color.parseColor(TEXT))
             textSize = 22f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -148,7 +148,7 @@ object FavoriteAppsManageDialog {
 
         titleRow.addView(TextView(activity).apply {
             text = "✕"
-            contentDescription = "Chiudi"
+            contentDescription = MotoLinkLocale.t(activity, "Chiudi")
             gravity = Gravity.CENTER
             setTextColor(Color.parseColor(GREEN))
             textSize = 23f
@@ -158,7 +158,7 @@ object FavoriteAppsManageDialog {
         outer.addView(titleRow)
 
         outer.addView(TextView(activity).apply {
-            text = subtitleText
+            text = MotoLinkLocale.t(activity, subtitleText)
             setTextColor(Color.parseColor(MUTED))
             textSize = 13f
             setPadding(0, dp(activity, 3), 0, dp(activity, 13))
@@ -201,13 +201,13 @@ object FavoriteAppsManageDialog {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(activity, 13), 0, 0, 0)
             addView(TextView(activity).apply {
-                text = title
+                text = MotoLinkLocale.t(activity, title)
                 setTextColor(Color.parseColor(accent))
                 textSize = 16f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             })
             addView(TextView(activity).apply {
-                text = subtitle
+                text = MotoLinkLocale.t(activity, subtitle)
                 setTextColor(Color.parseColor(MUTED))
                 textSize = 12f
             })

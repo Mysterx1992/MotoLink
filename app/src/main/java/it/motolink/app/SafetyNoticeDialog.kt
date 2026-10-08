@@ -34,7 +34,7 @@ object SafetyNoticeDialog {
         }
 
         root.addView(TextView(activity).apply {
-            text = "ATTENZIONE ALLA GUIDA"
+            text = MotoLinkLocale.t(activity, "ATTENZIONE ALLA GUIDA")
             setTextColor(Color.parseColor(GREEN))
             textSize = 21f
             typeface = Typeface.DEFAULT_BOLD
@@ -43,9 +43,12 @@ object SafetyNoticeDialog {
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
 
         root.addView(TextView(activity).apply {
-            text = "MotoLink è progettata per facilitare l’accesso alle funzioni utili durante il viaggio.\n\n" +
-                "Non utilizzare l’app per guardare video o altri contenuti che possano distrarre durante la guida.\n\n" +
-                "Mantieni sempre l’attenzione sulla strada e utilizza il dispositivo solo quando le condizioni lo consentono."
+            text = MotoLinkLocale.t(
+                activity,
+                "MotoLink è progettata per facilitare l’accesso alle funzioni utili durante il viaggio.\n\n" +
+                    "Non utilizzare l’app per guardare video o altri contenuti che possano distrarre durante la guida.\n\n" +
+                    "Mantieni sempre l’attenzione sulla strada e utilizza il dispositivo solo quando le condizioni lo consentono."
+            )
             setTextColor(Color.parseColor(TEXT))
             textSize = 15f
             setLineSpacing(0f, 1.12f)
@@ -53,7 +56,7 @@ object SafetyNoticeDialog {
         })
 
         val dontShow = CheckBox(activity).apply {
-            text = "Non visualizzare più questo messaggio"
+            text = MotoLinkLocale.t(activity, "Non visualizzare più questo messaggio")
             setTextColor(Color.parseColor(MUTED))
             textSize = 14f
             buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor(GREEN))
