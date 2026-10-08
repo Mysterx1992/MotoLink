@@ -22,6 +22,29 @@ object MotoLinkLocale {
         return locale.language.lowercase(Locale.ROOT)
     }
 
+    fun releaseNotes17(): String = when (language()) {
+        "it" -> "• L'interfaccia segue automaticamente la lingua del telefono.\n" +
+            "• Traduzioni complete incluse: Italiano, English, Русский e 中文; per le altre lingue viene usato l'inglese.\n" +
+            "• Tradotte anche la Guida iniziale e l'avviso di sicurezza durante la guida.\n" +
+            "• Google Maps ora riconosce anche le notifiche russe, comprese unità cirilliche м/км, spazi Unicode, tempi e principali manovre testuali.\n" +
+            "• Migliorata quindi la navigazione BLE turn-by-turn sui telefoni impostati in russo, inclusa la VOGE Valico 625 DSX."
+        "ru" -> "• Интерфейс автоматически использует язык телефона.\n" +
+            "• Полные переводы: Italiano, English, Русский и 中文; для остальных языков используется английский.\n" +
+            "• Также переведены начальное руководство и предупреждение о безопасности.\n" +
+            "• Google Maps теперь распознаёт русские уведомления, включая кириллические единицы м/км, Unicode-пробелы, время и основные текстовые манёвры.\n" +
+            "• Улучшена BLE-навигация turn-by-turn на телефонах с русским языком, включая VOGE Valico 625 DSX."
+        "zh" -> "• 界面会自动使用手机系统语言。\n" +
+            "• 已提供完整翻译：Italiano、English、Русский 和 中文；其他语言默认使用英语。\n" +
+            "• 入门指南和骑行安全提示也已翻译。\n" +
+            "• Google Maps 现在可识别俄语通知，包括西里尔字母单位 м/км、Unicode 空格、时间和主要文字转向指令。\n" +
+            "• 因此改进了俄语手机上的 BLE 逐向导航，包括 VOGE Valico 625 DSX。"
+        else -> "• The interface now follows the phone system language automatically.\n" +
+            "• Full translations included: Italiano, English, Русский and 中文; other languages fall back to English.\n" +
+            "• The Getting Started guide and riding-safety notice are translated too.\n" +
+            "• Google Maps now recognizes Russian notifications, including Cyrillic м/км units, Unicode spaces, time values and common maneuver text.\n" +
+            "• BLE turn-by-turn navigation is therefore improved on Russian-language phones, including the VOGE Valico 625 DSX."
+    }
+
     fun t(context: Context, raw: String): String {
         if (raw.isBlank()) return raw
         val lang = language()
