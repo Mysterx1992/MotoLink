@@ -1150,7 +1150,7 @@ class MainActivity : Activity() {
 
         val catalogOptions = bikeCatalogOptions()
         val catalog = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions)
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions.map { MotoLinkLocale.t(this@MainActivity, it) })
             pendingV16QrCatalogLabel?.let { remembered ->
                 val idx = catalogOptions.indexOfFirst { it.equals(remembered, true) }
                 if (idx >= 0) setSelection(idx)
@@ -2761,7 +2761,7 @@ class MainActivity : Activity() {
         }
 
         val name = EditText(this).apply {
-            hint = "Nome moto (es. La mia Trofeo)"
+            hint = MotoLinkLocale.t(this@MainActivity, "Nome moto (es. La mia Trofeo)")
             setTextColor(Color.WHITE)
             setHintTextColor(color(C_MUTED))
             isSingleLine = true
@@ -2770,7 +2770,7 @@ class MainActivity : Activity() {
         }
         val connectionOptions = v16GarageConnectionOptions()
         val connectionLabel = TextView(this).apply {
-            text = "Connessione:"
+            text = MotoLinkLocale.t(this@MainActivity, "Connessione:")
             setTextColor(Color.WHITE)
             textSize = 16f
             setPadding((4 * resources.displayMetrics.density).toInt(), (2 * resources.displayMetrics.density).toInt(), 0, (4 * resources.displayMetrics.density).toInt())
@@ -2781,7 +2781,7 @@ class MainActivity : Activity() {
         }
         val catalogOptions = bikeCatalogOptions()
         val catalog = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions)
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, catalogOptions.map { MotoLinkLocale.t(this@MainActivity, it) })
             val currentLabel = baseProfile.catalogLabel?.trim()
             if (!currentLabel.isNullOrEmpty()) {
                 val idx = catalogOptions.indexOfFirst { it.equals(currentLabel, true) }
@@ -3103,7 +3103,7 @@ class MainActivity : Activity() {
         val profile = BikeProfileStore.loadAll(this).getOrNull(index) ?: return
         val name = EditText(this).apply {
             setText(profile.displayName)
-            hint = "Nome moto"
+            hint = MotoLinkLocale.t(this@MainActivity, "Nome moto")
             setTextColor(Color.WHITE)
             setHintTextColor(color(C_MUTED))
             background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
@@ -3112,7 +3112,7 @@ class MainActivity : Activity() {
         }
         val connectionOptions = v16GarageConnectionOptions()
         val connectionLabel = TextView(this).apply {
-            text = "Connessione:"
+            text = MotoLinkLocale.t(this@MainActivity, "Connessione:")
             setTextColor(Color.WHITE)
             textSize = 16f
             setPadding((4 * resources.displayMetrics.density).toInt(), (2 * resources.displayMetrics.density).toInt(), 0, (4 * resources.displayMetrics.density).toInt())
@@ -3124,7 +3124,7 @@ class MainActivity : Activity() {
         }
         val catalog = Spinner(this)
         val catalogOptions = bikeCatalogOptions()
-        catalog.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, catalogOptions)
+        catalog.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, catalogOptions.map { MotoLinkLocale.t(this, it) })
         val normalizedCatalogSelection = when (profile.catalogLabel) {
             "Voge Trofeo 525DSX" -> "Voge Valico 525DSX"
             "Immagine MotoLink generica" -> "Altro modello"
@@ -3147,7 +3147,7 @@ class MainActivity : Activity() {
                 bottomMargin = (14 * resources.displayMetrics.density).toInt()
             })
             addView(TextView(this@MainActivity).apply {
-                text = "ELIMINA PROFILO"
+                text = MotoLinkLocale.t(this@MainActivity, "ELIMINA PROFILO")
                 gravity = Gravity.CENTER
                 setTextColor(Color.parseColor("#FF6A6A"))
                 textSize = 15f
