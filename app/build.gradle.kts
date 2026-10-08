@@ -14,7 +14,7 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = 29
-        versionName = "1.6-test-vc29-i18n"
+        versionName = "1.6"
     }
 
     buildTypes {
