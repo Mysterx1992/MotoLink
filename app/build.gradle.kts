@@ -10,7 +10,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "it.motolink.app"
+        applicationId = "it.motolink.app.test"
         minSdk = 29
         targetSdk = 36
         versionCode = 29
