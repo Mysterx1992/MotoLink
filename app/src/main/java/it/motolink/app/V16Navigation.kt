@@ -762,13 +762,12 @@ object VogeBleNavigationManager {
 }
 
 object GoogleMapsSourceAdapter {
-    // vc29 TEST RU: Maps localizes both the preposition and the distance unit.
-    // Russian notifications commonly use Cyrillic м/км and can contain NBSP/narrow-NBSP
-    // between the numeric value and the unit. Keep the parser deterministic and fail-closed.
+    // V1.7: Maps localizes both prepositions and distance units. Keep the
+    // parser deterministic, Unicode-safe and fail-closed.
     private val distanceRegex = Regex(
         "(?iu)(?:\\btra[\\s\\u00A0\\u202F]+|\\bfra[\\s\\u00A0\\u202F]+|\\bin[\\s\\u00A0\\u202F]+|\\bafter[\\s\\u00A0\\u202F]+|через[\\s\\u00A0\\u202F]+)?" +
             "(\\d+(?:[.,]\\d+)?)[\\s\\u00A0\\u202F]*" +
-            "(km|км|километр(?:а|ов)?|m|м|метр(?:а|ов)?|mi|ft)(?![\\p{L}\\p{N}])"
+            "(km|км|километр(?:а|ов)?|公里|千米|m|м|метр(?:а|ов)?|米|mi|ft)(?![\\p{L}\\p{N}])"
     )
     private val etaRegex = Regex("\\b([01]?\\d|2[0-3])[:.]([0-5]\\d)\\b")
     private val cyrillicRegex = Regex("[\\u0400-\\u04FF]")
@@ -777,9 +776,14 @@ object GoogleMapsSourceAdapter {
     private var lastUnknownIconFingerprint = ""
     private var lastUnknownIconLogAt = 0L
 
+    private data class MapsTextField(
+        val source: String,
+        val text: String,
+    )
+
     private data class MapsVisualData(
-        val textLines: List<String>,
-        val maneuverIcon: Bitmap?,
+        val fields: List<MapsTextField>,
+        val maneuverIcons: List<Bitmap>,
     )
 
     private data class RouteSummary(
@@ -792,58 +796,104 @@ object GoogleMapsSourceAdapter {
     fun parse(context: Context, notification: Notification): TurnByTurnInstruction? {
         if (notification.category != null && notification.category != "navigation") return null
         val e = notification.extras ?: return null
-        val title = clean(e.getCharSequence(Notification.EXTRA_TITLE))
-        if (title.isBlank()) return null
-        val text = clean(e.getCharSequence(Notification.EXTRA_TEXT))
-        val big = clean(e.getCharSequence(Notification.EXTRA_BIG_TEXT))
-        val sub = clean(e.getCharSequence(Notification.EXTRA_SUB_TEXT))
-        val info = clean(e.getCharSequence(Notification.EXTRA_INFO_TEXT))
-        val summary = clean(e.getCharSequence(Notification.EXTRA_SUMMARY_TEXT))
-        val ticker = clean(notification.tickerText)
 
-        // Recent Maps versions can expose distance/street as text while the maneuver itself is
-        // a graphic. First inspect every text surface, including RemoteViews; then use the
-        // notification maneuver glyph only if no textual maneuver can be classified.
+        val fields = ArrayList<MapsTextField>()
+        fun add(source: String, value: CharSequence?) {
+            clean(value).takeIf { it.isNotBlank() }?.let { fields += MapsTextField(source, it) }
+        }
+
+        add("EXTRA_TITLE", e.getCharSequence(Notification.EXTRA_TITLE))
+        add("EXTRA_TEXT", e.getCharSequence(Notification.EXTRA_TEXT))
+        add("EXTRA_BIG_TEXT", e.getCharSequence(Notification.EXTRA_BIG_TEXT))
+        add("EXTRA_SUB_TEXT", e.getCharSequence(Notification.EXTRA_SUB_TEXT))
+        add("EXTRA_INFO_TEXT", e.getCharSequence(Notification.EXTRA_INFO_TEXT))
+        add("EXTRA_SUMMARY_TEXT", e.getCharSequence(Notification.EXTRA_SUMMARY_TEXT))
+        e.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.forEachIndexed { index, value ->
+            add("EXTRA_TEXT_LINES[$index]", value)
+        }
+        add("TICKER", notification.tickerText)
+
         val visual = readVisualData(context, notification)
-        val instructionFields = LinkedHashSet<String>().apply {
-            listOf(title, text, big, sub, info, summary, ticker).filterTo(this) { it.isNotBlank() }
-            visual.textLines.filterTo(this) { it.isNotBlank() }
-        }.toList()
+        visual.fields.forEach { field ->
+            if (fields.none { it.source == field.source && it.text == field.text }) fields += field
+        }
 
-        // Google Maps normally exposes a route summary such as
-        // "23 min · 17 km · 18:42" separately from the distance to the next maneuver.
-        // VOGE byte 7..9 is the whole-route remaining distance, not the turn distance.
-        val routeSummary = instructionFields.asSequence().mapNotNull(::routeSummaryFrom).firstOrNull()
-        val distance = instructionFields.asSequence()
-            .filter { routeSummaryFrom(it) == null }
-            .mapNotNull(::explicitDistanceMeters)
+        val title = fields.firstOrNull { it.source == "EXTRA_TITLE" }?.text.orEmpty()
+        if (title.isBlank() && fields.isEmpty()) return null
+
+        val routeSummaryPair = fields.asSequence()
+            .mapNotNull { field -> routeSummaryFrom(field.text)?.let { field to it } }
             .firstOrNull()
-        val textManeuver = instructionFields.asSequence()
-            .map(::maneuverFrom)
+        val routeSummary = routeSummaryPair?.second
+
+        val distanceField = fields.asSequence()
+            .filter { routeSummaryFrom(it.text) == null }
+            .mapNotNull { field -> explicitDistanceMeters(field.text)?.let { field to it } }
+            .sortedByDescending { (field, _) -> maneuverDistancePriority(field) }
+            .firstOrNull()
+        val distance = distanceField?.second
+
+        val textManeuver = fields.asSequence()
+            .map { maneuverFrom(it.text) }
             .firstOrNull { it != NavManeuver.UNKNOWN }
-        val roundaboutEncoding = visual.maneuverIcon?.let {
-            V16ManeuverClassifier.classifyRoundaboutEncoding(context, it)
+
+        val iconManeuvers = visual.maneuverIcons.map { icon -> icon to maneuverFromIcon(icon) }
+        val iconRoundabout = iconManeuvers.firstOrNull { it.second == NavManeuver.ROUNDABOUT }?.first
+        val textRoundabout = textManeuver == NavManeuver.ROUNDABOUT
+        val roundaboutConfirmed = textRoundabout || iconRoundabout != null
+
+        val roundaboutEncoding = if (roundaboutConfirmed) {
+            visual.maneuverIcons.asSequence()
+                .mapNotNull { V16ManeuverClassifier.classifyRoundaboutEncoding(context, it, roundaboutConfirmed = true) }
+                .firstOrNull()
+        } else {
+            visual.maneuverIcons.asSequence()
+                .mapNotNull { V16ManeuverClassifier.classifyRoundaboutEncoding(context, it) }
+                .firstOrNull()
         }
-        val roundaboutSector = roundaboutEncoding?.annularDegrees
-        val maneuver = textManeuver
-            ?: if (roundaboutEncoding != null) NavManeuver.ROUNDABOUT else maneuverFromIcon(visual.maneuverIcon)
-        if (maneuver == NavManeuver.UNKNOWN && distance != null && visual.maneuverIcon != null) {
-            maybeLogUnknownManeuverIcon(visual.maneuverIcon, distance)
+
+        val iconManeuver = iconManeuvers.firstOrNull { it.second != NavManeuver.UNKNOWN }?.second
+        val maneuver = when {
+            roundaboutConfirmed || roundaboutEncoding != null -> NavManeuver.ROUNDABOUT
+            textManeuver != null -> textManeuver
+            iconManeuver != null -> iconManeuver
+            else -> NavManeuver.UNKNOWN
         }
+
+        if (maneuver == NavManeuver.UNKNOWN && distance != null) {
+            visual.maneuverIcons.firstOrNull()?.let { maybeLogUnknownManeuverIcon(it, distance) }
+        }
+
         val sourceKind = when {
+            roundaboutEncoding != null -> "ROUNDABOUT_ICON"
             textManeuver != null -> "TEXT"
-            roundaboutSector != null -> "ML_ICON"
-            maneuver != NavManeuver.UNKNOWN -> "ICON"
+            iconManeuver != null -> "ICON"
             else -> "NONE"
         }
-        val sourceLocale = if (instructionFields.any(cyrillicRegex::containsMatchIn)) "RU" else "LATIN"
-        if (maneuver == NavManeuver.ROUNDABOUT && roundaboutSector == null) {
-            AppLog.add("MAPS NAV V1.6 ROUNDABOUT: flag OEM corretto ma settore uscita non classificato; annular=0")
+        val sourceLocale = when {
+            fields.any { cyrillicRegex.containsMatchIn(it.text) } -> "RU"
+            fields.any { it.text.any { ch -> ch.code in 0x4E00..0x9FFF } } -> "ZH"
+            else -> "LATIN"
         }
+
+        if (distance == null || maneuver == NavManeuver.UNKNOWN || (maneuver == NavManeuver.ROUNDABOUT && roundaboutEncoding == null)) {
+            logFieldDiagnostics(
+                fields = fields,
+                iconCount = visual.maneuverIcons.size,
+                distanceMissing = distance == null,
+                maneuver = maneuver,
+                roundaboutEncodingMissing = maneuver == NavManeuver.ROUNDABOUT && roundaboutEncoding == null,
+            )
+        }
+
+        if (maneuver == NavManeuver.ROUNDABOUT && roundaboutEncoding == null) {
+            AppLog.add("MAPS NAV V1.7 ROUNDABOUT: rotonda riconosciuta ma settore uscita non affidabile; annular=0")
+        }
+
         val eta = routeSummary?.let { summary ->
             summary.arrivalHour?.let { h -> h to (summary.arrivalMinute ?: 0) }
-        } ?: instructionFields.asSequence().mapNotNull { line ->
-            etaRegex.find(line)?.let { m ->
+        } ?: fields.asSequence().mapNotNull { field ->
+            etaRegex.find(field.text)?.let { m ->
                 m.groupValues[1].toIntOrNull()?.let { h -> h to (m.groupValues[2].toIntOrNull() ?: 0) }
             }
         }.firstOrNull()
@@ -856,10 +906,45 @@ object GoogleMapsSourceAdapter {
             arrivalHour = eta?.first,
             arrivalMinute = eta?.second,
             roadFlag = if (maneuver == NavManeuver.ROUNDABOUT) 4 else 0,
-            annularDegrees = if (maneuver == NavManeuver.ROUNDABOUT) (roundaboutSector ?: 0) else 0,
+            annularDegrees = if (maneuver == NavManeuver.ROUNDABOUT) (roundaboutEncoding?.annularDegrees ?: 0) else 0,
             directionOverride = if (maneuver == NavManeuver.ROUNDABOUT) roundaboutEncoding?.directionCode else null,
             source = "GOOGLE_MAPS_NOTIFICATION_${sourceLocale}_$sourceKind",
             rawInstruction = title
+        )
+    }
+
+    private fun maneuverDistancePriority(field: MapsTextField): Int {
+        var score = when {
+            field.source.startsWith("EXTRA_TEXT_LINES") -> 80
+            field.source == "EXTRA_TEXT" -> 75
+            field.source == "EXTRA_BIG_TEXT" -> 70
+            field.source.startsWith("REMOTEVIEW") -> 65
+            field.source == "EXTRA_TITLE" -> 60
+            else -> 40
+        }
+        if (maneuverFrom(field.text) != NavManeuver.UNKNOWN) score += 20
+        if (field.text.contains("·") || field.text.contains("•")) score -= 5
+        return score
+    }
+
+    private fun logFieldDiagnostics(
+        fields: List<MapsTextField>,
+        iconCount: Int,
+        distanceMissing: Boolean,
+        maneuver: NavManeuver,
+        roundaboutEncodingMissing: Boolean,
+    ) {
+        val summary = fields.take(18).joinToString(" | ") { field ->
+            val distance = explicitDistanceMeters(field.text)
+            val route = routeSummaryFrom(field.text) != null
+            val man = maneuverFrom(field.text)
+            val ru = cyrillicRegex.containsMatchIn(field.text)
+            val zh = field.text.any { ch -> ch.code in 0x4E00..0x9FFF }
+            "${field.source}{len=${field.text.length},dist=${distance ?: -1},route=$route,man=$man,ru=$ru,zh=$zh}"
+        }
+        AppLog.add(
+            "MAPS NAV V1.7 FIELD DIAG: distanceMissing=$distanceMissing maneuver=$maneuver " +
+                "roundaboutEncodingMissing=$roundaboutEncodingMissing icons=$iconCount fields=${fields.size} :: $summary"
         )
     }
 
@@ -867,14 +952,17 @@ object GoogleMapsSourceAdapter {
         val parts = text.split(Regex("\\s*[·•]\\s*")).map(String::trim).filter(String::isNotBlank)
         if (parts.size < 3) return null
 
-        // Garminuino and other Maps-notification parsers observe the stable order
-        // duration · remaining distance · ETA. Require both a distance and either time
-        // or ETA so an ordinary maneuver sentence containing bullets cannot be mistaken.
-        val distance = explicitDistanceMeters(parts[1]) ?: return null
-        val timeSeconds = durationSeconds(parts[0])
-        val eta = etaRegex.find(parts[2])?.let { m ->
-            m.groupValues[1].toIntOrNull()?.let { h -> h to (m.groupValues[2].toIntOrNull() ?: 0) }
-        }
+        val distance = parts.asSequence().mapNotNull(::explicitDistanceMeters).firstOrNull() ?: return null
+        val timeSeconds = parts.asSequence().mapNotNull(::durationSeconds).firstOrNull()
+        val eta = parts.asSequence().mapNotNull { part ->
+            etaRegex.find(part)?.let { m ->
+                m.groupValues[1].toIntOrNull()?.let { h -> h to (m.groupValues[2].toIntOrNull() ?: 0) }
+            }
+        }.firstOrNull()
+
+        // A route summary must expose at least three bullet-separated fields and
+        // contain a remaining distance plus duration and/or ETA. Ordinary maneuver
+        // text such as "300 m · turn right" therefore cannot be filtered out.
         if (timeSeconds == null && eta == null) return null
         return RouteSummary(
             distanceMeters = distance,
@@ -903,8 +991,8 @@ object GoogleMapsSourceAdapter {
         if (value < 0) return null
         val unit = m.groupValues[2].lowercase(Locale.ROOT)
         return when {
-            unit == "m" || unit == "м" || unit.startsWith("метр") -> value.roundToInt()
-            unit == "km" || unit == "км" || unit.startsWith("километр") -> (value * 1000.0).roundToInt()
+            unit == "m" || unit == "м" || unit == "米" || unit.startsWith("метр") -> value.roundToInt()
+            unit == "km" || unit == "км" || unit == "公里" || unit == "千米" || unit.startsWith("километр") -> (value * 1000.0).roundToInt()
             unit == "mi" -> (value * 1609.344).roundToInt()
             unit == "ft" -> (value * 0.3048).roundToInt()
             else -> null
@@ -923,9 +1011,9 @@ object GoogleMapsSourceAdapter {
             listOf("inversione a u a destra", "inversione a destra", "u-turn right", "uturn right", "u turn right", "⤴", "↷").any(s::contains) -> NavManeuver.UTURN_RIGHT
 
             listOf(
-                "rotatoria", "rotonda", "roundabout", "rotary",
+                "rotatoria", "rotonda", "roundabout", "rotary", "rond-point", "kreisverkehr", "glorieta", "rotatória",
                 "круговое движение", "круговом движении", "круговом перекрестке", "круговом перекрёстке",
-                "кольцевое движение", "кольцевом движении"
+                "кольцевое движение", "кольцевом движении", "环岛", "环形交叉路口"
             ).any(s::contains) -> NavManeuver.ROUNDABOUT
 
             listOf(
@@ -964,52 +1052,74 @@ object GoogleMapsSourceAdapter {
     }
 
     private fun readVisualData(context: Context, notification: Notification): MapsVisualData {
-        val lines = LinkedHashSet<String>()
-        var maneuverIcon: Bitmap? = null
+        val fields = ArrayList<MapsTextField>()
+        val icons = ArrayList<Bitmap>()
 
-        // Inspect Maps' RemoteViews first: this is where the maneuver glyph is normally
-        // rendered. Failure is contained and falls back to largeIcon/extras.
         runCatching {
             val mapsContext = context.createPackageContext(MAPS_PACKAGE, Context.CONTEXT_IGNORE_SECURITY)
             val builder = Notification.Builder.recoverBuilder(context, notification)
-            val remote = builder.createBigContentView() ?: builder.createContentView()
-            if (remote != null) {
-                val root = remote.apply(mapsContext, null)
-                val walked = walkNotificationView(mapsContext, root, lines)
-                if (maneuverIcon == null) maneuverIcon = walked
-            }
-        }
-
-        // Layout-independent fallback used by several Maps versions for the same turn glyph.
-        if (maneuverIcon == null) {
-            maneuverIcon = runCatching {
-                notification.getLargeIcon()?.loadDrawable(context)?.let(::drawableToBitmap)
-            }.getOrNull()
-        }
-
-        return MapsVisualData(lines.toList(), maneuverIcon)
-    }
-
-    private fun walkNotificationView(context: Context, view: View, lines: MutableSet<String>): Bitmap? {
-        var foundIcon: Bitmap? = null
-        when (view) {
-            is TextView -> clean(view.text).takeIf { it.isNotBlank() }?.let(lines::add)
-            is ImageView -> {
-                val entryName = runCatching {
-                    if (view.id > 0) context.resources.getResourceEntryName(view.id) else ""
-                }.getOrDefault("")
-                if (entryName in setOf("nav_notification_icon", "right_icon", "lockscreen_notification_icon")) {
-                    foundIcon = view.drawable?.let(::drawableToBitmap)
+            val surfaces = listOf(
+                "REMOTEVIEW_CONTENT_DIRECT" to notification.contentView,
+                "REMOTEVIEW_BIG_DIRECT" to notification.bigContentView,
+                "REMOTEVIEW_HEADSUP_DIRECT" to notification.headsUpContentView,
+                "REMOTEVIEW_CONTENT_RECOVERED" to builder.createContentView(),
+                "REMOTEVIEW_BIG_RECOVERED" to builder.createBigContentView(),
+                "REMOTEVIEW_HEADSUP_RECOVERED" to builder.createHeadsUpContentView(),
+            )
+            surfaces.forEach { (source, remote) ->
+                if (remote == null) return@forEach
+                runCatching {
+                    val root = remote.apply(mapsContext, null)
+                    walkNotificationView(mapsContext, root, source, fields, icons)
                 }
             }
         }
-        if (view is ViewGroup) {
-            for (i in 0 until view.childCount) {
-                val childIcon = walkNotificationView(context, view.getChildAt(i), lines)
-                if (foundIcon == null && childIcon != null) foundIcon = childIcon
+
+        runCatching {
+            notification.getLargeIcon()?.loadDrawable(context)?.let(::drawableToBitmap)
+        }.getOrNull()?.let(icons::add)
+
+        return MapsVisualData(
+            fields = fields.distinctBy { it.source to it.text },
+            maneuverIcons = icons.take(8),
+        )
+    }
+
+    private fun walkNotificationView(
+        context: Context,
+        view: View,
+        source: String,
+        fields: MutableList<MapsTextField>,
+        icons: MutableList<Bitmap>,
+    ) {
+        fun addText(kind: String, value: CharSequence?) {
+            clean(value).takeIf { it.isNotBlank() }?.let {
+                fields += MapsTextField("$source:$kind", it)
             }
         }
-        return foundIcon
+
+        when (view) {
+            is TextView -> addText("TEXT", view.text)
+            is ImageView -> {
+                val entryName = runCatching {
+                    if (view.id > 0) context.resources.getResourceEntryName(view.id) else ""
+                }.getOrDefault("").lowercase(Locale.ROOT)
+                val likelyManeuver = entryName in setOf(
+                    "nav_notification_icon", "right_icon", "lockscreen_notification_icon"
+                ) || listOf("nav", "turn", "maneuver", "direction").any(entryName::contains)
+                if (likelyManeuver && icons.size < 8) {
+                    view.drawable?.let(::drawableToBitmap)?.let(icons::add)
+                }
+            }
+        }
+
+        addText("CONTENT_DESCRIPTION", view.contentDescription)
+
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                walkNotificationView(context, view.getChildAt(i), source, fields, icons)
+            }
+        }
     }
 
     /**
@@ -1149,7 +1259,7 @@ object GoogleMapsSourceAdapter {
         if (fp == lastUnknownIconFingerprint && now - lastUnknownIconLogAt < 15_000L) return
         lastUnknownIconFingerprint = fp
         lastUnknownIconLogAt = now
-        AppLog.add("MAPS NAV V1.6 ICON DIAG: manovra non classificata fp=$fp distance=${distanceMeters}m")
+        AppLog.add("MAPS NAV V1.7 ICON DIAG: manovra non classificata fp=$fp distance=${distanceMeters}m")
     }
 
     /** 8x8 binary fingerprint of the maneuver glyph only; no route text/image is stored. */
@@ -1233,7 +1343,7 @@ class MapsNavigationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        AppLog.add("MAPS NAV V1.6: accesso notifiche connesso")
+        AppLog.add("MAPS NAV V1.7: accesso notifiche connesso")
         runCatching { activeNotifications?.filter { it.packageName == MAPS_PACKAGE }?.forEach(::handle) }
     }
 
@@ -1243,7 +1353,7 @@ class MapsNavigationListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn?.packageName == MAPS_PACKAGE) AppLog.add("MAPS NAV V1.6: navigazione/notifica Maps rimossa")
+        if (sbn?.packageName == MAPS_PACKAGE) AppLog.add("MAPS NAV V1.7: navigazione/notifica Maps rimossa")
     }
 
     private fun handle(sbn: StatusBarNotification) {
@@ -1259,18 +1369,18 @@ class MapsNavigationListenerService : NotificationListenerService() {
         if (fingerprint == lastFingerprint) return
         lastFingerprint = fingerprint
         if (!model.hasRealDistance) {
-            AppLog.add("MAPS NAV V1.6 GATE: istruzione ricevuta ma distanza reale alla manovra non esposta; TFT non aggiornato")
+            AppLog.add("MAPS NAV V1.7 GATE: istruzione ricevuta ma distanza reale alla manovra non esposta; TFT non aggiornato")
             return
         }
         if (model.distanceMeters == 0) {
-            AppLog.add("MAPS NAV V1.6 ZERO TRANSITION GUARD: distance=0 soppressa; attendo la prossima istruzione positiva per evitare stale 0 sul TFT")
+            AppLog.add("MAPS NAV V1.7 ZERO TRANSITION GUARD: distance=0 soppressa; attendo la prossima istruzione positiva per evitare stale 0 sul TFT")
             return
         }
         if (model.maneuver == NavManeuver.UNKNOWN) {
-            AppLog.add("MAPS NAV V1.6 GATE: distanza reale presente ma manovra non classificabile; TFT non aggiornato")
+            AppLog.add("MAPS NAV V1.7 GATE: distanza reale presente ma manovra non classificabile; TFT non aggiornato")
             return
         }
-        AppLog.add("MAPS NAV V1.6: TBT reale accettato source=${model.source} maneuver=${model.maneuver} distance=${model.distanceMeters}m routeRemain=${model.routeRemainDistanceMeters ?: -1}m routeTime=${model.routeRemainTimeSeconds ?: -1}s roadFlag=${model.roadFlag} annular=${model.annularDegrees} dir=${model.directionOverride ?: -1}")
+        AppLog.add("MAPS NAV V1.7: TBT reale accettato source=${model.source} maneuver=${model.maneuver} distance=${model.distanceMeters}m routeRemain=${model.routeRemainDistanceMeters ?: -1}m routeTime=${model.routeRemainTimeSeconds ?: -1}s roadFlag=${model.roadFlag} annular=${model.annularDegrees} dir=${model.directionOverride ?: -1}")
         VogeBleNavigationManager.sendNavigation(model)
     }
 }
