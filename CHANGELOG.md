@@ -1,5 +1,30 @@
 # Changelog MotoLink
 
+## V1.6 vc28 — 2026-09-25
+
+### Recovery rete/TFT completo
+
+- Corretto il caso fisico Trofeo 500 in cui il TFT chiude contemporaneamente `10920`, `10921` e i due canali PXC `10922`.
+- In caso di perdita totale, MotoLink invalida il vecchio endpoint EasyConn e non continua più a tentare indefinitamente l'IP non raggiungibile.
+- Per profili Hotspot riaggancia la stessa rete Wi-Fi moto ricordata solo in RAM; per QR/WLAN Direct riattiva il rispettivo trasporto.
+- Dopo il riaggancio rifà discovery mDNS / `EC INIT` e aspetta un vero FIRST FRAME prima di dichiarare il recovery completato.
+- MediaProjection, encoder H264 e Modalità tasca restano attivi/invariati durante il recovery.
+- Corretto il reattach della Home: una sessione con MirrorService vivo ma `consumer=false` non viene più mostrata come “Sessione attiva”; START resta disponibile per il recovery.
+- Il controllo di liveness non considera più un generico Wi-Fi Android come prova sufficiente della rete moto.
+- Version name `1.6`, versionCode `28`.
+- Fix vc27 Modalità tasca preservato senza modifiche.
+
+## V1.6 vc27 — 2026-09-25
+
+### Bugfix e freeze
+
+- **Trofeo 500 / EasyConn:** il passaggio dalla schermata di mirroring al tachigrafo non viene più interpretato subito come perdita reale della rete moto quando il TFT chiude temporaneamente i canali media. Il recovery resta persistente usando PXC, link moto gestito/P2P o Wi-Fi della sessione come segnali di trasporto ancora vivo.
+- **Modalità tasca:** ripristinato il gate V1.5.1 `projectionReadyForProximity`, così il wake-lock di prossimità viene armato solo quando MediaProjection/video sono realmente pronti.
+- Preservata la protezione vc22 con Modalità tasca OFF.
+- Baseline vc27 congelata: future integrazioni devono produrre diff e verifica dei componenti EasyConn, proximity, MediaProjection e H264 prima della promozione.
+- Version name `1.6`, versionCode `27`.
+- APK vc27 validato SHA-256 `a757654f02961ae7ebadeb4a776b0b3d759f263ab483cad5995548da771e564d`.
+
 ## V1.6
 
 - Modalità BLE turn-by-turn per TFT VOGE compatibili.

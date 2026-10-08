@@ -27,6 +27,9 @@ class BikeNetworkConnector(context: Context) {
     private var callback: ConnectivityManager.NetworkCallback? = null
     @Volatile private var boundNetwork: Network? = null
     @Volatile private var linkProperties: LinkProperties? = null
+    // vc28: keep the last bound SSID only in RAM so recovery can rebind the same
+    // motorcycle network after the TFT tears down the EasyConn/PXC session.
+    @Volatile private var lastBoundSsid: String? = null
 
     fun isBound(): Boolean = boundNetwork != null
 
@@ -145,6 +148,18 @@ class BikeNetworkConnector(context: Context) {
      * Android keeps cellular as the default Internet network. Only this process is bound.
      */
     fun bindExistingWifiForHotspot(): Boolean {
+        // During recovery prefer the exact Wi-Fi used by the current motorcycle session.
+        // This avoids rebinding MotoLink to an unrelated Internet Wi-Fi when Android has
+        // multiple Wi-Fi transports visible.
+        lastBoundSsid?.takeIf { it.isNotBlank() }?.let { remembered ->
+            findExistingNetwork(remembered)?.let { existing ->
+                release()
+                bind(existing)
+                AppLog.add("RECOVERY RETE VC28: stessa rete Wi-Fi moto riagganciata")
+                return true
+            }
+        }
+
         val candidates = cm.allNetworks.mapNotNull { network ->
             val caps = cm.getNetworkCapabilities(network) ?: return@mapNotNull null
             if (!caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return@mapNotNull null
@@ -187,23 +202,51 @@ class BikeNetworkConnector(context: Context) {
         runCatching { cm.bindProcessToNetwork(null) }
         boundNetwork = null
         linkProperties = null
+        // lastBoundSsid intentionally remains RAM-only across transient transport loss so
+        // vc28 can reacquire the same motorcycle Wi-Fi without asking the rider to START again.
+    }
+
+    /**
+     * vc28 recovery helper. First tries the exact Wi-Fi used by the current session;
+     * if Android has already forgotten that transport, falls back to the existing local
+     * hotspot selector. Nothing is persisted and no SSID is written to the Log.
+     */
+    fun rebindLastBikeWifiForRecovery(): Boolean {
+        val remembered = lastBoundSsid
+        if (!remembered.isNullOrBlank()) {
+            findExistingNetwork(remembered)?.let { existing ->
+                release()
+                bind(existing)
+                AppLog.add("RECOVERY RETE VC28: rete moto precedente nuovamente disponibile")
+                return true
+            }
+        }
+        val rebound = bindExistingWifiForHotspot()
+        if (rebound) AppLog.add("RECOVERY RETE VC28: fallback rete Wi-Fi locale riagganciato")
+        return rebound
     }
 
     private fun bind(network: Network) {
         boundNetwork = network
         linkProperties = cm.getLinkProperties(network)
+        readSsid(network)?.let { lastBoundSsid = it }
         cm.bindProcessToNetwork(network)
+    }
+
+    private fun readSsid(network: Network): String? {
+        val caps = cm.getNetworkCapabilities(network) ?: return null
+        val wifiInfo = if (Build.VERSION.SDK_INT >= 29) caps.transportInfo as? WifiInfo else null
+        return wifiInfo?.ssid
+            ?.trim()
+            ?.trim('"')
+            ?.takeIf { it.isNotBlank() && it != WifiManagerCompat.UNKNOWN_SSID }
     }
 
     private fun findExistingNetwork(targetSsid: String): Network? {
         for (network in cm.allNetworks) {
             val caps = cm.getNetworkCapabilities(network) ?: continue
             if (!caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) continue
-            val wifiInfo = if (Build.VERSION.SDK_INT >= 29) caps.transportInfo as? WifiInfo else null
-            val current = wifiInfo?.ssid?.trim()?.trim('"')
-            if (!current.isNullOrBlank() && current != WifiManagerCompat.UNKNOWN_SSID && current == targetSsid) {
-                return network
-            }
+            if (readSsid(network) == targetSsid) return network
         }
         return null
     }

@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
-    <img src="https://img.shields.io/badge/RELEASE-Ultima%20versione-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="Ultima release MotoLink">
+  <a href="https://github.com/Mysterx1992/MotoLink/tree/release/v1.6-vc28">
+    <img src="https://img.shields.io/badge/MOTOLINK-V1.6%20vc28-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="MotoLink V1.6 vc28">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
@@ -25,7 +25,7 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ## 🆕 MotoLink V1.6
 
-MotoLink **V1.6 vc22** è pubblicata come release stabile. La vc22 include il fix della Modalità tasca: quando è disattivata, MotoLink non arma più il sensore di prossimità né il `PROXIMITY_SCREEN_OFF_WAKE_LOCK`.
+MotoLink **V1.6 vc28** è la sorgente corrente. Mantiene integralmente i fix vc27 già validati sulla Modalità tasca e aggiunge il recovery completo della rete TFT: se la moto chiude insieme H264, Media e PXC, MotoLink invalida l'endpoint EasyConn, riaggancia la rete moto/P2P, rifà la discovery e ripristina il mirroring senza riavviare MediaProjection.
 
 MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibili, mantenendo il mirroring EasyConn tramite i profili Hotspot/QR.
 
@@ -39,7 +39,11 @@ MotoLink V1.6 introduce la modalità **BLE turn-by-turn** per TFT VOGE compatibi
 - **Tempo e chilometraggio restanti** valorizzati quando Google Maps li espone nella notifica.
 - **Recovery BLE migliorato**, mantenendo il core EasyConn/H264 già validato.
 - **Garage aggiornato** per i profili Hotspot, QR Code e BLE.
-- **Hotfix prossimità vc22:** con Modalità tasca OFF `armProximityScreenOff()` termina prima di registrare `TYPE_PROXIMITY` o acquisire il wake-lock di prossimità; il sensore non deve più spegnere lo schermo.
+- **Hotfix prossimità vc22 preservata:** con Modalità tasca OFF non viene armato il percorso proximity.
+- **Bugfix EasyConn vc26/vc27 preservato:** se il TFT chiude temporaneamente 10920/10921 ma PXC resta vivo, MotoLink mantiene la sessione e attende la riapertura naturale.
+- **Bugfix Modalità tasca vc27 preservato:** ripristinato il gate V1.5.1 `projectionReadyForProximity`; nel log fisico successivo all'installazione non risultano nuovi keyguard causati dalla Modalità tasca.
+- **Recovery totale vc28:** se cadono anche i canali PXC/10922, MotoLink non martella più il vecchio IP: invalida l'endpoint, riaggancia la rete moto o WLAN Direct/P2P, rifà mDNS/EC INIT e mantiene MediaProjection/encoder vivi.
+- **Session reattach vc28:** se MainActivity viene ricreata mentre `consumer=false`, la Home mostra che il mirroring va ripristinato e lascia START disponibile invece di dichiarare falsamente “Sessione attiva”.
 
 La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono mostrare la freccia dell'uscita invece di un'icona circolare dedicata per le rotonde.
 
@@ -47,10 +51,14 @@ La resa grafica delle manovre dipende dal firmware TFT: alcuni display possono m
 
 ## Scarica MotoLink
 
-**APK ufficiale V1.6 vc22:**  
-https://github.com/Mysterx1992/MotoLink/releases/download/v1.6/MotoLink_V1.6_VC22_PROXIMITY_HOTFIX_OFFICIAL_SIGNED.apk
+**Sorgente corrente:** V1.6 vc28 (`versionCode 28`) — Android CI **PASS**  
+**Ultimo APK ufficiale firmato disponibile localmente:** V1.6 vc27  
+**SHA-256 APK vc27:** `a757654f02961ae7ebadeb4a776b0b3d759f263ab483cad5995548da771e564d`
 
-**SHA-256:** `dc3933db1738b31abf42b9fe449a50a6ed19653bb5812b6e6f89d73cbb5d8acf`
+> La vc28 modifica solo il recovery di rete/sessione e lo stato di reattach della Home. Modalità tasca, MediaProjection e pipeline H264 restano congelati dalla vc27.
+
+**Pagina della release V1.6:**  
+https://github.com/Mysterx1992/MotoLink/releases/tag/v1.6
 
 **Pagina dell'ultima release pubblicata:**  
 https://github.com/Mysterx1992/MotoLink/releases/latest
@@ -128,7 +136,7 @@ MotoLink include strumenti per adattare manualmente l'immagine alla geometria de
 
 ### 📱 Modalità tasca
 
-Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, la vc22 impedisce l'armamento del listener e del wake-lock di prossimità. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
+Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, resta preservata la protezione vc22. Con Modalità tasca attiva, resta congelato il fix vc27: il gate V1.5.1 arma la prossimità solo quando MediaProjection/video sono realmente pronti. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
 
 ### 🧰 Log MotoLink
 
@@ -190,8 +198,8 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Sorgente V1.6 vc22 su `main` | ✅ Pubblicato |
-| Release binaria V1.6 vc22 | ✅ Pubblicata e firmata ufficialmente |
+| Sorgente V1.6 vc28 recovery hotfix | ✅ Pubblicata |
+| APK ufficiale firmato | 🟡 vc27 disponibile; build vc28 da validare fisicamente prima della promozione |
 | Mirroring EasyConn | ✅ Implementato |
 | Navigazione BLE turn-by-turn | ✅ Implementata |
 | Garage / profili moto | ✅ Implementato |

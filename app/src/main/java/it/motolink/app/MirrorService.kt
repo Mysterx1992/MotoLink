@@ -354,7 +354,7 @@ class MirrorService : Service() {
 
     private fun armProximityScreenOff() {
         proximityArmRequested = true
-        if (projection == null || !proximityGateAllowed) {
+        if (projection == null || !projectionReadyForProximity) {
             AppLog.add("PROX V1.5.1 PENDING: mirroring non ancora pronto; richiesta conservata")
             return
         }
