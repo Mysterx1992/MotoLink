@@ -82,7 +82,7 @@
             android:exported="false"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
-            android:taskAffinity="it.motolink.app.proximitygate"
+            android:taskAffinity="${applicationId}.proximitygate"
             android:theme="@style/ProximityGateTheme"
             android:screenOrientation="unspecified"
             android:resizeableActivity="true"
