@@ -5,7 +5,7 @@ import android.os.Build
 import java.util.Locale
 
 /**
- * vc29 TEST: system-locale UI layer.
+ * vc29: system-locale UI layer.
  *
  * MotoLink keeps technical logs stable for support, while user-facing strings are rendered
  * according to the phone language. Italian is preserved, English is the fallback for every
