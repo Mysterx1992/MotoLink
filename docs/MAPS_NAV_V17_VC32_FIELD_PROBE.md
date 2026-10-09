@@ -8,6 +8,8 @@ Capire perché, sul telefono della VOGE 625, MotoLink legge notifiche Maps con `
 
 ## Dati ora presenti nel log
 
+- `MAPS NAV V1.7 NOTIFICATION META`: per ogni notifica proveniente da Maps, anche scartata dal parser, ID, stato `ongoing`, categoria normalizzata, `categoryAllowed`, numero di extras e presenza di viste standard. Ripetizioni identiche limitate a 15 secondi.
+- `MAPS NAV V1.7 VIEW PROBE ERROR`: eventuale errore nella ricostruzione di una vista, indicando solo superficie e classe dell'eccezione, mai il suo messaggio.
 - `MAPS NAV V1.7 FIELD DIAG`: notificationId, ongoing, categoria normalizzata, numero di campi e icone, conteggio di campi con cifre/unità/distanze riconosciute; `siblingFragmentHint` segnala soltanto numero e unità in viste sorelle.
 - `MAPS NAV V1.7 FIELD PROBE X/Y`: metadati di tutti i campi fino a 96, in blocchi di sei: origine, identificativo di vista filtrato, posizione nell'albero, lunghezza, presenza cifre/unità, numero/unità isolati, distanza riconosciuta, orario, route summary e cirillico.
 - Log diagnostici strutturalmente identici limitati a una volta ogni 15 secondi.
