@@ -1131,8 +1131,15 @@ object GoogleMapsSourceAdapter {
                 runCatching {
                     val root = remote.apply(mapsContext, null)
                     walkNotificationView(mapsContext, root, source, fields, icons, "r")
+                }.onFailure { error ->
+                    // Class only, never throwable messages containing notification text.
+                    AppLog.add("MAPS NAV V1.7 VIEW PROBE ERROR: surface=" + source +
+                        " exception=" + error.javaClass.simpleName)
                 }
             }
+        }.onFailure { error ->
+            AppLog.add("MAPS NAV V1.7 VIEW PROBE ERROR: surface=SETUP exception=" +
+                error.javaClass.simpleName)
         }
 
         runCatching {
@@ -1404,6 +1411,8 @@ class MapsNavigationListenerService : NotificationListenerService() {
     private var lastFingerprint: String? = null
     private var lastRouteRemainDistanceMeters: Int? = null
     private var lastRouteRemainTimeSeconds: Int? = null
+    private var lastNotificationMetaSignature: String? = null
+    private var lastNotificationMetaAtMs = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -1425,8 +1434,31 @@ class MapsNavigationListenerService : NotificationListenerService() {
         if (sbn?.packageName == MAPS_PACKAGE) AppLog.add("MAPS NAV V1.7: navigazione/notifica Maps rimossa")
     }
 
+    // Observes ALL Google Maps notifications, including those rejected by the
+    // parser's pre-existing category gate. Does not alter that gate.
+    private fun logNotificationMetadata(sbn: StatusBarNotification, n: Notification) {
+        val category = when (n.category) {
+            null -> "null"
+            Notification.CATEGORY_NAVIGATION -> "navigation"
+            Notification.CATEGORY_SERVICE -> "service"
+            else -> "other"
+        }
+        val permitted = n.category == null || n.category == Notification.CATEGORY_NAVIGATION
+        val meta = "id=" + sbn.id + " ongoing=" + sbn.isOngoing +
+            " category=" + category + " categoryAllowed=" + permitted +
+            " extrasCount=" + runCatching { n.extras?.keySet()?.size ?: 0 }.getOrDefault(-1) +
+            " contentView=" + (n.contentView != null) +
+            " bigView=" + (n.bigContentView != null)
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (meta == lastNotificationMetaSignature && now - lastNotificationMetaAtMs < 15_000L) return
+        lastNotificationMetaSignature = meta
+        lastNotificationMetaAtMs = now
+        AppLog.add("MAPS NAV V1.7 NOTIFICATION META: " + meta)
+    }
+
     private fun handle(sbn: StatusBarNotification) {
         val n = sbn.notification ?: return
+        logNotificationMetadata(sbn, n)
         val parsed = GoogleMapsSourceAdapter.parse(this, n, sbn.id, sbn.isOngoing) ?: return
         parsed.routeRemainDistanceMeters?.takeIf { it > 0 }?.let { lastRouteRemainDistanceMeters = it }
         parsed.routeRemainTimeSeconds?.takeIf { it > 0 }?.let { lastRouteRemainTimeSeconds = it }
