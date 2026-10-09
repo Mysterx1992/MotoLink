@@ -773,12 +773,21 @@ object GoogleMapsSourceAdapter {
     private val cyrillicRegex = Regex("[\\u0400-\\u04FF]")
     private const val MAPS_PACKAGE = "com.google.android.apps.maps"
     private const val ICON_SAMPLE = 48
+    // The following regexes are for metadata logs ONLY; never for TBT decisions.
+    private val probeUnitRegex = Regex("(?iu)(?:^|[^\\p{L}\\p{N}])(?:км|km|м|m|метр(?:а|ов|ах)?|километр(?:а|ов|ах)?|mi|ft|米|公里|千米)(?![\\p{L}\\p{N}])")
+    private val probeNumberOnly = Regex("^[\\p{Nd}]+(?:[.,][\\p{Nd}]+)?$")
+    private val probeUnitOnly = Regex("(?iu)^(?:км|km|м|m|метр(?:а|ов|ах)?|километр(?:а|ов|ах)?|mi|ft|米|公里|千米)$")
+    private var lastFieldDiagSignature: String? = null
+    private var lastFieldDiagAtMs = 0L
     private var lastUnknownIconFingerprint = ""
     private var lastUnknownIconLogAt = 0L
 
     private data class MapsTextField(
         val source: String,
         val text: String,
+        // Diagnostic-only: parsing and deduplication remain unchanged.
+        val viewRole: String = "none",
+        val viewTree: String = "-",
     )
 
     private data class MapsVisualData(
@@ -793,7 +802,7 @@ object GoogleMapsSourceAdapter {
         val arrivalMinute: Int?,
     )
 
-    fun parse(context: Context, notification: Notification): TurnByTurnInstruction? {
+    fun parse(context: Context, notification: Notification, notificationId: Int = -1, notificationOngoing: Boolean = false): TurnByTurnInstruction? {
         if (notification.category != null && notification.category != "navigation") return null
         val e = notification.extras ?: return null
 
@@ -883,6 +892,9 @@ object GoogleMapsSourceAdapter {
                 distanceMissing = distance == null,
                 maneuver = maneuver,
                 roundaboutEncodingMissing = maneuver == NavManeuver.ROUNDABOUT && roundaboutEncoding == null,
+                notificationId = notificationId,
+                notificationOngoing = notificationOngoing,
+                notificationCategory = notification.category,
             )
         }
 
@@ -927,25 +939,73 @@ object GoogleMapsSourceAdapter {
         return score
     }
 
+    // Diagnostic-only: no raw Maps text, streets, destinations, positions or
+    // numeric distance values are written; BLE and parsing remain unchanged.
+    @Synchronized
     private fun logFieldDiagnostics(
         fields: List<MapsTextField>,
         iconCount: Int,
         distanceMissing: Boolean,
         maneuver: NavManeuver,
         roundaboutEncodingMissing: Boolean,
+        notificationId: Int,
+        notificationOngoing: Boolean,
+        notificationCategory: String?,
     ) {
-        val summary = fields.take(18).joinToString(" | ") { field ->
-            val distance = explicitDistanceMeters(field.text)
-            val route = routeSummaryFrom(field.text) != null
-            val man = maneuverFrom(field.text)
-            val ru = cyrillicRegex.containsMatchIn(field.text)
-            val zh = field.text.any { ch -> ch.code in 0x4E00..0x9FFF }
-            "${field.source}{len=${field.text.length},dist=${distance ?: -1},route=$route,man=$man,ru=$ru,zh=$zh}"
+        val category = when (notificationCategory) {
+            null -> "null"
+            Notification.CATEGORY_NAVIGATION -> "navigation"
+            Notification.CATEGORY_SERVICE -> "service"
+            else -> "other"
         }
+        val items = fields.take(96).mapIndexed { index, field ->
+            val num = field.text.any(Char::isDigit)
+            val unit = probeUnitRegex.containsMatchIn(field.text)
+            val direct = explicitDistanceMeters(field.text) != null
+            val numberOnly = probeNumberOnly.matches(field.text)
+            val unitOnly = probeUnitOnly.matches(field.text)
+            val route = routeSummaryFrom(field.text) != null
+            val clock = etaRegex.containsMatchIn(field.text)
+            val ru = cyrillicRegex.containsMatchIn(field.text)
+            index.toString() + ":" + field.source +
+                "[id=" + field.viewRole + ",tree=" + field.viewTree +
+                ",len=" + field.text.length + ",num=" + num + ",unit=" + unit +
+                ",direct=" + direct + ",numOnly=" + numberOnly + ",unitOnly=" + unitOnly +
+                ",route=" + route + ",clock=" + clock + ",ru=" + ru + "]"
+        }
+        val signature = notificationId.toString() + "/" + notificationOngoing +
+            "/" + category + "/" + maneuver + "/" + distanceMissing +
+            "/" + iconCount + "/" + items.joinToString("|")
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (signature == lastFieldDiagSignature && now - lastFieldDiagAtMs < 15_000L) return
+        lastFieldDiagSignature = signature
+        lastFieldDiagAtMs = now
+
+        val numericOnlyViews = fields.filter { it.viewTree != "-" && probeNumberOnly.matches(it.text) }
+            .map { it.source.substringBefore(':') to it.viewTree.substringBeforeLast('.', "") }.toSet()
+        val unitOnlyViews = fields.filter { it.viewTree != "-" && probeUnitOnly.matches(it.text) }
+            .map { it.source.substringBefore(':') to it.viewTree.substringBeforeLast('.', "") }.toSet()
+        val siblingHint = numericOnlyViews.intersect(unitOnlyViews).isNotEmpty()
+
         AppLog.add(
-            "MAPS NAV V1.7 FIELD DIAG: distanceMissing=$distanceMissing maneuver=$maneuver " +
-                "roundaboutEncodingMissing=$roundaboutEncodingMissing icons=$iconCount fields=${fields.size} :: $summary"
+            "MAPS NAV V1.7 FIELD DIAG: distanceMissing=" + distanceMissing +
+                " maneuver=" + maneuver + " roundaboutEncodingMissing=" + roundaboutEncodingMissing +
+                " icons=" + iconCount + " fields=" + fields.size +
+                " notificationId=" + notificationId + " ongoing=" + notificationOngoing +
+                " category=" + category + " numericFields=" +
+                fields.count { it.text.any(Char::isDigit) } +
+                " unitFields=" + fields.count { probeUnitRegex.containsMatchIn(it.text) } +
+                " parsedDistances=" + fields.count { explicitDistanceMeters(it.text) != null } +
+                " siblingFragmentHint=" + siblingHint
         )
+        val chunks = items.chunked(6)
+        chunks.forEachIndexed { index, chunk ->
+            AppLog.add("MAPS NAV V1.7 FIELD PROBE " + (index + 1) + "/" + chunks.size +
+                ": " + chunk.joinToString(" | "))
+        }
+        if (fields.size > 96) {
+            AppLog.add("MAPS NAV V1.7 FIELD PROBE: truncated=" + (fields.size - 96))
+        }
     }
 
     private fun routeSummaryFrom(text: String): RouteSummary? {
@@ -1070,7 +1130,7 @@ object GoogleMapsSourceAdapter {
                 if (remote == null) return@forEach
                 runCatching {
                     val root = remote.apply(mapsContext, null)
-                    walkNotificationView(mapsContext, root, source, fields, icons)
+                    walkNotificationView(mapsContext, root, source, fields, icons, "r")
                 }
             }
         }
@@ -1091,10 +1151,19 @@ object GoogleMapsSourceAdapter {
         source: String,
         fields: MutableList<MapsTextField>,
         icons: MutableList<Bitmap>,
+        path: String,
     ) {
+        // Only code-defined resource names are logged, never unknown IDs.
+        val role = runCatching {
+            if (view.id > 0) context.resources.getResourceEntryName(view.id) else ""
+        }.getOrDefault("").lowercase(Locale.ROOT).let { name ->
+            if (name.startsWith("nav_") || name.startsWith("lockscreen_") ||
+                name in setOf("title", "text", "header_text", "time", "right_icon")
+            ) name else "other"
+        }
         fun addText(kind: String, value: CharSequence?) {
             clean(value).takeIf { it.isNotBlank() }?.let {
-                fields += MapsTextField("$source:$kind", it)
+                fields += MapsTextField("$source:$kind", it, role, path)
             }
         }
 
@@ -1117,7 +1186,7 @@ object GoogleMapsSourceAdapter {
 
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) {
-                walkNotificationView(context, view.getChildAt(i), source, fields, icons)
+                walkNotificationView(context, view.getChildAt(i), source, fields, icons, path + "." + i)
             }
         }
     }
@@ -1358,7 +1427,7 @@ class MapsNavigationListenerService : NotificationListenerService() {
 
     private fun handle(sbn: StatusBarNotification) {
         val n = sbn.notification ?: return
-        val parsed = GoogleMapsSourceAdapter.parse(this, n) ?: return
+        val parsed = GoogleMapsSourceAdapter.parse(this, n, sbn.id, sbn.isOngoing) ?: return
         parsed.routeRemainDistanceMeters?.takeIf { it > 0 }?.let { lastRouteRemainDistanceMeters = it }
         parsed.routeRemainTimeSeconds?.takeIf { it > 0 }?.let { lastRouteRemainTimeSeconds = it }
         val model = parsed.copy(
