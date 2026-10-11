@@ -1,0 +1,104 @@
+name: Publish verified MotoLink V1.7 vc32 APK
+
+on:
+  push:
+    branches:
+      - diagnostics/v17-maps-field-probe-vc32
+    paths:
+      - ".github/workflows/publish-vc32-verified-release.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    name: Reproduce tester APK and publish only on exact hash
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout frozen vc32 code and public reconstruction material
+        uses: actions/checkout@v4
+
+      - name: Download original unsigned vc32 artifact from GitHub Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci_unsigned
+          gh run download 37969069940 --repo "$GITHUB_REPOSITORY" \
+            -n MotoLink_V1.7_VC32_DIAG_UNSIGNED -D ci_unsigned
+          test -s ci_unsigned/MotoLink_V1.7_VC32_DIAG_UNSIGNED.apk
+          echo "1ec6b92f1894522da4914febea8fdfa68db9c4131642a96076d527b9b0694a52  ci_unsigned/MotoLink_V1.7_VC32_DIAG_UNSIGNED.apk" | sha256sum -c -
+
+      - name: Reconstruct field-tested APK without any private signing credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/vc32_release/reconstruct.py \
+            ci_unsigned/MotoLink_V1.7_VC32_DIAG_UNSIGNED.apk \
+            tools/vc32_release/public_apk_signing_block.b64 \
+            MotoLink_V1.7_VC32Diagnosi.apk
+          echo "ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625  MotoLink_V1.7_VC32Diagnosi.apk" | sha256sum -c -
+
+      - name: Verify version, official signer, and APK signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "build-tools;36.0.0"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/apksigner" verify --verbose --print-certs MotoLink_V1.7_VC32Diagnosi.apk | tee verify.txt
+          grep -q 'Verified using v3 scheme.*true' verify.txt
+          grep -qi '9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100' verify.txt
+          "$BT/aapt" dump badging MotoLink_V1.7_VC32Diagnosi.apk | tee badging.txt
+          grep -q "package: name='it.motolink.app'" badging.txt
+          grep -q "versionCode='32'" badging.txt
+          grep -q "versionName='1.7'" badging.txt
+          sha256sum MotoLink_V1.7_VC32Diagnosi.apk > MotoLink_V1.7_VC32_SHA256.txt
+
+      - name: Upload exact verified vc32 to existing v1.7 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload v1.7 \
+            MotoLink_V1.7_VC32Diagnosi.apk \
+            MotoLink_V1.7_VC32_SHA256.txt \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Preserve prior public vc31 package before updating latest alias
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p previous_release
+          gh release download v1.7 --repo "$GITHUB_REPOSITORY" \
+            --pattern MotoLink_V1.7.apk --dir previous_release
+          test -s previous_release/MotoLink_V1.7.apk
+          if "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging previous_release/MotoLink_V1.7.apk | grep -q "versionCode='31'"; then
+            cp previous_release/MotoLink_V1.7.apk MotoLink_V1.7_VC31_archive.apk
+            gh release upload v1.7 MotoLink_V1.7_VC31_archive.apk \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "Prior alias is not vc31; refusing to overwrite an unexpected APK."
+            exit 1
+          fi
+
+      - name: Point stable V1.7 APK download at exact verified vc32
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp MotoLink_V1.7_VC32Diagnosi.apk MotoLink_V1.7.apk
+          echo "ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625  MotoLink_V1.7.apk" > MotoLink_V1.7_SHA256.txt
+          echo "ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625  MotoLink_V1.7.apk" | sha256sum -c -
+          gh release upload v1.7 MotoLink_V1.7.apk MotoLink_V1.7_SHA256.txt \
+            --repo "$GITHUB_REPOSITORY" --clobber
