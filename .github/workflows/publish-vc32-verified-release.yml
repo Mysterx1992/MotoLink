@@ -42,14 +42,15 @@ jobs:
             MotoLink_V1.7_VC32Diagnosi.apk
           echo "ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625  MotoLink_V1.7_VC32Diagnosi.apk" | sha256sum -c -
 
-      - name: Install Android SDK 36 build tools for verification
-        uses: android-actions/setup-android@v3
-
       - name: Verify version, official signer, and APK signature
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager "build-tools;36.0.0" "platforms;android-36"
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "build-tools;36.0.0"
           BT="$ANDROID_HOME/build-tools/36.0.0"
           "$BT/apksigner" verify --verbose --print-certs MotoLink_V1.7_VC32Diagnosi.apk | tee verify.txt
           grep -q 'Verified using v3 scheme.*true' verify.txt
