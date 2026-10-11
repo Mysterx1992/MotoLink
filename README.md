@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/tree/release/v1.7">
-    <img src="https://img.shields.io/badge/MOTOLINK-V1.7-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="MotoLink V1.7">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk">
+    <img src="https://img.shields.io/badge/SCARICA-MOTOLINK%20V1.7%20APK-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="Scarica MotoLink V1.7 APK">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
@@ -46,10 +46,12 @@ MotoLink **V1.7** aggiunge l'interfaccia multilingua automatica e migliora la na
 
 **[⬇️ Scarica direttamente MotoLink V1.7 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk)**
 
-Versione corrente: **MotoLink V1.7** · `versionCode 31`  
+Versione APK pubblica: **MotoLink V1.7** · `versionCode 31`  
 Package: `it.motolink.app`
 
 Release: https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7
+
+La **vc32** (diagnostica Maps, validata nei test di navigazione) è ancora in fase di pubblicazione: finché il pacchetto ufficiale non compare nella release, il pulsante scarica l'APK pubblico vc31. [Codice vc32](https://github.com/Mysterx1992/MotoLink/tree/diagnostics/v17-maps-field-probe-vc32).
 
 ---
 
