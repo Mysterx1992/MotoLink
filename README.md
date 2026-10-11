@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk">
-    <img src="https://img.shields.io/badge/SCARICA-MOTOLINK%20V1.7%20vc31-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="Scarica MotoLink V1.7 vc31 APK">
+    <img src="https://img.shields.io/badge/SCARICA-MOTOLINK%20V1.7%20vc32-181717?style=for-the-badge&logo=github&logoColor=ffffff" alt="Scarica MotoLink V1.7 vc32 APK">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
@@ -23,9 +23,9 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.7
+## 🆕 MotoLink V1.7 · vc32
 
-MotoLink **V1.7** aggiunge l'interfaccia multilingua automatica e migliora la navigazione Google Maps sui telefoni impostati in russo, mantenendo il recovery TFT/EasyConn e la Modalità tasca già consolidati.
+MotoLink **V1.7 vc32** aggiunge l'interfaccia multilingua automatica e migliora la navigazione Google Maps sui telefoni impostati in russo, mantenendo il recovery TFT/EasyConn e la Modalità tasca già consolidati. La vc32 include inoltre la diagnostica estesa delle notifiche Google Maps, senza modificare il protocollo BLE o il parser già funzionante.
 
 ### Novità V1.7
 
@@ -44,14 +44,14 @@ MotoLink **V1.7** aggiunge l'interfaccia multilingua automatica e migliora la na
 
 ## Scarica MotoLink
 
-**[⬇️ Scarica direttamente MotoLink V1.7 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk)**
+**[⬇️ Scarica direttamente MotoLink V1.7 vc32 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk)**
 
-Versione APK pubblica: **MotoLink V1.7** · `versionCode 31`  
+Versione APK pubblica: **MotoLink V1.7 vc32** · `versionCode 32`  
 Package: `it.motolink.app`
 
 Release: https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7
 
-La **vc32** (diagnostica Maps, confermata dai test di navigazione sulla VOGE 625) **non è ancora pubblicata come APK sulla release**. Il pulsante scarica quindi la vc31; aggiornare badge e link solo dopo il caricamento e la verifica dell'APK vc32 firmata. Il workflow di firma GitHub richiede Secrets di firma non ancora configurati. [Codice vc32](https://github.com/Mysterx1992/MotoLink/tree/diagnostics/v17-maps-field-probe-vc32).
+**Build ufficiale vc32 verificata:** il pulsante e il file `MotoLink_V1.7.apk` scaricano la medesima APK firmata utilizzata nei test reali della VOGE Valico 625 DSX. SHA-256: `ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625`. La vc31 resta disponibile come [archivio](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7_VC31_archive.apk). **Limiti ancora in test:** riconnessione automatica BLE dopo lo spegnimento del quadro e conferma fisica delle uscite di rotonda. Nessuna funzione vc33 è inclusa nella vc32.
 
 ---
 
