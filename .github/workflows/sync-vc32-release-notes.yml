@@ -1,0 +1,39 @@
+name: Synchronize MotoLink V1.7 vc32 release notes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/sync-vc32-release-notes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout published vc32 notes
+        uses: actions/checkout@v4
+      - name: Verify vc32 APK and archive exist before updating release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view v1.7 --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[].name' > existing_assets.txt
+          grep -Fxq 'MotoLink_V1.7.apk' existing_assets.txt
+          grep -Fxq 'MotoLink_V1.7_VC32Diagnosi.apk' existing_assets.txt
+          grep -Fxq 'MotoLink_V1.7_VC31_archive.apk' existing_assets.txt
+      - name: Update release title and version description
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release edit v1.7 --repo "$GITHUB_REPOSITORY" \
+            --title "MotoLink V1.7 - vc32" \
+            --notes-file docs/RELEASE_NOTES_V1_7_VC32.md
