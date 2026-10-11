@@ -1,0 +1,46 @@
+name: Repair homepage MotoLink V1.7 download badge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/repair-homepage-download-badge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render opaque RGB PNG (avoid indexed transparency rendering)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet Pillow==11.3.0
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          import hashlib
+          source=Image.open("docs/images/download-motolink-v17.png").convert("RGBA")
+          output=Image.new("RGB", source.size, (13,17,23))
+          output.paste(source, mask=source.getchannel("A"))
+          target=Path("docs/images/download-motolink-v17-rgb.png")
+          output.save(target,format="PNG",optimize=True)
+          assert Image.open(target).mode == "RGB"
+          data=target.read_bytes()
+          sha=hashlib.sha1(f"blob {len(data)}\\0".encode()+data).hexdigest()
+          # The content hash ensures a repeatable, verified asset is committed
+          print("RGB BADGE SHA1",sha,"size",len(data))
+          PY
+      - name: Publish RGB PNG on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/images/download-motolink-v17-rgb.png
+          git commit -m "fix: replace fragile indexed badge with truecolor RGB PNG"
+          git push origin HEAD:main
