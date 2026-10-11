@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -111,3 +111,14 @@ jobs:
             badging.txt
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish verified vc32 APK to existing V1.7 release
+        if: github.ref == 'refs/heads/diagnostics/v17-maps-field-probe-vc32'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s MotoLink_V1.7_VC32_MAPS_FIELD_DIAG_OFFICIAL_SIGNED.apk
+          test -s SHA256SUMS.txt
+          gh release upload v1.7 MotoLink_V1.7_VC32_MAPS_FIELD_DIAG_OFFICIAL_SIGNED.apk SHA256SUMS.txt#MotoLink_V1.7_VC32_SHA256.txt --clobber
