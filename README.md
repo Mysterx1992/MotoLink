@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk">
-    <img src="docs/images/download-motolink-vc32.png" alt="Scarica MotoLink V1.7 vc32 APK" height="34">
+    <img src="docs/images/download-motolink-v17.png" alt="Scarica MotoLink V1.7 APK" height="34">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
