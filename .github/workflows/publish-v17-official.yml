@@ -1,0 +1,92 @@
+name: Publish MotoLink V1.7 official APK
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/publish-v17-official.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Verify vc33 bytes and update stable V1.7
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current official source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify the exact frozen vc33 application code and synthetic regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          FROZEN=c40257232307fb0b5b11f9d9a3403d1e4f187228
+          for f in app/build.gradle.kts app/src/main/java/it/motolink/app/V16Navigation.kt app/src/main/java/it/motolink/app/MainActivity.kt; do
+            git show "$FROZEN:$f" > /tmp/frozen_motolink_file
+            cmp /tmp/frozen_motolink_file "$f"
+          done
+          python3 tools/vc33_ble_regression.py
+
+      - name: Fetch official-signature vc33 build and prior vc32 from GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p previous candidate
+          gh release download v1.7-vc33-test --repo "$GITHUB_REPOSITORY" \
+            --pattern MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk -D candidate
+          gh release download v1.7 --repo "$GITHUB_REPOSITORY" \
+            --pattern MotoLink_V1.7.apk -D previous
+          echo "c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e  candidate/MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk" | sha256sum -c -
+          echo "ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625  previous/MotoLink_V1.7.apk" | sha256sum -c -
+          cp candidate/MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk MotoLink1.7.apk
+          cp previous/MotoLink_V1.7.apk MotoLink_V1.7_VC32_archive.apk
+          echo "c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e  MotoLink1.7.apk" | sha256sum -c -
+
+      - name: Verify official Android certificate, v3 signature, package and version
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "build-tools;36.0.0"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/apksigner" verify --verbose --print-certs MotoLink1.7.apk | tee /tmp/motolink_verified.txt
+          grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' /tmp/motolink_verified.txt
+          grep -Fiq '9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100' /tmp/motolink_verified.txt
+          "$BT/aapt" dump badging MotoLink1.7.apk | tee /tmp/motolink_badging.txt
+          grep -q "package: name='it.motolink.app'" /tmp/motolink_badging.txt
+          grep -q "versionCode='33'" /tmp/motolink_badging.txt
+          grep -q "versionName='1.7'" /tmp/motolink_badging.txt
+          sha256sum MotoLink1.7.apk > MotoLink1.7_SHA256.txt
+
+      - name: Publish the signed V1.7 and preserve vc32 history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload v1.7 \
+            MotoLink_V1.7_VC32_archive.apk MotoLink1.7.apk MotoLink1.7_SHA256.txt \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          gh release download v1.7 --repo "$GITHUB_REPOSITORY" \
+            --pattern MotoLink1.7.apk -D /tmp
+          echo "c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e  /tmp/MotoLink1.7.apk" | sha256sum -c -
+          gh release edit v1.7 --repo "$GITHUB_REPOSITORY" \
+            --title "MotoLink V1.7" \
+            --notes-file docs/RELEASE_NOTES_V1_7_VC33_OFFICIAL.md
+
+      - name: Retire obsolete public filenames and superseded prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete-asset v1.7 MotoLink_V1.7.apk --repo "$GITHUB_REPOSITORY" --yes
+          gh release delete-asset v1.7 MotoLink_V1.7_SHA256.txt --repo "$GITHUB_REPOSITORY" --yes
+          gh release delete v1.7-vc33-test --repo "$GITHUB_REPOSITORY" --yes
