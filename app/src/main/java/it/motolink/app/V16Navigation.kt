@@ -200,7 +200,7 @@ object VogeBleNavigationManager {
     }
 
     private enum class Kind { HEARTBEAT, NAV }
-    private data class Tx(val bytes: ByteArray, val kind: Kind, val attempts: Int = 0, val navGroup: Long = 0L)
+    private data class Tx(val bytes: ByteArray, val kind: Kind, val attempts: Int = 0, val navGroup: Long = 0L, val queuedAtMs: Long = 0L)
     private data class Candidate(val device: BluetoothDevice, val name: String, val rssi: Int)
 
     private val main = Handler(Looper.getMainLooper())
@@ -289,7 +289,8 @@ object VogeBleNavigationManager {
             queue.clear()
             keep.forEach(queue::addLast)
             val newGroup = ++nextNavGroup
-            frames.forEach { queue.addLast(Tx(it, Kind.NAV, navGroup = newGroup)) }
+            val receivedAtMs = android.os.SystemClock.elapsedRealtime()
+            frames.forEach { queue.addLast(Tx(it, Kind.NAV, navGroup = newGroup, queuedAtMs = receivedAtMs)) }
             if (dropped > 0) AppLog.add("BLE NAV VC33: coalescing scarta $dropped frame NAV obsoleti; ultimo=${model.distanceMeters}m")
         }
         AppLog.add("BLE NAV V1.6: TBT reale accodato maneuver=${model.maneuver} distance=${model.distanceMeters}m frames=5")
@@ -521,6 +522,10 @@ object VogeBleNavigationManager {
             }
             if (sent == null) return
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                if (sent.kind == Kind.NAV && sent.bytes[1].toInt().and(0xFF) == 0x6E) {
+                    val tookMs = android.os.SystemClock.elapsedRealtime() - sent.queuedAtMs
+                    AppLog.add("BLE NAV VC33: NAV_GROUP_COMPLETE group=${sent.navGroup} queued_to_gatt_last_ack_ms=$tookMs; TFT render non misurato")
+                }
                 var becameReady = false
                 if (sent.kind == Kind.HEARTBEAT) {
                     synchronized(this@VogeBleNavigationManager) {
@@ -620,6 +625,10 @@ object VogeBleNavigationManager {
         }.getOrDefault(-1)
 
         if (result == 0) {
+            if (tx.kind == Kind.NAV && tx.bytes[1].toInt().and(0xFF) == 0x6A) {
+                val ageMs = android.os.SystemClock.elapsedRealtime() - tx.queuedAtMs
+                AppLog.add("BLE NAV VC33: NAV_GROUP_START group=${tx.navGroup} queue_wait_ms=$ageMs")
+            }
             val generation: Long
             synchronized(this) {
                 inFlight = tx
@@ -647,6 +656,10 @@ object VogeBleNavigationManager {
                             everReady = true
                             becameReady = true
                         }
+                    }
+                    if (tx.kind == Kind.NAV && tx.bytes[1].toInt().and(0xFF) == 0x6E) {
+                        val tookMs = android.os.SystemClock.elapsedRealtime() - tx.queuedAtMs
+                        AppLog.add("BLE NAV VC33: NAV_GROUP_COMPLETE_NO_RESPONSE group=${tx.navGroup} queued_to_settle_ms=$tookMs; TFT render non misurato")
                     }
                     if (becameReady) {
                         val address = selectedAddress.orEmpty()
