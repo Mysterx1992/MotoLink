@@ -72,16 +72,15 @@ class Scheduler:
 # A first group (90m) already started, notification burst arrives (80..50).
 q = Scheduler()
 q.notify(90)
-sent = [q.next()]
+first = q.next()
+assert first == (1, 0, 90)
 for meters in (80, 70, 60, 50):
     q.notify(meters)
-while q.queue and q.queue[0][0] == 1:
+sent = []
+while q.inflight is not None or q.queue:
+    if q.inflight is None: q.next()
     sent.append(q.ack())
-    sent.append(q.next())
-sent.append(q.ack())
-while q.queue:
-    sent.append(q.next())
-    sent.append(q.ack())
+    if q.queue: q.next()
 assert len(sent) == 10
 assert [x[2] for x in sent] == [90] * 5 + [50] * 5, sent
 assert [x[1] for x in sent] == list(range(5)) * 2
