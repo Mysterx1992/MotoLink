@@ -21,4 +21,4 @@ Il tester russo su VOGE Valico 625 DSX ha confermato il funzionamento della navi
 
 La nuova gestione della coda BLE e la riconnessione hanno superato compilazione Android CI, test sintetici e verifica crittografica dell'APK firmata. **La misura del ritardo effettivo sul TFT e la conferma fisica della riconnessione dopo OFF/ON restano da effettuare:** i test software non equivalgono a una verifica su strada. Non usare lo smartphone durante la guida.
 
-La precedente vc32 firmata resta disponibile come archivio nella release. I dettagli e la storia integrale sono nel [master unico](https://github.com/Mysterx1992/MotoLink/blob/main/docs/MOTOLINK_MASTER_UNICO_CURRENT.md).
+La precedente vc32 firmata resta disponibile come archivio nella release. La documentazione tecnica integrale resta riservata al proprietario del progetto.
