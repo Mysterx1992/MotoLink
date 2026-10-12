@@ -46,8 +46,20 @@ MotoLink **V1.7 vc32** aggiunge l'interfaccia multilingua automatica e migliora 
 
 **[⬇️ Scarica direttamente MotoLink V1.7 vc32 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk)**
 
-Versione APK pubblica: **MotoLink V1.7 vc32** · `versionCode 32`  
+Versione APK pubblica stabile: **MotoLink V1.7 vc32** · `versionCode 32`  
 Package: `it.motolink.app`
+
+### Nuova vc33 — prova BLE (versione TEST, non ancora stabile)
+
+**[⬇️ Scarica direttamente MotoLink V1.7 vc33 TEST — APK firmata](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7-vc33-test/MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk)**
+
+- `versionCode 33`, `versionName 1.7`, stessa firma ufficiale della vc32.
+- Coda BLE ottimizzata: gli aggiornamenti Maps obsoleti ancora in attesa vengono sostituiti dall'ultimo, senza interrompere i cinque frame di un gruppo già iniziato.
+- Riconnessione BLE automatica dopo quadro moto OFF/ON, con scansioni a intervalli controllati e senza nuovo START; STOP cancella i retry.
+- Reattach BLE senza riaprire Google Maps.
+- [Release vc33 TEST](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7-vc33-test) · [Pull Request #15](https://github.com/Mysterx1992/MotoLink/pull/15) · [Master unico R69](docs/MOTOLINK_MASTER_UNICO_CURRENT.md).
+- **Prova fisica vc33 ancora da confermare sulla moto.** Il pulsante principale `SCARICA MOTOLINK | V1.7` continua volutamente a scaricare la vc32 stabile finché questo test non avrà esito positivo. Non utilizzare il telefono mentre si guida.
+
 
 Release: https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7
 
