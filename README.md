@@ -48,7 +48,6 @@ La versione ufficiale **MotoLink V1.7** introduce una navigazione BLE più reatt
 **Package:** `it.motolink.app`  
 **SHA-256:** `c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e`  
 **Release:** https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7  
-**Master unico:** [Stato e storico del progetto](docs/MOTOLINK_MASTER_UNICO_CURRENT.md)
 
 La compilazione, la firma ufficiale e le verifiche software sono state completate. **La riduzione effettiva della latenza sul TFT e la riconnessione quadro OFF/ON richiedono ancora la conferma sulla moto**: non sono risultati già misurati su strada. La versione precedente è conservata come archivio nella release.
 
