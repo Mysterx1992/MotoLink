@@ -1397,10 +1397,12 @@ class MainActivity : Activity() {
         setHeaderStatus(if (automatic) "Automatica" else "Bluetooth", profile.displayName, C_AMBER)
         setState("Connessione…", if (automatic) "Cerco il collegamento compatibile" else "Cerco il Bluetooth navigazione", C_AMBER, "BLE")
         val activeIndex = BikeProfileStore.activeIndex(this)
+        // A reconnect must restore TFT updates, not relaunch Maps over a running route.
+        var mapsLaunchRequested = false
         VogeBleNavigationManager.start(this, profile.bleAddress, automatic, object : VogeBleNavigationManager.Callback {
             override fun onState(label: String) {
                 runOnUiThread {
-                    if (runSelection == RunSelection.START) setState(label, "", C_AMBER, "BLE")
+                    if (runSelection == RunSelection.START || startInProgress) setState(label, "", C_AMBER, "BLE")
                 }
             }
 
@@ -1419,8 +1421,11 @@ class MainActivity : Activity() {
                     setRunSelection(RunSelection.START)
                     setHeaderStatus("Connesso", current.displayName, C_GREEN)
                     setState("Bluetooth navigazione pronto", "Avvia una destinazione in Google Maps", C_GREEN, "BLE")
-                    AppLog.add("BLE NAV V1.6: profilo collegato e heartbeat attivo")
-                    ensureMapsNotificationAccessThenLaunch()
+                    AppLog.add("BLE NAV VC33: profilo collegato e heartbeat attivo; reattach=${mapsLaunchRequested}")
+                    if (!mapsLaunchRequested) {
+                        mapsLaunchRequested = true
+                        ensureMapsNotificationAccessThenLaunch()
+                    }
                 }
             }
 

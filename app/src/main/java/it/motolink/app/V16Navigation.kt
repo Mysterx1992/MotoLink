@@ -200,7 +200,7 @@ object VogeBleNavigationManager {
     }
 
     private enum class Kind { HEARTBEAT, NAV }
-    private data class Tx(val bytes: ByteArray, val kind: Kind, val attempts: Int = 0)
+    private data class Tx(val bytes: ByteArray, val kind: Kind, val attempts: Int = 0, val navGroup: Long = 0L, val queuedAtMs: Long = 0L)
     private data class Candidate(val device: BluetoothDevice, val name: String, val rssi: Int)
 
     private val main = Handler(Looper.getMainLooper())
@@ -213,6 +213,12 @@ object VogeBleNavigationManager {
     private var txChar: BluetoothGattCharacteristic? = null
     private var rxChar: BluetoothGattCharacteristic? = null
     private var inFlight: Tx? = null
+    // An already started NAV group stays atomic; all other pending groups
+    // are replaced by the newest valid Maps update.
+    private var nextNavGroup = 0L
+    private var activeNavGroup: Long? = null
+    private var scanMissCount = 0
+    private var everReady = false
     private var heartbeatActive = false
     private var transportVerified = false
     private var wanted = false
@@ -237,6 +243,8 @@ object VogeBleNavigationManager {
         automatic = auto
         wanted = true
         automaticFallbackSent = false
+        scanMissCount = 0
+        everReady = false
         writeTypeMode = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
         noResponseFallbackTried = false
         selectedAddress = savedAddress?.takeIf { it.isNotBlank() }
@@ -274,10 +282,16 @@ object VogeBleNavigationManager {
                 AppLog.add("BLE NAV V1.6: istruzione reale disponibile ma TFT BLE non pronto")
                 return
             }
-            val keep = queue.filter { it.kind != Kind.HEARTBEAT }
+            val active = activeNavGroup
+            val keep = if (active == null) emptyList() else
+                queue.filter { it.kind == Kind.NAV && it.navGroup == active }
+            val dropped = queue.count { it.kind == Kind.NAV } - keep.size
             queue.clear()
             keep.forEach(queue::addLast)
-            frames.forEach { queue.addLast(Tx(it, Kind.NAV)) }
+            val newGroup = ++nextNavGroup
+            val receivedAtMs = android.os.SystemClock.elapsedRealtime()
+            frames.forEach { queue.addLast(Tx(it, Kind.NAV, navGroup = newGroup, queuedAtMs = receivedAtMs)) }
+            if (dropped > 0) AppLog.add("BLE NAV VC33: coalescing scarta $dropped frame NAV obsoleti; ultimo=${model.distanceMeters}m")
         }
         AppLog.add("BLE NAV V1.6: TBT reale accodato maneuver=${model.maneuver} distance=${model.distanceMeters}m frames=5")
         main.post(::sendNext)
@@ -329,8 +343,9 @@ object VogeBleNavigationManager {
             stopScan()
             val best = synchronized(this) { candidates.values.maxByOrNull { it.rssi } }
             if (best == null) {
-                unavailable("Nessuna moto BLE compatibile trovata")
+                retryScanWhenBikeMissing("Nessuna moto BLE compatibile trovata")
             } else {
+                scanMissCount = 0
                 connectDevice(best.device, best.name)
             }
         }, 6500L)
@@ -341,6 +356,29 @@ object VogeBleNavigationManager {
         scanGeneration++
         runCatching { scanner?.stopScan(scanCallback) }
         scanner = null
+    }
+
+    private fun retryScanWhenBikeMissing(reason: String) {
+        if (!wanted) return
+        // Preserve initial AUTOMATIC fallback to Hotspot/QR; once BLE was
+        // READY, an ignition cycle must not silently switch transports.
+        if (automatic && !everReady) {
+            unavailable(reason)
+            return
+        }
+        val attempt = (++scanMissCount).coerceAtMost(6)
+        val delayMs = when (attempt) {
+            1 -> 2500L
+            2 -> 5000L
+            3 -> 10000L
+            else -> 15000L
+        }
+        val generation = scanGeneration
+        callback?.onState("In attesa della moto…")
+        AppLog.add("BLE NAV VC33: $reason; riprovo scansione tra ${delayMs}ms, attempt=$attempt")
+        main.postDelayed({
+            if (wanted && generation == scanGeneration && !transportVerified) startScan()
+        }, delayMs)
     }
 
     private val scanCallback = object : ScanCallback() {
@@ -361,7 +399,9 @@ object VogeBleNavigationManager {
         }
 
         override fun onScanFailed(errorCode: Int) {
-            unavailable("Scansione BLE fallita ($errorCode)")
+            if (!wanted || scanner == null) return
+            stopScan()
+            retryScanWhenBikeMissing("Scansione BLE fallita ($errorCode)")
         }
     }
 
@@ -408,6 +448,7 @@ object VogeBleNavigationManager {
                         rxChar = null
                         inFlight = null
                         queue.clear()
+                        activeNavGroup = null
                         heartbeatActive = false
                         main.removeCallbacks(heartbeat)
                     }
@@ -473,10 +514,18 @@ object VogeBleNavigationManager {
                 val s = inFlight
                 inFlight = null
                 writeGeneration++
+                if (s?.kind == Kind.NAV && activeNavGroup == s.navGroup &&
+                    queue.none { it.kind == Kind.NAV && it.navGroup == s.navGroup }) {
+                    activeNavGroup = null
+                }
                 s
             }
             if (sent == null) return
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                if (sent.kind == Kind.NAV && sent.bytes[1].toInt().and(0xFF) == 0x6E) {
+                    val tookMs = android.os.SystemClock.elapsedRealtime() - sent.queuedAtMs
+                    AppLog.add("BLE NAV VC33: NAV_GROUP_COMPLETE group=${sent.navGroup} queued_to_gatt_last_ack_ms=$tookMs; TFT render non misurato")
+                }
                 var becameReady = false
                 if (sent.kind == Kind.HEARTBEAT) {
                     synchronized(this@VogeBleNavigationManager) {
@@ -484,6 +533,8 @@ object VogeBleNavigationManager {
                             transportVerified = true
                             heartbeatActive = true
                             reconnectAttempt = 0
+                            scanMissCount = 0
+                            everReady = true
                             becameReady = true
                         }
                     }
@@ -557,6 +608,7 @@ object VogeBleNavigationManager {
             localGatt = gatt ?: return
             localChar = txChar ?: return
             tx = queue.removeFirst()
+            if (tx.kind == Kind.NAV && activeNavGroup == null) activeNavGroup = tx.navGroup
         }
         val writeType = synchronized(this) { writeTypeMode }
         val result = runCatching {
@@ -573,6 +625,10 @@ object VogeBleNavigationManager {
         }.getOrDefault(-1)
 
         if (result == 0) {
+            if (tx.kind == Kind.NAV && tx.bytes[1].toInt().and(0xFF) == 0x6A) {
+                val ageMs = android.os.SystemClock.elapsedRealtime() - tx.queuedAtMs
+                AppLog.add("BLE NAV VC33: NAV_GROUP_START group=${tx.navGroup} queue_wait_ms=$ageMs")
+            }
             val generation: Long
             synchronized(this) {
                 inFlight = tx
@@ -588,12 +644,22 @@ object VogeBleNavigationManager {
                         if (generation != writeGeneration || inFlight == null || !wanted) return@postDelayed
                         inFlight = null
                         writeGeneration++
+                        if (tx.kind == Kind.NAV && activeNavGroup == tx.navGroup &&
+                            queue.none { it.kind == Kind.NAV && it.navGroup == tx.navGroup }) {
+                            activeNavGroup = null
+                        }
                         if (tx.kind == Kind.HEARTBEAT && !transportVerified) {
                             transportVerified = true
                             heartbeatActive = true
                             reconnectAttempt = 0
+                            scanMissCount = 0
+                            everReady = true
                             becameReady = true
                         }
+                    }
+                    if (tx.kind == Kind.NAV && tx.bytes[1].toInt().and(0xFF) == 0x6E) {
+                        val tookMs = android.os.SystemClock.elapsedRealtime() - tx.queuedAtMs
+                        AppLog.add("BLE NAV VC33: NAV_GROUP_COMPLETE_NO_RESPONSE group=${tx.navGroup} queued_to_settle_ms=$tookMs; TFT render non misurato")
                     }
                     if (becameReady) {
                         val address = selectedAddress.orEmpty()
@@ -670,6 +736,7 @@ object VogeBleNavigationManager {
             main.removeCallbacks(heartbeat)
             queue.clear()
             inFlight = null
+            activeNavGroup = null
             writeGeneration++
             txChar = null
             rxChar = null
@@ -686,7 +753,7 @@ object VogeBleNavigationManager {
             // cached path. From the second consecutive recovery attempt we always scan.
             if (forceFreshScan || attempt >= 2) {
                 AppLog.add("BLE NAV V1.6: recovery -> nuova scansione BLE prima di connectGatt")
-                if (automatic && !automaticFallbackSent && attempt >= 4) unavailable(reason) else startScan()
+                if (automatic && !everReady && !automaticFallbackSent && attempt >= 4) unavailable(reason) else startScan()
                 return@postDelayed
             }
 
@@ -699,12 +766,12 @@ object VogeBleNavigationManager {
                     return@postDelayed
                 }
             }
-            if (automatic && !automaticFallbackSent) unavailable(reason) else startScan()
+            if (automatic && !everReady && !automaticFallbackSent) unavailable(reason) else startScan()
         }, delayMs)
     }
 
     private fun recoverOrFallback(reason: String) {
-        if (automatic && !automaticFallbackSent) unavailable(reason) else scheduleReconnect(reason)
+        if (automatic && !everReady && !automaticFallbackSent) unavailable(reason) else scheduleReconnect(reason)
     }
 
     private fun unavailable(reason: String) {
@@ -729,6 +796,8 @@ object VogeBleNavigationManager {
         wanted = false
         reconnectGeneration++
         reconnectAttempt = 0
+        scanMissCount = 0
+        everReady = false
         scanGeneration++
         writeGeneration++
         heartbeatActive = false
@@ -738,6 +807,7 @@ object VogeBleNavigationManager {
         synchronized(this) {
             queue.clear()
             inFlight = null
+            activeNavGroup = null
             txChar = null
             rxChar = null
         }
