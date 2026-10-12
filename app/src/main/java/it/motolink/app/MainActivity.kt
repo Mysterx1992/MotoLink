@@ -1402,7 +1402,7 @@ class MainActivity : Activity() {
         VogeBleNavigationManager.start(this, profile.bleAddress, automatic, object : VogeBleNavigationManager.Callback {
             override fun onState(label: String) {
                 runOnUiThread {
-                    if (runSelection == RunSelection.START) setState(label, "", C_AMBER, "BLE")
+                    if (runSelection == RunSelection.START || startInProgress) setState(label, "", C_AMBER, "BLE")
                 }
             }
 
