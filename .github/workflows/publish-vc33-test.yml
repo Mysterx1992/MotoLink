@@ -1,0 +1,88 @@
+name: Publish verified MotoLink vc33 TEST APK
+
+on:
+  push:
+    branches: ["feature/v17-vc33-ble-latest-wins-reconnect"]
+    paths:
+      - ".github/workflows/publish-vc33-test.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify source matches unsigned build commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          FROZEN=c40257232307fb0b5b11f9d9a3403d1e4f187228
+          for f in app/build.gradle.kts app/src/main/java/it/motolink/app/V16Navigation.kt app/src/main/java/it/motolink/app/MainActivity.kt; do
+            git show "$FROZEN:$f" > frozen_file.tmp
+            cmp frozen_file.tmp "$f"
+          done
+          rm frozen_file.tmp
+      - name: Retrieve previously verified unsigned build from CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download 38226998331 --repo "$GITHUB_REPOSITORY" \
+            -n MotoLink_V1.7_VC33_UNSIGNED_CANDIDATE -D candidate
+          test -s candidate/app/build/outputs/apk/release/app-release-unsigned.apk
+          echo "1541459cd10a7c3a5f49aab29ef0c506f3a76c68e4062be67e5ab5862f481f2e  candidate/app/build/outputs/apk/release/app-release-unsigned.apk" | sha256sum -c -
+      - name: Rebuild EXACT already signed vc33 from public ZIP metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/vc33_release/rebuild_verified_vc33.py \
+            candidate/app/build/outputs/apk/release/app-release-unsigned.apk \
+            tools/vc33_release/public_reconstruction_template.b64 \
+            MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk
+          echo "c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e  MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk" | sha256sum -c -
+      - name: Verify v3 APK signature and release package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "build-tools;36.0.0" "platforms;android-36"
+          TOOLS="$ANDROID_HOME/build-tools/36.0.0"
+          "$TOOLS/apksigner" verify --verbose --print-certs MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk | tee verification.txt
+          grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' verification.txt
+          grep -Fiq '9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100' verification.txt
+          "$TOOLS/aapt" dump badging MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk | tee badging.txt
+          grep -q "package: name='it.motolink.app'" badging.txt
+          grep -q "versionCode='33'" badging.txt
+          grep -q "versionName='1.7'" badging.txt
+          sha256sum MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk > MotoLink_V1.7_VC33_TEST_SHA256.txt
+      - name: Publish separate test prerelease only; keep stable vc32 unchanged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v1.7-vc33-test
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk \
+              MotoLink_V1.7_VC33_TEST_SHA256.txt \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" \
+              MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk \
+              MotoLink_V1.7_VC33_TEST_SHA256.txt \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --prerelease \
+              --title "MotoLink V1.7 vc33 TEST - BLE queue and reconnect" \
+              --notes-file docs/VC33_BLE_QUEUE_RECONNECT_FIELD_EVIDENCE.md
+          fi
