@@ -1,0 +1,60 @@
+name: MotoLink Supabase DB keepalive
+
+on:
+  schedule:
+    # Four lightweight PostgreSQL reads per day; GitHub scheduled jobs may be delayed.
+    - cron: "17 1,7,13,19 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/supabase-db-keepalive.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: motolink-supabase-db-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      SUPABASE_URL: https://yjklfhhchswnvqvgfrqk.supabase.co
+      # Public publishable key; NOT a secret or service_role key.
+      # RPC is security-invoker, granted only to anon, and reads no application data.
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_7ZCabeTGxfBJgCvfU7Rh4Q_lMJQR4c2"
+    steps:
+      - name: Execute read-only database ping
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          url = os.environ["SUPABASE_URL"].rstrip("/") + "/rest/v1/rpc/motolink_keepalive_ping_v1"
+          request = urllib.request.Request(
+              url,
+              data=b"{}",
+              method="POST",
+              headers={
+                  "apikey": os.environ["SUPABASE_PUBLISHABLE_KEY"],
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+                  "User-Agent": "MotoLink-GitHubActions-DBHealth/1.0",
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=22) as response:
+                  body = json.load(response)
+                  if response.status != 200 or body.get("ok") is not True or not body.get("server_utc"):
+                      raise ValueError("Unexpected PostgreSQL RPC response")
+                  print("PASS: PostgreSQL answered the read-only keepalive at", body["server_utc"])
+          except Exception as err:
+              print("FAIL: MotoLink Supabase PostgreSQL keepalive did not complete:", type(err).__name__, file=sys.stderr)
+              sys.exit(1)
+          PY
