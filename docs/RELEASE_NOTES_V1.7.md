@@ -6,7 +6,7 @@ La nuova versione migliora la freschezza delle distanze sul TFT attraverso una c
 
 **Firma APK e integrità verificate.** La riduzione effettiva della latenza e il ciclo di riconnessione attendono conferma su moto.
 
-Per note complete, vincoli e hash vedi [note ufficiali](RELEASE_NOTES_V1_7_VC33_OFFICIAL.md) e [master unico R70](MOTOLINK_MASTER_UNICO_CURRENT.md).
+Per note complete, vincoli e hash vedi [note ufficiali](RELEASE_NOTES_V1_7_VC33_OFFICIAL.md).
 
 ---
 
