@@ -77,9 +77,11 @@ jobs:
           gh release download v1.7 --repo "$GITHUB_REPOSITORY" \
             --pattern MotoLink1.7.apk -D /tmp
           echo "c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e  /tmp/MotoLink1.7.apk" | sha256sum -c -
+          git fetch --quiet origin main
+          git show origin/main:docs/RELEASE_NOTES_V1_7_VC33_OFFICIAL.md > /tmp/MotoLink_V1.7_official_notes.md
           gh release edit v1.7 --repo "$GITHUB_REPOSITORY" \
             --title "MotoLink V1.7" \
-            --notes-file docs/RELEASE_NOTES_V1_7_VC33_OFFICIAL.md
+            --notes-file /tmp/MotoLink_V1.7_official_notes.md
 
       - name: Retire obsolete public filenames and superseded prerelease
         env:
