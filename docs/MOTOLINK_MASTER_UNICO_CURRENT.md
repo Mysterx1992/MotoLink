@@ -1,3 +1,57 @@
+# MotoLink V1.x — MASTER UNICO CORRENTE R70
+
+**Aggiornato:** 2026-10-12  
+**Stato:** documento unico autorevole della linea ufficiale MotoLink V1.x.  
+**Revisione:** R70. **R69 preservato integralmente qui sotto**, non riscritto retroattivamente.
+
+> **REGOLA DI PREVALENZA — R70**
+>
+> Lo stato R70 prevale sulle descrizioni precedenti. R69 e gli archivi inferiori sono conservati come storia tecnica e possono citare candidate o release superate. Non confondere pubblicazione software con validazione fisica.
+
+---
+
+# STATO AUTOREVOLE CORRENTE — 2026-10-12 (R70)
+
+## 1. Release pubblica: MotoLink V1.7
+
+- Repository: `Mysterx1992/MotoLink`, branch `main`; Pull Request #15 della vc33 **unita** con merge SHA `3985001051241f6462023171c200d78c96307e08`.
+- Application ID `it.motolink.app`, `versionName 1.7`, `versionCode 33`.
+- **Nome pubblico APK unico per il download principale:** `MotoLink1.7.apk` — https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink1.7.apk
+- Release ufficiale: https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7 — titolo **MotoLink V1.7**; la prerelease precedente è stata ritirata.
+- APK firmata con certificato ufficiale: SHA-256 `c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e`; certificato SHA-256 `9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100`; 73.479.750 byte, firma APK v3 verificata.
+- Pubblicazione e verifica GitHub Actions `38238875788` **SUCCESS**: confronto dei file applicativi con sorgente congelata `c40257232307fb0b5b11f9d9a3403d1e4f187228`, test sintetici, verifica hash esatta, certificato, firma, `versionCode=33`, package e download post-caricamento.
+- Precedente vc32 preservata nella stessa release come `MotoLink_V1.7_VC32_archive.apk` (SHA-256 `ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625`); vc31 archivio già preservata. L'alias pubblico obsoleto `MotoLink_V1.7.apk` è stato ritirato: il nuovo collegamento è **MotoLink1.7.apk**.
+- Il badge grafico RGB opaco della homepage, `docs/images/download-motolink-v17-rgb.png`, resta visivamente invariato: **SCARICA MOTOLINK | V1.7**, con collegamento aggiornato al file corrente. Nessun nuovo badge esterno.
+- File README, note release, CHANGELOG e presente master riflettono la distribuzione attuale.
+
+## 2. Modifiche funzionali portate dalla vc33 in V1.7
+
+- **Coda BLE latest-wins:** il vecchio comportamento accumulava 5 frame `0x6A..0x6E` per ogni distanza. Ora i gruppi non ancora iniziati vengono sostituiti dall'ultimo gruppo valido; il gruppo già in corso completa tutti e cinque i frame senza mescolare manovre. Singola scrittura GATT in volo, `NAV_PACE_MS=100`, heartbeat e formato pacchetti invariati.
+- **Misure temporali interne:** `NAV_GROUP_START` e `NAV_GROUP_COMPLETE` registrano tempo di attesa in coda e intervallo fino all'ultima callback GATT. Non misurano il momento in cui il TFT renderizza l'informazione.
+- **Riconnessione dopo quadro OFF/ON:** al termine di una scansione da 6,5s senza dispositivo, la sessione BLE esplicita resta in attesa e ripete le scansioni dopo 2,5/5/10/15 secondi; STOP invalida i retry. Dopo un READY iniziale la modalità automatica non devia verso Hotspot/QR a seguito del solo spegnimento del quadro; il fallback iniziale pre-READY è preservato.
+- Stato connesso solo dopo verifica GATT/heartbeat; riaggancio senza rilanciare Google Maps; i frame obsoleti vengono rimossi durante il recovery.
+- Non modificati: parser Google Maps russo, classificazione manovre, rotonde, codifica VOGE, servizio UUID, EasyConn, H264, MediaProjection, Modalità tasca, profili e grafica principale. Osmand/OsmAnd non è una sorgente di navigazione attiva nella versione corrente.
+
+## 3. Evidenze del tester russo e rischi ancora aperti
+
+- VOGE Valico 625 DSX: il tester ha riferito che la navigazione vc32 funziona anche con schermo telefono spento, che le rotonde funzionano e che il TFT rimaneva indietro rispetto alle distanze di Maps.
+- Log `MotoLink_Log_20261012_093513.txt`: 1.541 righe; **194** istruzioni accettate, **166** aggiornamenti BLE accodati, **48** aggiornamenti di rotonda (41 BLE accodati), **23** `distanceMissing=true`, **28** istruzioni senza invio per canale TFT non verificato. Sono aggiornamenti, non manovre uniche.
+- Esempio di latenza sorgente: RIGHT 90m alle 09:23:32, 80m alle 09:23:34, 70m alle 09:23:36, 60m alle 09:23:37, 50m alle 09:23:39. Il log mostra ricezione e accodamento, non l'orario di visualizzazione sul TFT.
+- **Validazione fisica della nuova versione ancora PENDING:** controllare sul TFT se il ritardo Maps→TFT diminuisce, confermare rotonde e manovre, quadro OFF per alcuni minuti e ON senza secondo START, STOP senza ulteriori tentativi, assenza di dati vecchi dopo il reattach.
+- I gate Android CI, regressione sintetica e firma sono **PASS**. La pubblicazione è stata eseguita su richiesta dell'utente prima di completare il nuovo test sulla moto; questa distinzione va sempre riportata e non deve essere trasformata in un PASS fisico inventato.
+
+## 4. Regole e prossimo gate
+
+- La versione distribuita è V1.7 vc33; non chiamarla TEST nel README, nel pulsante, nel titolo della release o nel nome della APK principale.
+- Conservare in master la cronologia storica e gli SHA; non alterare le prove vc32 e non dichiarare ancora certificata la latenza o la riconnessione fisica.
+- Non introdurre stime di distanza in assenza di dati reali Google Maps. Non interrompere un gruppo NAV avviato e non modificare il protocollo o il BLE write type senza una diagnosi isolata.
+- Non esporre chiavi private, password o Secrets; mantenere il controllo server/repository sui file firmati.
+- **Prossima prova su strada:** una sessione con Google Maps russo, tratto con distanze ravvicinate, rotonda reale e spegnimento quadro ≥2 minuti, riaccensione senza STOP/START; raccogliere log più video o tempi TFT sincronizzati. Prova solo a veicolo fermo o con passeggero che osserva il display; il conducente non deve usare il telefono.
+
+---
+
+# ARCHIVIO INTEGRALE — R69 (STATO STORICO; PREVALE R70)
+
 # MotoLink V1.x — MASTER UNICO CORRENTE R69
 
 **Aggiornato:** 2026-10-12

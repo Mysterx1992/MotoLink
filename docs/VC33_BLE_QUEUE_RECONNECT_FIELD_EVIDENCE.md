@@ -1,10 +1,8 @@
-# MotoLink V1.7 vc33 — BLE latest-wins and ignition reconnect
+# MotoLink V1.7 — BLE latest-wins e riconnessione (evidenze tecniche)
 
-**Status:** candidate only — NOT a publicly released APK.
+**Stato corrente (2026-10-12):** codice vc33 integrato in `main`, APK `MotoLink1.7.apk` firmata e pubblicata nella release principale v1.7. SHA-256 `c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e`; conferma fisica delle nuove ottimizzazioni ancora attesa.
 
-**Current stable:** MotoLink V1.7 vc32, released in `v1.7`, SHA-256 `ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625`. The homepage button must continue downloading that officially signed APK until the vc33 gate is complete.
-
-**Source:** `feature/v17-vc33-ble-latest-wins-reconnect`; PR #15; `versionCode 33`, `versionName 1.7`; unchanged `it.motolink.app`.
+**Archivio precedente:** vc32 SHA-256 `ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625` preservata nella release. Le note originali di indagine qui sotto rimangono come base diagnostica precedente alla promozione.
 
 ## Field findings — Russian VOGE Valico 625 DSX
 

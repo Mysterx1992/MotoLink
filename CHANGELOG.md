@@ -1,5 +1,20 @@
 # Changelog MotoLink
 
+## V1.7 · versionCode 33 — 2026-10-12
+
+- Nuova release principale: `MotoLink1.7.apk`, firma ufficiale invariata e package `it.motolink.app`.
+- Gestione BLE *latest-wins*: mantiene integra la navigazione già in volo e sostituisce gli aggiornamenti ancora in coda con i più recenti.
+- Riconnessione dopo spegnimento del quadro con scansioni ripetute e intervalli progressivi; STOP interrompe i retry.
+- Telemetria di ritardo coda e callback GATT; parser Maps, rotonde, protocollo VOGE, mirroring e Modalità tasca preservati.
+- Convalidati build CI, regressione sintetica, firma v3, hash e versione. **Verifica fisica dei nuovi comportamenti ancora da completare**.
+- Precedente vc32 disponibile in archivio.
+
+## V1.7 · versionCode 32 — 2026-10-11
+
+- Supporto e diagnosi delle notifiche di Google Maps in russo.
+- Conferma fisica delle frecce e feedback positivo sulle rotonde da tester VOGE Valico 625 DSX.
+- Navigazione con schermo smartphone spento confermata dal tester.
+
 ## V1.6 vc28 — 2026-09-25
 
 ### Recovery rete/TFT completo

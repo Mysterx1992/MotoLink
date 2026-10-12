@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink1.7.apk">
     <img src="docs/images/download-motolink-v17-rgb.png" alt="Scarica MotoLink V1.7 APK" height="34">
   </a>
   &nbsp;
@@ -23,47 +23,34 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.7 · vc32
+## 🆕 MotoLink V1.7
 
-MotoLink **V1.7 vc32** aggiunge l'interfaccia multilingua automatica e migliora la navigazione Google Maps sui telefoni impostati in russo, mantenendo il recovery TFT/EasyConn e la Modalità tasca già consolidati. La vc32 include inoltre la diagnostica estesa delle notifiche Google Maps, senza modificare il protocollo BLE o il parser già funzionante.
+La versione ufficiale **MotoLink V1.7** introduce una navigazione BLE più reattiva e la riconnessione automatica dopo lo spegnimento e la riaccensione del quadro. Mantiene le funzionalità di mirroring e il supporto multilingua già disponibili.
 
-### Novità V1.7
+### Novità e miglioramenti
 
-- Lingua dell'interfaccia automatica in base alla lingua del telefono.
-- Traduzioni complete in Italiano, English, Русский e 中文; fallback inglese per le altre lingue.
-- Guida iniziale e avviso di sicurezza tradotti.
-- Google Maps: supporto alle notifiche russe, comprese unità cirilliche м/км, spazi Unicode, tempi e principali manovre testuali.
-- Navigazione BLE turn-by-turn migliorata sui telefoni in russo, inclusa VOGE Valico 625 DSX.
-- Reader Google Maps esteso a `EXTRA_TEXT_LINES`, viste compatte/estese/heads-up e accessibility text.
-- Rotonde migliorate su tutte le lingue con riconoscimento visivo language-agnostic e codifica VOGE di settore/direzione d'uscita.
-- Diagnostica Maps privacy-safe per identificare i campi realmente esposti senza salvare strade o destinazioni.
-- Il tasto Versione App mostra soltanto gli aggiornamenti della V1.7.
-- Recovery vc28, MediaProjection, H264 e Modalità tasca preservati.
+- **Distanze Google Maps più aggiornate sul TFT:** coda BLE con gestione *latest-wins*, che sostituisce i pacchetti di navigazione ancora in attesa con quelli dell'ultima istruzione valida, senza interrompere una sequenza già iniziata.
+- **Riconnessione Bluetooth automatica:** in caso di perdita del TFT, MotoLink ripete le scansioni BLE con pause progressive e mantiene la sessione START; STOP arresta i tentativi.
+- **Ripristino della navigazione senza nuovo START:** dopo il riaggancio e la verifica GATT/heartbeat, le nuove manovre possono riprendere senza riaprire Google Maps.
+- **Diagnostica dei ritardi BLE:** registrazione dei tempi di coda e di completamento della trasmissione GATT.
+- Interfaccia automatica in Italiano, English, Русский e 中文, con fallback inglese.
+- Navigazione Google Maps in russo, comprese le distanze м/км e il riconoscimento delle manovre.
+- Navigazione VOGE turn-by-turn e gestione delle rotonde: funzionamento riferito dal tester russo su Valico 625 DSX.
+- Mirroring EasyConn/H264, MediaProjection, Modalità tasca e protocollo VOGE mantenuti.
 
 ---
 
 ## Scarica MotoLink
 
-**[⬇️ Scarica direttamente MotoLink V1.7 vc32 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7.apk)**
+**[⬇️ Scarica direttamente MotoLink1.7.apk](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink1.7.apk)**
 
-Versione APK pubblica stabile: **MotoLink V1.7 vc32** · `versionCode 32`  
-Package: `it.motolink.app`
+**Versione corrente:** MotoLink V1.7 · `versionCode 33` · `versionName 1.7`  
+**Package:** `it.motolink.app`  
+**SHA-256:** `c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e`  
+**Release:** https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7  
+**Master unico:** [Stato e storico del progetto](docs/MOTOLINK_MASTER_UNICO_CURRENT.md)
 
-### Nuova vc33 — prova BLE (versione TEST, non ancora stabile)
-
-**[⬇️ Scarica direttamente MotoLink V1.7 vc33 TEST — APK firmata](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7-vc33-test/MotoLink_V1.7_VC33_TEST_OFFICIAL_SIGNED.apk)**
-
-- `versionCode 33`, `versionName 1.7`, stessa firma ufficiale della vc32.
-- Coda BLE ottimizzata: gli aggiornamenti Maps obsoleti ancora in attesa vengono sostituiti dall'ultimo, senza interrompere i cinque frame di un gruppo già iniziato.
-- Riconnessione BLE automatica dopo quadro moto OFF/ON, con scansioni a intervalli controllati e senza nuovo START; STOP cancella i retry.
-- Reattach BLE senza riaprire Google Maps.
-- [Release vc33 TEST](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7-vc33-test) · [Pull Request #15](https://github.com/Mysterx1992/MotoLink/pull/15) · [Master unico R69](docs/MOTOLINK_MASTER_UNICO_CURRENT.md).
-- **Prova fisica vc33 ancora da confermare sulla moto.** Il pulsante principale `SCARICA MOTOLINK | V1.7` continua volutamente a scaricare la vc32 stabile finché questo test non avrà esito positivo. Non utilizzare il telefono mentre si guida.
-
-
-Release: https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7
-
-**Build ufficiale vc32 verificata:** il pulsante e il file `MotoLink_V1.7.apk` scaricano la medesima APK firmata utilizzata nei test reali della VOGE Valico 625 DSX. SHA-256: `ad30dac38b9d0174d0b6422d92b167b6293a8e26196ea5ca7b3c1a6566429625`. La vc31 resta disponibile come [archivio](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink_V1.7_VC31_archive.apk). **Limiti ancora in test:** riconnessione automatica BLE dopo lo spegnimento del quadro e conferma fisica delle uscite di rotonda. Nessuna funzione vc33 è inclusa nella vc32.
+La compilazione, la firma ufficiale e le verifiche software sono state completate. **La riduzione effettiva della latenza sul TFT e la riconnessione quadro OFF/ON richiedono ancora la conferma sulla moto**: non sono risultati già misurati su strada. La versione precedente è conservata come archivio nella release.
 
 ---
 

@@ -1,3 +1,17 @@
+# MotoLink V1.7 — release ufficiale
+
+**Versione corrente:** `1.7` (`versionCode 33`) — download principale: [MotoLink1.7.apk](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink1.7.apk).
+
+La nuova versione migliora la freschezza delle distanze sul TFT attraverso una coda BLE che sostituisce gli aggiornamenti superati; tenta inoltre il ricollegamento automatico dopo lo spegnimento del quadro e mantiene STOP come arresto definitivo dei tentativi. Rimangono invariati il supporto multilingua e in russo, il riconoscimento delle rotonde, il protocollo VOGE e le funzioni di mirroring.
+
+**Firma APK e integrità verificate.** La riduzione effettiva della latenza e il ciclo di riconnessione attendono conferma su moto.
+
+Per note complete, vincoli e hash vedi [note ufficiali](RELEASE_NOTES_V1_7_VC33_OFFICIAL.md) e [master unico R70](MOTOLINK_MASTER_UNICO_CURRENT.md).
+
+---
+
+## Note storiche del primo rilascio V1.7 (conservate integralmente)
+
 # MotoLink 1.7
 
 MotoLink 1.7 è l'aggiornamento ufficiale successivo alla V1.6/vc28.
