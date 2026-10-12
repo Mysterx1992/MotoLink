@@ -1,0 +1,23 @@
+name: Remove internal master from public repository
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/remove-internal-master.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove private document from public main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm --ignore-unmatch docs/MOTOLINK_MASTER_UNICO_CURRENT.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "privacy: remove internal project master from public tree"
+          git push origin HEAD:main
