@@ -77,6 +77,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onAssistantWhatsAppClick: (() -> Unit)? = null
     var onIntroToggleClick: (() -> Unit)? = null
     var onAdaptationClick: (() -> Unit)? = null
+    var onWifiRecoveryClick: (() -> Unit)? = null
     var onVersionClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
@@ -1161,7 +1162,8 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         bodyHost.addView(settingCard(IconKind.BOOK, "Guida iniziale", "Mostra la guida completa alla prossima apertura.", guideNextLaunchEnabled, true) { onGuideClick?.invoke() }, lp(58f, 600f, 824f, 185f))
         bodyHost.addView(settingCard(IconKind.WALLPAPER, "Sfondo", "Cambia lo sfondo in base alla moto collegata.", dynamicBackgroundEnabled, true) { onBackgroundToggleClick?.invoke() }, lp(58f, 805f, 824f, 170f))
         bodyHost.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 995f, 824f, 175f))
-        bodyHost.addView(versionCard(), lp(58f, 1190f, 824f, 145f))
+        bodyHost.addView(settingCard(IconKind.GEAR, "Ripristino Wi-Fi", "Trofeo 500 · ripristino manuale hotspot", false, false) { onWifiRecoveryClick?.invoke() }, lp(58f, 1180f, 824f, 150f))
+        bodyHost.addView(versionCard(), lp(58f, 1340f, 824f, 145f))
     }
 
     private fun settingCard(kind: IconKind, title: String, desc: String, enabled: Boolean, toggle: Boolean, click: () -> Unit): View {

@@ -10,11 +10,11 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "it.motolink.app"
+        applicationId = "it.motolink.app.recoverylab"
         minSdk = 29
         targetSdk = 36
-        versionCode = 33
-        versionName = "1.7"
+        versionCode = 34
+        versionName = "1.7-recoverylab"
     }
 
     buildTypes {

@@ -58,3 +58,10 @@ Se il TFT cambia temporaneamente modalità mentre la rete della moto resta dispo
 ## Sicurezza durante la guida
 
 Configura profili, app, permessi e regolazioni a veicolo fermo. Non interagire con lo smartphone in modo da distrarti dalla guida.
+
+
+## Impostazioni — Ripristino Wi-Fi (Trofeo 500)
+
+Solo se la moto non riesce più a collegarsi all'hotspot del telefono, da fermo, apri **Impostazioni → Ripristino Wi-Fi**. Conferma **SÌ**, lascia acceso l'hotspot del telefono e premi **AVVIA**. MotoLink esegue la diagnostica Bluetooth Classic/SDP, BLE/GATT senza scritture e scansione Wi-Fi. CHIUDI interrompe il recupero. Non è necessario inserire password dell'hotspot nel diagnostico.
+
+**Diagnostica completata non significa connessione ripristinata.** Controlla sul TFT il simbolo Wi-Fi e la connessione reale. La funzione non si avvia durante una sessione START di mirroring.

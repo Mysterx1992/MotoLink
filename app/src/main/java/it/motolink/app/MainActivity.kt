@@ -212,6 +212,7 @@ class MainActivity : Activity() {
             onGuideClick = { toggleGuideSetting() }
             onBackgroundToggleClick = { toggleDynamicBackgroundSetting() }
             onAdaptationClick = { toggleAdaptationSetting() }
+            onWifiRecoveryClick = { showWifiRecoveryPrompt() }
             onVersionClick = { showInstalledReleaseNotes() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
@@ -2690,6 +2691,79 @@ class MainActivity : Activity() {
                 }
             }
         )
+    }
+
+
+    private var wifiRecoveryLab: TrofeoWifiRecovery? = null
+
+    private fun showWifiRecoveryPrompt() {
+        if (wifiRecoveryLab != null) return
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Ripristino Wi-Fi · Trofeo 500")
+            .setMessage("Usa questa funzione solo se il TFT non si collega all'hotspot del telefono. Le scansioni possono interrompere temporaneamente le connessioni wireless. Utilizzala a moto ferma. Continuare?")
+            .setNegativeButton("NO", null)
+            .setPositiveButton("SÌ") { _, _ -> showWifiRecoveryDialog() }
+            .show()
+    }
+
+    private fun showWifiRecoveryDialog() {
+        if (runSelection == RunSelection.START) {
+            android.app.AlertDialog.Builder(this).setTitle("Interrompi prima il mirroring")
+                .setMessage("Premi STOP nella Home prima di procedere.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        val column = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 30, 40, 16)
+        }
+        val description = TextView(this).apply {
+            text = "Telefono = hotspot • Trofeo 500 = client Wi-Fi. Mantieni l'hotspot acceso. Il recupero controlla Bluetooth Classic, SDP, BLE/GATT e Wi-Fi senza modificare le credenziali."
+            textSize = 15f
+        }
+        val ssid = EditText(this).apply { hint = "SSID hotspot del telefono (facoltativo)"; setSingleLine(true) }
+        val progress = TextView(this).apply { text = "Pronto per avviare."; textSize = 15f; setPadding(0,20,0,12) }
+        column.addView(description)
+        column.addView(ssid)
+        column.addView(progress)
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("Recupero Wi-Fi Trofeo 500")
+            .setView(column)
+            .setNegativeButton("CHIUDI") { _, _ -> wifiRecoveryLab?.stop(); wifiRecoveryLab = null }
+            .setPositiveButton("AVVIA", null).create()
+        dialog.setOnDismissListener { wifiRecoveryLab?.stop(); wifiRecoveryLab = null }
+        dialog.setOnShowListener {
+            val button = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+            button.setOnClickListener {
+                val adapter = getSystemService(android.bluetooth.BluetoothManager::class.java)?.adapter
+                val allowed = Build.VERSION.SDK_INT < 31 ||
+                    (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+                     checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+                if (adapter?.isEnabled != true || !allowed) {
+                    progress.text = "Attiva Bluetooth e concedi Dispositivi nelle vicinanze, poi riprova."
+                    return@setOnClickListener
+                }
+                if (wifiRecoveryLab != null) return@setOnClickListener
+                button.isEnabled = false
+                val worker = TrofeoWifiRecovery(this, ssid.text.toString().trim()) { status, done ->
+                    runOnUiThread {
+                        if (!dialog.isShowing) return@runOnUiThread
+                        progress.text = status
+                        if (done) {
+                            wifiRecoveryLab = null
+                            button.isEnabled = true
+                            button.text = "RIPROVA"
+                            android.app.AlertDialog.Builder(this).setTitle("Diagnostica completata")
+                                .setMessage("Verifica il simbolo Wi-Fi sul TFT e che la Trofeo 500 sia collegata all'hotspot. Nessun successo viene dichiarato senza conferma del collegamento.")
+                                .setPositiveButton("OK", null).show()
+                        }
+                    }
+                }
+                wifiRecoveryLab = worker
+                worker.start()
+            }
+        }
+        dialog.show()
     }
 
     private fun bikeCatalogOptions(): List<String> = listOf(
