@@ -58,3 +58,22 @@ Se il TFT cambia temporaneamente modalità mentre la rete della moto resta dispo
 ## Sicurezza durante la guida
 
 Configura profili, app, permessi e regolazioni a veicolo fermo. Non interagire con lo smartphone in modo da distrarti dalla guida.
+
+## Impostazioni — Ripristino Wi-Fi (VOGE Trofeo 500)
+
+**Usalo solo a moto ferma e quando il TFT non riesce più a collegarsi all'hotspot del telefono.** Nella Trofeo 500 il telefono crea la rete Wi-Fi, mentre il TFT si collega automaticamente come client.
+
+1. Apri **Impostazioni → Ripristino Wi-Fi**. Leggi l'avviso e premi **SÌ** per procedere, oppure **NO** per annullare.
+2. Assicurati che hotspot e Bluetooth siano accesi. Ferma prima il mirroring MotoLink con STOP.
+3. Di norma lascia SSID e password vuoti: la richiesta Android client→rete del secondo pulsante della vecchia diagnostica è nella direzione opposta rispetto alla connessione TFT→hotspot. Inserisci quelle credenziali solo se il TFT mostra esplicitamente una rete da associare dal telefono.
+4. Premi **AVVIA**. MotoLink avvia ricerca Bluetooth Classic, interrogazione SDP, scansione BLE e, se trova un dispositivo VOGE, discovery GATT di sola lettura. Esegue anche una scansione Wi-Fi del telefono. Con SSID/password compilati richiede inoltre un'associazione Wi-Fi temporanea ad Android.
+5. Al termine verifica il simbolo Wi-Fi sul TFT e che la moto si sia collegata all'hotspot. Premi **VERIFICA RISULTATO SUL TFT**: rispondi **SÌ** solo se la connessione funziona. Il messaggio **Successo!** rappresenta una conferma fornita dall'utente, non una lettura diretta del TFT.
+6. Se non funziona, seleziona **NO** e condividi il log tramite **Supporto → Log**. Non ripetere la procedura durante la guida.
+
+Il recupero non cambia SSID o password dell'hotspot e non scrive sulle caratteristiche GATT della moto. La password inserita per il test non viene registrata nel log. Può tuttavia disturbare temporaneamente le connessioni wireless.
+
+Questa funzione è sperimentale: sono stati riferiti due recuperi Wi-Fi dopo l'uso della diagnostica originale, ma l'operazione specifica responsabile non è stata ancora isolata.
+
+### APK laboratorio
+
+L'APK di laboratorio è un'app separata con package Android it.motolink.app.recoverylab, firmata con certificato debug. Può essere installata accanto alla V1.7 ufficiale senza sostituirla. I dati delle due app sono separati.
