@@ -47,6 +47,16 @@ Adattamento permette di correggere manualmente come il contenuto viene mostrato 
 - **Adattamento OFF** significa editor chiuso: non annulla la geometria di base né le regolazioni personali salvate.
 - Usa **Ripristina** solo quando vuoi tornare alla geometria di base prevista per il profilo.
 
+## Impostazioni — Ripristino Wi-Fi Trofeo 500
+
+Usa **Ripristino Wi-Fi** soltanto quando il TFT VOGE Trofeo 500 non riesce a collegarsi all'hotspot del telefono. La moto è client Wi-Fi; il telefono crea l'hotspot. Non serve conoscere o inserire la password della rete nell'app diagnostica.
+
+A veicolo fermo apri **Impostazioni → Ripristino Wi-Fi**, leggi l'avviso e premi **SÌ**; nella finestra successiva premi **AVVIA**. MotoLink prova la scansione Bluetooth Classic/SDP, ricerca BLE, discovery GATT senza inviare comandi e una scansione diagnostica Wi-Fi. Il vecchio tentativo di collegare il telefono come client a una presunta rete TFT non viene eseguito, perché potrebbe interferire con l'hotspot reale.
+
+La sequenza dura indicativamente meno di un minuto. Non interrompe intenzionalmente né modifica hotspot, password o profili. Attendi la fine, controlla il simbolo Wi-Fi sul TFT e scegli **HO VISTO IL WI-FI** soltanto se realmente presente. La conferma è dell'utente; l'app non può certificare automaticamente che il TFT abbia completato l'associazione all'hotspot. Se il problema persiste condividi il log da Supporto.
+
+Non eseguire la diagnostica durante una sessione MotoLink/Google Maps già connessa. Questo è uno strumento sperimentale: due utenti hanno riferito un recupero dopo l'uso della vecchia diagnostica, ma il meccanismo non è ancora stato isolato.
+
 ## Impostazioni — VERSIONE
 
 Tocca **VERSIONE** per vedere le novità e i bugfix della versione MotoLink installata. Le informazioni sono disponibili localmente e non richiedono Internet.
