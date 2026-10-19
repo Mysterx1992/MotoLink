@@ -1,0 +1,51 @@
+name: Build Trofeo 500 Wi-Fi Recovery Lab APK
+on:
+  push:
+    branches: ["experiment/trofeo500-wifi-recovery-apk"]
+    paths:
+      - ".github/workflows/trofeo500-wifi-recovery-lab.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Android 36
+        run: |
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile independently installable lab APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+      - name: Verify package and rename
+        run: |
+          set -euo pipefail
+          SRC=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$SRC"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$SRC" | tee /tmp/badging.txt
+          grep -q "package: name='it.motolink.app.recoverylab'" /tmp/badging.txt
+          grep -q "versionCode='34'" /tmp/badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$SRC"
+          cp "$SRC" MotoLink1.7_Trofeo500_Recovery_Lab.apk
+          sha256sum MotoLink1.7_Trofeo500_Recovery_Lab.apk | tee MotoLink1.7_Trofeo500_Recovery_Lab.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink1.7_Trofeo500_Recovery_Lab
+          path: |
+            MotoLink1.7_Trofeo500_Recovery_Lab.apk
+            MotoLink1.7_Trofeo500_Recovery_Lab.sha256
+          retention-days: 7
+          if-no-files-found: error
