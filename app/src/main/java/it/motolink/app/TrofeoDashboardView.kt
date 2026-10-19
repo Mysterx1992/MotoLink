@@ -78,6 +78,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onIntroToggleClick: (() -> Unit)? = null
     var onAdaptationClick: (() -> Unit)? = null
     var onVersionClick: (() -> Unit)? = null
+    var onTrofeoWifiRecoveryClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
     var onCreditsDonateClick: (() -> Unit)? = null
@@ -177,6 +178,12 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             title = "IMPOSTAZIONI · Adattamento",
             body = "ATTIVAZIONE\nADATTAMENTO serve ad aprire l’editor. La base display approvata resta applicata automaticamente anche con l’interruttore OFF.\n\nREGOLAZIONE\n↑ ↓ ← → regolano i quattro bordi di 5 px. + allarga e − restringe. Le modifiche vengono salvate per la moto attiva e per orientamento.\n\nCHIUSURA\n× conclude la regolazione, chiude il pannello e porta automaticamente l’interruttore su OFF. La personalizzazione rimane applicata nelle sessioni successive e non viene azzerata.\n\nRIPRISTINO\n↺ Ripristina richiede due conferme e torna ai valori iniziali approvati dell’app per quell’orientamento.",
             target = GuideTarget(58f, 995f, 824f, 175f)
+        ),
+        GuideStep(
+            Page.SETTINGS,
+            title = "IMPOSTAZIONI · Ripristino Wi-Fi",
+            body = "Solo VOGE Trofeo 500 con problemi di collegamento all'hotspot del telefono.\n\nA moto ferma apri Ripristino Wi-Fi, accetta l'avviso e premi AVVIA: MotoLink esegue diagnosi Bluetooth e Wi-Fi, senza modificare password o hotspot.\n\nLa moto è client Wi-Fi, il telefono è hotspot. Controlla sul TFT se il simbolo è tornato. Il successo non viene dichiarato automaticamente senza verifica.",
+            target = GuideTarget(58f, 1010f, 824f, 164f)
         ),
         GuideStep(
             Page.SETTINGS,
@@ -1155,13 +1162,15 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     // -----------------------------------------------------------------------------------------
 
     private fun buildSettings() {
-        bodyHost.addView(sectionTitle("Impostazioni"), lp(58f, 35f, 824f, 125f))
-        bodyHost.addView(settingCard(IconKind.POCKET, "Modalità tasca", "Disattiva schermo e comandi per evitare tocchi accidentali.", pocketModeEnabled, true) { onPocketModeClick?.invoke() }, lp(58f, 190f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.PLAY, "Animazione iniziale", "Riproduci l’animazione di apertura dell’app.", introEnabled, true) { onIntroToggleClick?.invoke() }, lp(58f, 395f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.BOOK, "Guida iniziale", "Mostra la guida completa alla prossima apertura.", guideNextLaunchEnabled, true) { onGuideClick?.invoke() }, lp(58f, 600f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.WALLPAPER, "Sfondo", "Cambia lo sfondo in base alla moto collegata.", dynamicBackgroundEnabled, true) { onBackgroundToggleClick?.invoke() }, lp(58f, 805f, 824f, 170f))
-        bodyHost.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 995f, 824f, 175f))
-        bodyHost.addView(versionCard(), lp(58f, 1190f, 824f, 145f))
+        // Compact rows permit a recovery control without hiding Versione.
+        bodyHost.addView(sectionTitle("Impostazioni"), lp(58f, 26f, 824f, 115f))
+        bodyHost.addView(settingCard(IconKind.POCKET, "Modalità tasca", "Disattiva schermo e comandi per evitare tocchi accidentali.", pocketModeEnabled, true) { onPocketModeClick?.invoke() }, lp(58f, 160f, 824f, 164f))
+        bodyHost.addView(settingCard(IconKind.PLAY, "Animazione iniziale", "Riproduci l’animazione di apertura dell’app.", introEnabled, true) { onIntroToggleClick?.invoke() }, lp(58f, 330f, 824f, 164f))
+        bodyHost.addView(settingCard(IconKind.BOOK, "Guida iniziale", "Mostra la guida completa alla prossima apertura.", guideNextLaunchEnabled, true) { onGuideClick?.invoke() }, lp(58f, 500f, 824f, 164f))
+        bodyHost.addView(settingCard(IconKind.WALLPAPER, "Sfondo", "Cambia lo sfondo in base alla moto collegata.", dynamicBackgroundEnabled, true) { onBackgroundToggleClick?.invoke() }, lp(58f, 670f, 824f, 164f))
+        bodyHost.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 840f, 824f, 164f))
+        bodyHost.addView(settingCard(IconKind.GEAR, "Ripristino Wi-Fi", "Solo Trofeo 500 · Diagnosi per hotspot che non si collega.", false, false) { onTrofeoWifiRecoveryClick?.invoke() }, lp(58f, 1010f, 824f, 164f))
+        bodyHost.addView(versionCard(), lp(58f, 1180f, 824f, 145f))
     }
 
     private fun settingCard(kind: IconKind, title: String, desc: String, enabled: Boolean, toggle: Boolean, click: () -> Unit): View {
