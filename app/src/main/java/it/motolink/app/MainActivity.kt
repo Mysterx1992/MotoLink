@@ -53,6 +53,7 @@ class MainActivity : Activity() {
         private const val REQ_QR_INTERNAL = 7006
         private const val REQ_QR_CAMERA_PERMISSION = 7007
         private const val REQ_BLE_NAV_PERMISSION = 7008
+        private const val REQ_TROFEO_WIFI_RECOVERY = 7009
         private const val PREF_INTRO_ENABLED = "v1_intro_enabled"
         private const val PREF_DYNAMIC_BACKGROUND_ENABLED = "v1_dynamic_background_enabled"
         private const val QR_MDNS_FALLBACK_MS = 6_000L
@@ -90,6 +91,7 @@ class MainActivity : Activity() {
 
     private lateinit var dashboard: TrofeoDashboardView
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var trofeoWifiRecovery: Trofeo500WifiRecovery? = null
     private var startInProgress = false
     private var runSelection = RunSelection.NONE
 
@@ -213,6 +215,7 @@ class MainActivity : Activity() {
             onBackgroundToggleClick = { toggleDynamicBackgroundSetting() }
             onAdaptationClick = { toggleAdaptationSetting() }
             onVersionClick = { showInstalledReleaseNotes() }
+            onTrofeoWifiRecoveryClick = { confirmTrofeoWifiRecovery() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
             onCreditsDonateClick = { openPayPalDonation() }
@@ -1857,6 +1860,12 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_TROFEO_WIFI_RECOVERY) {
+            val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (granted) showTrofeoRecoveryStart()
+            else NeonDialogs.showInfo(this, "Ripristino Wi-Fi", "Per eseguire la diagnostica devi autorizzare la ricerca Bluetooth nelle impostazioni Android.")
+            return
+        }
         if (requestCode == REQ_BLE_NAV_PERMISSION) {
             val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             if (granted) {
@@ -3473,6 +3482,129 @@ class MainActivity : Activity() {
         }
     }
 
+    // Trofeo 500: manually requested radio diagnostic, entirely separate from START.
+    private fun confirmTrofeoWifiRecovery() {
+        if (runSelection == RunSelection.START || startInProgress || recoveryActive ||
+            VogeBleNavigationManager.isReady || trofeoWifiRecovery != null) {
+            NeonDialogs.showInfo(this, "Ripristino Wi-Fi",
+                "Termina prima la sessione MotoLink con STOP: per sicurezza non eseguo scansioni diagnostiche durante una connessione in corso.")
+            return
+        }
+        NeonDialogs.showConfirm(
+            activity = this,
+            title = "Ripristino Wi-Fi Trofeo 500",
+            message = "Usa questa funzione SOLO se la VOGE Trofeo 500 non riesce a collegarsi all'hotspot del telefono.\n\n" +
+                "La procedura esegue una ricerca Bluetooth e controlli Wi-Fi che possono disturbare temporaneamente la radio del telefono. " +
+                "Non cambia password, non invia comandi al TFT e non spegne l'hotspot.\n\n" +
+                "Eseguila esclusivamente a moto ferma.\n\nContinuare?",
+            positiveText = "SÌ",
+            negativeText = "NO",
+            onPositive = { requestTrofeoRecoveryPermissions() }
+        )
+    }
+
+    private fun requestTrofeoRecoveryPermissions() {
+        val missing = Trofeo500WifiRecovery.requiredPermissions()
+            .filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+        if (missing.isNotEmpty()) {
+            requestPermissions(missing.toTypedArray(), REQ_TROFEO_WIFI_RECOVERY)
+        } else {
+            showTrofeoRecoveryStart()
+        }
+    }
+
+    private fun showTrofeoRecoveryStart() {
+        val input = EditText(this).apply {
+            hint = "SSID hotspot del telefono (facoltativo)"
+            setSingleLine(true)
+            setText("VOGE-36f")
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.GRAY)
+            setPadding(12, 12, 12, 12)
+            background = NeonDialogs.rounded("#0A140D", "#2A7A28", 1, 12, this@MainActivity)
+        }
+        val info = TextView(this).apply {
+            text = "VOGE TROFEO 500\n\nIl TELEFONO crea l'hotspot; la MOTO si collega come client.\n\n" +
+                "Controlla che l'hotspot sia acceso. L'SSID qui è solo un riferimento visivo: " +
+                "non serve la password e MotoLink non cambia il nome della rete.\n\n" +
+                "AVVIA esegue in sequenza diagnosi Bluetooth Classic/SDP, BLE/GATT e verifica radio Wi-Fi."
+            textSize = 15f
+            setTextColor(Color.WHITE)
+            setPadding(8, 8, 8, 12)
+        }
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(info)
+            addView(input)
+        }
+        NeonDialogs.showCustom(
+            activity = this,
+            title = "Ripristino Wi-Fi",
+            contentView = layout,
+            positiveText = "AVVIA",
+            negativeText = "ANNULLA",
+            onPositive = {
+                // No credentials are retained or logged.
+                val ssidProvided = input.text?.isNotBlank() == true
+                AppLog.add("TROFEO500 WIFI RECOVERY: avvio volontario; SSID indicato=" + ssidProvided)
+                startTrofeoRecoveryRun()
+            }
+        )
+    }
+
+    private fun startTrofeoRecoveryRun() {
+        if (runSelection == RunSelection.START || startInProgress ||
+            VogeBleNavigationManager.isReady || trofeoWifiRecovery != null) return
+        val status = TextView(this).apply {
+            text = "Preparazione diagnostica…\n"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setPadding(10, 10, 10, 10)
+        }
+        var finished = false
+        val session = Trofeo500WifiRecovery(
+            context = this,
+            onStatus = { line ->
+                runOnUiThread {
+                    val prev = status.text.toString().takeLast(1100)
+                    status.text = prev + "\n• " + line
+                }
+            },
+            onFinished = {
+                runOnUiThread {
+                    finished = true
+                    status.append("\n\nOperazioni concluse. Controlla se l'icona Wi-Fi è comparsa sul TFT.")
+                }
+            }
+        )
+        trofeoWifiRecovery = session
+        val dialog = NeonDialogs.showCustom(
+            activity = this,
+            title = "Recupero Trofeo 500",
+            message = "Mantieni l'hotspot del telefono acceso. Non interagire con la moto durante la diagnosi.",
+            contentView = status,
+            positiveText = "HO VISTO IL WI-FI",
+            negativeText = "CHIUDI",
+            onPositive = {
+                if (finished) {
+                    NeonDialogs.showInfo(this, "Wi-Fi ripristinato",
+                        "Hai confermato che il simbolo Wi-Fi è tornato sul TFT. " +
+                        "Per verificare la piena connessione, prova il normale START di MotoLink.")
+                    AppLog.add("TROFEO500 WIFI RECOVERY: successo dichiarato dall'utente; non verificato automaticamente dal TFT.")
+                } else {
+                    NeonDialogs.showInfo(this, "Recupero non concluso",
+                        "La diagnostica è stata interrotta prima della fine. Riprova se necessario.")
+                }
+            },
+            onNegative = { AppLog.add("TROFEO500 WIFI RECOVERY: finestra chiusa dall'utente") }
+        )
+        dialog.setOnDismissListener {
+            session.cancel()
+            if (trofeoWifiRecovery === session) trofeoWifiRecovery = null
+        }
+        session.start()
+    }
+
     private fun openPayPalDonation() {
         val donationUrl = "https://www.paypal.com/donate/?hosted_button_id=N7BM2VCKWWKNN"
         try {
@@ -3584,6 +3716,8 @@ class MainActivity : Activity() {
 
 
     override fun onDestroy() {
+        trofeoWifiRecovery?.cancel()
+        trofeoWifiRecovery = null
         invalidateRecovery()
         AppLog.unsubscribe(logListener)
         try {
