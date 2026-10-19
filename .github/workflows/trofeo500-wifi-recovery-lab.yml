@@ -47,7 +47,7 @@ jobs:
         with:
           name: MotoLink1.7_Trofeo500_Recovery_Lab2
           path: |
-            MotoLink1.7_Trofeo500_Recovery_Lab.apk
-            MotoLink1.7_Trofeo500_Recovery_Lab.sha256
+            MotoLink1.7_Trofeo500_Recovery_Lab2.apk
+            MotoLink1.7_Trofeo500_Recovery_Lab2.sha256
           retention-days: 7
           if-no-files-found: error
