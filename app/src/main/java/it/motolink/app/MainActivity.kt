@@ -213,6 +213,7 @@ class MainActivity : Activity() {
             onBackgroundToggleClick = { toggleDynamicBackgroundSetting() }
             onAdaptationClick = { toggleAdaptationSetting() }
             onVersionClick = { showInstalledReleaseNotes() }
+            onWifiRecoveryClick = { showTrofeoWifiRecoveryConsent() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
             onCreditsDonateClick = { openPayPalDonation() }
@@ -3330,6 +3331,29 @@ class MainActivity : Activity() {
     private fun clearLocalLog() {
         AppLog.clearLogs()
         dashboard.replaceSupportLogs(AppLog.recentLines(AppLog.UI_VISIBLE_LINE_LIMIT))
+    }
+
+    private fun showTrofeoWifiRecoveryConsent() {
+        if (runSelection == RunSelection.START || startInProgress) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Ripristino Wi-Fi")
+                .setMessage("Interrompi prima il mirroring con STOP. Il recupero non deve interferire con una sessione in corso.")
+                .setPositiveButton("OK", null).show()
+            return
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Ripristino Wi-Fi · Trofeo 500")
+            .setMessage(
+                "Usa questo strumento soltanto se la moto non riesce a collegarsi all'hotspot del telefono. " +
+                "La diagnostica può interrompere temporaneamente Bluetooth o Wi-Fi. " +
+                "Eseguila a moto ferma, con hotspot e Bluetooth accesi. Vuoi continuare?"
+            )
+            .setNegativeButton("NO", null)
+            .setPositiveButton("SÌ") { _, _ ->
+                AppLog.add("TROFEO500 WIFI RECOVERY LAB: conferma esplicita utente")
+                startActivity(Intent(this, TrofeoWifiRecoveryActivity::class.java))
+            }
+            .show()
     }
 
     private fun toggleIntroSetting() {
