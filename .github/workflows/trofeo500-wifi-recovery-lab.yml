@@ -38,7 +38,7 @@ jobs:
           SRC=app/build/outputs/apk/debug/app-debug.apk
           test -s "$SRC"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$SRC" | tee /tmp/badging.txt
-          grep -q "package: name='it.motolink.app.recoverylab'" /tmp/badging.txt
+          grep -q "package: name='it.motolink.app.recoverylab2'" /tmp/badging.txt
           grep -q "versionCode='35'" /tmp/badging.txt
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$SRC"
           cp "$SRC" MotoLink1.7_Trofeo500_Recovery_Lab2.apk
