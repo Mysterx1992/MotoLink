@@ -13,8 +13,8 @@ android {
         applicationId = "it.motolink.app.recoverylab"
         minSdk = 29
         targetSdk = 36
-        versionCode = 34
-        versionName = "1.7-recoverylab"
+        versionCode = 35
+        versionName = "1.7-recoverylab2"
     }
 
     buildTypes {

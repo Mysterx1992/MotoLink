@@ -65,3 +65,8 @@ Configura profili, app, permessi e regolazioni a veicolo fermo. Non interagire c
 Solo se la moto non riesce più a collegarsi all'hotspot del telefono, da fermo, apri **Impostazioni → Ripristino Wi-Fi**. Conferma **SÌ**, lascia acceso l'hotspot del telefono e premi **AVVIA**. MotoLink esegue la diagnostica Bluetooth Classic/SDP, BLE/GATT senza scritture e scansione Wi-Fi. CHIUDI interrompe il recupero. Non è necessario inserire password dell'hotspot nel diagnostico.
 
 **Diagnostica completata non significa connessione ripristinata.** Controlla sul TFT il simbolo Wi-Fi e la connessione reale. La funzione non si avvia durante una sessione START di mirroring.
+
+
+### Recupero Trofeo 500 — autorizzazioni e interfaccia
+
+In questa build le Impostazioni scorrono verticalmente, mentre la barra di navigazione resta fissa. La guida interattiva evidenzia separatamente **Ripristino Wi-Fi** e **Versione app**. Alla prima pressione su AVVIA Android richiede il permesso **Dispositivi nelle vicinanze**: dopo l'autorizzazione la procedura parte automaticamente. Se il permesso è negato, abilitarlo dalle impostazioni dell'app Android. I dialoghi sono nello stile nero e verde MotoLink. Nessuna richiesta di password è necessaria per una diagnosi che non modifica il collegamento Wi-Fi.
