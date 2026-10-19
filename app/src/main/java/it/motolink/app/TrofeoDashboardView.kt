@@ -1179,7 +1179,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         val inner = FrameLayout(context)
         // The last card plus a generous bottom touch margin, at the same UI scale.
         val contentHeight = pxH(1635f)
-        scroller.addView(inner, ScrollView.LayoutParams(LayoutParams.MATCH_PARENT, contentHeight))
+        scroller.addView(inner, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, contentHeight))
         bodyHost.addView(scroller, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         settingsScroll = scroller
         inner.addView(sectionTitle("Impostazioni"), lp(58f, 35f, 824f, 125f))
