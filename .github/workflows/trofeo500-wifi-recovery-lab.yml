@@ -42,7 +42,7 @@ jobs:
           grep -q "versionCode='35'" /tmp/badging.txt
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$SRC"
           cp "$SRC" MotoLink1.7_Trofeo500_Recovery_Lab2.apk
-          sha256sum MotoLink1.7_Trofeo500_Recovery_Lab.apk | tee MotoLink1.7_Trofeo500_Recovery_Lab2.sha256
+          sha256sum MotoLink1.7_Trofeo500_Recovery_Lab2.apk | tee MotoLink1.7_Trofeo500_Recovery_Lab2.sha256
       - uses: actions/upload-artifact@v4
         with:
           name: MotoLink1.7_Trofeo500_Recovery_Lab2
