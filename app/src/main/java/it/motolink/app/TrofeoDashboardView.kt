@@ -78,6 +78,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onIntroToggleClick: (() -> Unit)? = null
     var onAdaptationClick: (() -> Unit)? = null
     var onVersionClick: (() -> Unit)? = null
+    var onWifiRecoveryClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
     var onCreditsDonateClick: (() -> Unit)? = null
@@ -152,31 +153,37 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Modalità tasca",
             body = "La Modalità tasca utilizza il sensore di prossimità del telefono per ridurre i tocchi accidentali quando il dispositivo viene coperto.\n\nSchermo nero rapido\nDurante il mirroring, premi due volte Volume Giù per oscurare lo schermo e bloccare i tocchi. Ripeti due volte Volume Giù per riattivarlo.\n\nPuoi attivare o disattivare la Modalità tasca in qualsiasi momento dalle IMPOSTAZIONI.",
-            target = GuideTarget(58f, 190f, 824f, 185f)
+            target = GuideTarget(58f, 185f, 824f, 158f)
         ),
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Animazione iniziale",
             body = "Determina se mostrare l’animazione MotoLink all’avvio.\n\nON\nL’animazione viene riprodotta prima della schermata principale.\n\nOFF\nMotoLink apre direttamente l’interfaccia principale.",
-            target = GuideTarget(58f, 395f, 824f, 185f)
+            target = GuideTarget(58f, 355f, 824f, 158f)
         ),
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Guida iniziale",
             body = "Attiva questa opzione quando vuoi visualizzare nuovamente la guida completa alla prossima apertura di MotoLink.\n\nUna volta avviata la guida, l’opzione torna automaticamente disattivata.",
-            target = GuideTarget(58f, 600f, 824f, 185f)
+            target = GuideTarget(58f, 525f, 824f, 158f)
         ),
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Sfondo",
             body = "Gestisce lo sfondo utilizzato nelle schermate MotoLink.\n\nON\nDopo una connessione reale viene utilizzata l’immagine associata alla moto attiva.\n\nOFF\nRimane sempre lo sfondo standard MotoLink.",
-            target = GuideTarget(58f, 805f, 824f, 170f)
+            target = GuideTarget(58f, 695f, 824f, 145f)
         ),
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Adattamento",
             body = "ATTIVAZIONE\nADATTAMENTO serve ad aprire l’editor. La base display approvata resta applicata automaticamente anche con l’interruttore OFF.\n\nREGOLAZIONE\n↑ ↓ ← → regolano i quattro bordi di 5 px. + allarga e − restringe. Le modifiche vengono salvate per la moto attiva e per orientamento.\n\nCHIUSURA\n× conclude la regolazione, chiude il pannello e porta automaticamente l’interruttore su OFF. La personalizzazione rimane applicata nelle sessioni successive e non viene azzerata.\n\nRIPRISTINO\n↺ Ripristina richiede due conferme e torna ai valori iniziali approvati dell’app per quell’orientamento.",
-            target = GuideTarget(58f, 995f, 824f, 175f)
+            target = GuideTarget(58f, 850f, 824f, 158f)
+        ),
+        GuideStep(
+            Page.SETTINGS,
+            title = "IMPOSTAZIONI · Ripristino Wi-Fi",
+            body = "Utilizza Ripristino Wi-Fi solo quando una Trofeo 500 non riesce a collegarsi all'hotspot del telefono.\n\nDopo una conferma, AVVIA esegue controlli Bluetooth e Wi-Fi. Il risultato deve essere verificato sul display TFT.\n\nIl ripristino può disturbare temporaneamente le reti e non va avviato durante il mirroring o la guida.",
+            target = GuideTarget(58f, 1017f, 824f, 160f)
         ),
         GuideStep(
             Page.SETTINGS,
@@ -1156,11 +1163,12 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
 
     private fun buildSettings() {
         bodyHost.addView(sectionTitle("Impostazioni"), lp(58f, 35f, 824f, 125f))
-        bodyHost.addView(settingCard(IconKind.POCKET, "Modalità tasca", "Disattiva schermo e comandi per evitare tocchi accidentali.", pocketModeEnabled, true) { onPocketModeClick?.invoke() }, lp(58f, 190f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.PLAY, "Animazione iniziale", "Riproduci l’animazione di apertura dell’app.", introEnabled, true) { onIntroToggleClick?.invoke() }, lp(58f, 395f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.BOOK, "Guida iniziale", "Mostra la guida completa alla prossima apertura.", guideNextLaunchEnabled, true) { onGuideClick?.invoke() }, lp(58f, 600f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.WALLPAPER, "Sfondo", "Cambia lo sfondo in base alla moto collegata.", dynamicBackgroundEnabled, true) { onBackgroundToggleClick?.invoke() }, lp(58f, 805f, 824f, 170f))
-        bodyHost.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 995f, 824f, 175f))
+        bodyHost.addView(settingCard(IconKind.POCKET, "Modalità tasca", "Disattiva schermo e comandi per evitare tocchi accidentali.", pocketModeEnabled, true) { onPocketModeClick?.invoke() }, lp(58f, 185f, 824f, 158f))
+        bodyHost.addView(settingCard(IconKind.PLAY, "Animazione iniziale", "Riproduci l’animazione di apertura dell’app.", introEnabled, true) { onIntroToggleClick?.invoke() }, lp(58f, 355f, 824f, 158f))
+        bodyHost.addView(settingCard(IconKind.BOOK, "Guida iniziale", "Mostra la guida completa alla prossima apertura.", guideNextLaunchEnabled, true) { onGuideClick?.invoke() }, lp(58f, 525f, 824f, 158f))
+        bodyHost.addView(settingCard(IconKind.WALLPAPER, "Sfondo", "Cambia lo sfondo in base alla moto collegata.", dynamicBackgroundEnabled, true) { onBackgroundToggleClick?.invoke() }, lp(58f, 695f, 824f, 145f))
+        bodyHost.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 850f, 824f, 158f))
+        bodyHost.addView(settingCard(IconKind.INFO, "Ripristino Wi-Fi", "Trofeo 500: tenta il recupero della connessione hotspot.", false, false) { onWifiRecoveryClick?.invoke() }, lp(58f, 1017f, 824f, 160f))
         bodyHost.addView(versionCard(), lp(58f, 1190f, 824f, 145f))
     }
 
