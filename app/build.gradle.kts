@@ -18,6 +18,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Experimental build installs beside the official application.
+            applicationIdSuffix = ".recoverylab"
+            versionNameSuffix = "-wifi-recovery"
+        }
         release {
             isMinifyEnabled = false
         }
