@@ -22,6 +22,37 @@ object MotoLinkLocale {
         return locale.language.lowercase(Locale.ROOT)
     }
 
+    fun releaseNotes18(): String = when (language()) {
+        "it" -> "• Ripristino Wi-Fi Trofeo 500 nelle Impostazioni, con conferma SÌ/NO e un solo AVVIA.\n" +
+            "• Diagnosi Bluetooth Classic, SDP, BLE/GATT senza scritture e scansione Wi-Fi del telefono.\n" +
+            "• Richiesta automatica di Dispositivi nelle vicinanze con ripresa dopo il consenso.\n" +
+            "• Nuove finestre nero/verde MotoLink con stato e risultato della procedura.\n" +
+            "• Impostazioni scorrevoli e Versione app sempre raggiungibile.\n" +
+            "• Guida iniziale più leggibile con finestre ampie che non coprono i controlli illustrati.\n\n" +
+            "La diagnostica completata non garantisce il ripristino Wi-Fi. Utilizzare solo a moto ferma."
+        "ru" -> "• В Настройках добавлено восстановление Wi-Fi Trofeo 500 с подтверждением и одной кнопкой.\n" +
+            "• Диагностика Bluetooth Classic, SDP, BLE/GATT без записи и сканирование Wi-Fi телефона.\n" +
+            "• Android автоматически запрашивает разрешение на устройства поблизости.\n" +
+            "• Новые чёрно-зелёные окна с ходом выполнения.\n" +
+            "• Настройки прокручиваются, версия приложения доступна.\n" +
+            "• Окна руководства увеличены и не закрывают выделенные элементы.\n\n" +
+            "Завершение диагностики не гарантирует восстановления Wi-Fi. Используйте на остановленном мотоцикле."
+        "zh" -> "• 设置中新增 Trofeo 500 Wi-Fi 恢复工具，确认后可一键启动。\n" +
+            "• Bluetooth Classic、SDP、BLE/GATT 只读诊断与手机 Wi-Fi 扫描。\n" +
+            "• 自动请求 Android 附近设备权限，授权后继续。\n" +
+            "• 使用 MotoLink 黑绿配色的新进度窗口。\n" +
+            "• 设置页面可滚动，应用版本可访问。\n" +
+            "• 新手指南窗口更大且不遮挡所介绍的控件。\n\n" +
+            "诊断完成不保证 Wi-Fi 已恢复。请在停车后操作。"
+        else -> "• New Trofeo 500 Wi-Fi recovery in Settings, with confirmation and one START button.\n" +
+            "• Bluetooth Classic, SDP, read-only BLE/GATT and phone Wi-Fi diagnostics.\n" +
+            "• Android Nearby Devices permission requested when needed, resuming after consent.\n" +
+            "• New black-and-green recovery dialogs with clear progress messages.\n" +
+            "• Scrollable Settings and accessible App version.\n" +
+            "• Larger guided-tour panels positioned away from highlighted controls.\n\n" +
+            "Diagnostic completion does not guarantee Wi-Fi recovery. Use only while stopped."
+    }
+
     fun releaseNotes17(): String = when (language()) {
         "it" -> "• L'interfaccia segue automaticamente la lingua del telefono.\n" +
             "• Traduzioni complete: Italiano, English, Русский e 中文; fallback inglese per le altre lingue.\n" +
