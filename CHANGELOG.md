@@ -1,5 +1,14 @@
 # Changelog MotoLink
 
+## V1.8 · versionCode 34 — 2026-10-20
+
+- Ripristino Wi-Fi manuale Trofeo 500: Bluetooth Classic/SDP, BLE/GATT read-only e scansione Wi-Fi del telefono, con conferma e permessi runtime.
+- Finestre di diagnostica nere/verdi integrate; nessuna scrittura GATT o cambio automatico dell'hotspot.
+- Impostazioni scorrevoli e voce Versione app sempre raggiungibile.
+- Guida iniziale con finestra adattiva più grande e posizionamento fuori dal controllo evidenziato.
+- Note di aggiornamento V1.8 dedicate (it/en/ru/zh), senza ripetere la V1.7.
+- Test interfaccia/permessi superato nella Lab2, recupero fisico TFT specifico ancora da verificare.
+
 ## V1.7 · versionCode 33 — 2026-10-12
 
 - Nuova release principale: `MotoLink1.7.apk`, firma ufficiale invariata e package `it.motolink.app`.
