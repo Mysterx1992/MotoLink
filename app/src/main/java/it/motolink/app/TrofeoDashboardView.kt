@@ -133,21 +133,21 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.FAVORITES,
             title = "PREFERITE · App",
             body = "In PREFERITE puoi configurare fino a 4 app.\n\nLe app selezionate vengono mostrate anche nella HOME per un accesso rapido.\n\nUsa Cambia per sostituire l’app di uno slot oppure X per rimuoverla.",
-            target = GuideTarget(125f, 350f, 700f, 870f)
+            target = GuideTarget(125f, 350f, 700f, 300f)
         ),
         GuideStep(
             Page.SUPPORT,
             SupportTab.LOG,
             title = "SUPPORTO · Log",
             body = "Il Log registra localmente gli eventi tecnici utili alla diagnosi e rimane disponibile finché non scegli Pulisci. Per mantenere MotoLink leggera, questa schermata mostra solo le ultime 50 righe; il file .txt locale e quello condiviso conservano invece il Log completo.\n\nCon Condividi puoi scegliere:\n\nESTERNO\nInvia il Log tramite le normali funzioni di condivisione Android.\n\nASSISTENTE\nInvia all’Assistente MotoLink una copia filtrata per quella singola richiesta. Il Log originale resta sul telefono.",
-            target = GuideTarget(90f, 185f, 760f, 1135f)
+            target = GuideTarget(481f, 1275f, 360f, 92f)
         ),
         GuideStep(
             Page.SUPPORT,
             SupportTab.ASSISTANT,
             title = "SUPPORTO · Assistente",
             body = "L’Assistente MotoLink è dedicato al supporto dell’app. Scrivi direttamente nel campo della chat e invia la domanda.\n\nIl Log non viene letto automaticamente. Per allegarlo usa SUPPORTO > Log > Condividi > Assistente.\n\nLa ⓘ accanto allo stato dell’Assistente spiega il funzionamento della chat, l’invio del Log e le informazioni sulla privacy.",
-            target = GuideTarget(90f, 185f, 760f, 1135f)
+            target = GuideTarget(101f, 198f, 740f, 78f)
         ),
         GuideStep(
             Page.SETTINGS,
@@ -195,7 +195,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.CREDITS,
             title = "CREDITI · Autore e Community",
             body = "In CREDITI trovi le informazioni sul progetto MotoLink e il collegamento alla community ufficiale.\n\nUsa Entra nel gruppo per aprire il gruppo WhatsApp MotoLink Mirroring dedicato a supporto, test e confronto tra utenti.",
-            target = GuideTarget(125f, 185f, 690f, 1025f)
+            target = GuideTarget(140f, 195f, 663f, 330f)
         ),
         GuideStep(
             Page.CREDITS,
@@ -1449,7 +1449,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
                     if (index < bikeProfiles.lastIndex) profilesHeight += 25f
                 }
             }
-            GuideTarget(58f, 285f, 824f, profilesHeight.coerceAtMost(875f))
+            GuideTarget(58f, 285f, 824f, profilesHeight.coerceAtMost(375f))
         } else if (step.page == Page.GARAGE && step.title == "GARAGE · Aggiungi moto") {
             // The QR card moves vertically depending on how many profiles are saved.
             // Mirror the exact Garage layout calculation so the spotlight always follows
