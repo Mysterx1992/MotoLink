@@ -1,0 +1,53 @@
+name: MotoLink V1.8 unsigned reproducible candidate
+on:
+  push:
+    branches: ["release/v1.8-trofeo-wifi-recovery"]
+    paths: [".github/workflows/build-v18-unsigned-for-offline-sign.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: V1.8 static BLE regression
+        run: python3 tools/v18_ble_regression.py
+      - name: Build unsigned V1.8 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew :app:assembleRelease --stacktrace
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          UNSIGNED=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$UNSIGNED"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" MotoLink1.8_unsigned_aligned.apk
+          "$BT/zipalign" -c -p 4 MotoLink1.8_unsigned_aligned.apk
+          "$BT/aapt" dump badging MotoLink1.8_unsigned_aligned.apk > BADGING.txt
+          grep -q "package: name='it.motolink.app'" BADGING.txt
+          grep -q "versionCode='34'" BADGING.txt
+          grep -q "versionName='1.8'" BADGING.txt
+          sha256sum MotoLink1.8_unsigned_aligned.apk | tee UNSIGNED_ALIGNED_SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_UNSIGNED_ALIGNED
+          path: |
+            MotoLink1.8_unsigned_aligned.apk
+            BADGING.txt
+            UNSIGNED_ALIGNED_SHA256.txt
+          retention-days: 30
+          if-no-files-found: error
