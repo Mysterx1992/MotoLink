@@ -34,7 +34,7 @@ jobs:
           grep -Fq 'versionName = "1.8"' app/build.gradle.kts
           grep -Fq 'MotoLinkLocale.releaseNotes18()' app/src/main/java/it/motolink/app/MainActivity.kt
           grep -Fq 'onWifiRecoveryClick' app/src/main/java/it/motolink/app/TrofeoDashboardView.kt
-          python3 tools/vc33_ble_regression.py
+          python3 tools/v18_ble_regression.py
       - name: Assemble release
         shell: bash
         run: |
