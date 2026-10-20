@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink1.7.apk">
-    <img src="docs/images/download-motolink-v17-rgb.png" alt="Scarica MotoLink V1.7 APK" height="34">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.8/MotoLink1.8.apk">
+    <img src="https://img.shields.io/badge/SCARICA%20MOTOLINK-V1.8-5BFF2D?style=for-the-badge&labelColor=102218&logo=android&logoColor=ffffff" alt="Scarica MotoLink V1.8 APK" height="34">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
@@ -23,33 +23,32 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.7
+## 🆕 MotoLink V1.8
 
-La versione ufficiale **MotoLink V1.7** introduce una navigazione BLE più reattiva e la riconnessione automatica dopo lo spegnimento e la riaccensione del quadro. Mantiene le funzionalità di mirroring e il supporto multilingua già disponibili.
+La V1.8 introduce un **recupero Wi-Fi guidato per VOGE Trofeo 500** e rende più comode le Impostazioni e la guida iniziale, mantenendo le funzioni di mirroring e navigazione già presenti.
 
-### Novità e miglioramenti
+### Cosa cambia nella V1.8
 
-- **Distanze Google Maps più aggiornate sul TFT:** coda BLE con gestione *latest-wins*, che sostituisce i pacchetti di navigazione ancora in attesa con quelli dell'ultima istruzione valida, senza interrompere una sequenza già iniziata.
-- **Riconnessione Bluetooth automatica:** in caso di perdita del TFT, MotoLink ripete le scansioni BLE con pause progressive e mantiene la sessione START; STOP arresta i tentativi.
-- **Ripristino della navigazione senza nuovo START:** dopo il riaggancio e la verifica GATT/heartbeat, le nuove manovre possono riprendere senza riaprire Google Maps.
-- **Diagnostica dei ritardi BLE:** registrazione dei tempi di coda e di completamento della trasmissione GATT.
-- Interfaccia automatica in Italiano, English, Русский e 中文, con fallback inglese.
-- Navigazione Google Maps in russo, comprese le distanze м/км e il riconoscimento delle manovre.
-- Navigazione VOGE turn-by-turn e gestione delle rotonde: funzionamento riferito dal tester russo su Valico 625 DSX.
-- Mirroring EasyConn/H264, MediaProjection, Modalità tasca e protocollo VOGE mantenuti.
+- **Impostazioni → Ripristino Wi-Fi**: funzione manuale per i casi in cui la Trofeo 500 non si collega all'hotspot del telefono.
+- Un solo pulsante **AVVIA** per la diagnostica Bluetooth Classic, SDP, BLE/GATT e scansione Wi-Fi, senza cambiare credenziali o inviare scritture GATT.
+- **Permesso Dispositivi nelle vicinanze** richiesto al primo utilizzo, con prosecuzione automatica dopo il consenso.
+- Finestre in stile nero/verde MotoLink con conferma, avanzamento ed esito della diagnostica.
+- **Impostazioni scorrevoli**, con accesso alla voce Versione app e barra di navigazione fissa.
+- **Guida iniziale** più leggibile, con schede più grandi posizionate senza coprire il controllo spiegato.
+- **Versione app** ora mostra soltanto le novità della versione installata.
 
----
+> **Limite di validazione:** sono stati verificati interfaccia e permessi sul telefono con la Lab2. Il recupero fisico Wi-Fi sul TFT della Trofeo 500 con questa integrazione non è ancora certificato: completare la procedura non garantisce il ripristino. Utilizzare a veicolo fermo.
 
 ## Scarica MotoLink
 
-**[⬇️ Scarica direttamente MotoLink1.7.apk](https://github.com/Mysterx1992/MotoLink/releases/download/v1.7/MotoLink1.7.apk)**
+**[⬇️ Scarica direttamente MotoLink1.8.apk](https://github.com/Mysterx1992/MotoLink/releases/download/v1.8/MotoLink1.8.apk)**
 
-**Versione corrente:** MotoLink V1.7 · `versionCode 33` · `versionName 1.7`  
+**Versione corrente:** MotoLink V1.8 · `versionCode 34` · `versionName 1.8`  
 **Package:** `it.motolink.app`  
-**SHA-256:** `c4d68f35e5c96b348d003d36e80b4648eff9a6e947a18e326c0411f1104e954e`  
-**Release:** https://github.com/Mysterx1992/MotoLink/releases/tag/v1.7  
+**Release:** https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8  
+**Novità:** [Note ufficiali V1.8](docs/RELEASE_NOTES_V1.8.md)
 
-La compilazione, la firma ufficiale e le verifiche software sono state completate. **La riduzione effettiva della latenza sul TFT e la riconnessione quadro OFF/ON richiedono ancora la conferma sulla moto**: non sono risultati già misurati su strada. La versione precedente è conservata come archivio nella release.
+La precedente V1.7 resta disponibile per chi ne ha bisogno nella sezione Release GitHub.
 
 ---
 
@@ -118,6 +117,10 @@ MotoLink include strumenti per adattare manualmente l'immagine alla geometria de
 
 Durante il mirroring, se **Modalità tasca è attiva**, MotoLink può utilizzare il sensore di prossimità per oscurare lo schermo. Con **Modalità tasca disattivata**, resta preservata la protezione vc22. Con Modalità tasca attiva, resta congelato il fix vc27: il gate V1.5.1 arma la prossimità solo quando MediaProjection/video sono realmente pronti. Il comando con **doppio Volume Giù** resta disponibile separatamente per oscurare/riattivare lo schermo con blocco dei tocchi senza interrompere la sessione.
 
+### 🛠️ Ripristino Wi-Fi Trofeo 500
+
+Con **Impostazioni → Ripristino Wi-Fi** puoi avviare una diagnosi manuale per provare a recuperare il collegamento all'hotspot. Non è un comando di reset garantito e richiede una verifica sul TFT dopo il completamento.
+
 ### 🧰 Log MotoLink
 
 La sezione **Supporto → Log** mostra al massimo le ultime **50 righe** per mantenere l'interfaccia leggera.
@@ -153,7 +156,7 @@ Le funzioni tecniche possono richiedere:
 | Accesso / conferma | Quando viene usato | Perché serve |
 |---|---|---|
 | **Connessione moto / Wi-Fi** | Collegamento Hotspot/QR | Comunicazione con il TFT tramite Wi-Fi / Wi-Fi Direct. |
-| **Dispositivi Bluetooth vicini** | Profilo BLE | Scansione, connessione e comunicazione turn-by-turn con TFT BLE compatibili. |
+| **Dispositivi Bluetooth vicini** | Profilo BLE o Ripristino Wi-Fi | Scansione BLE, diagnostica GATT e navigazione turn-by-turn sui TFT compatibili. |
 | **Accesso alle notifiche** | Navigazione BLE con Google Maps | Lettura delle indicazioni di navigazione esposte dalla notifica di Google Maps. |
 | **Fotocamera** | Solo quando serve il fallback scanner QR interno | Lettura del QR della moto. |
 | **MediaProjection / condivisione schermo** | Avvio mirroring | Autorizzazione Android alla cattura dello schermo o di una singola app. |
@@ -178,8 +181,8 @@ La community contribuisce con test su moto e display differenti, feedback e supp
 | Voce | Stato |
 |---|---|
 | Applicazione Android | ✅ Disponibile |
-| Sorgente V1.6 vc28 recovery hotfix | ✅ Pubblicata |
-| APK ufficiale firmato | 🟡 vc27 disponibile; build vc28 da validare fisicamente prima della promozione |
+| Sorgente V1.8 | ✅ Pubblicata |
+| APK ufficiale firmato | ✅ V1.8 |
 | Mirroring EasyConn | ✅ Implementato |
 | Navigazione BLE turn-by-turn | ✅ Implementata |
 | Garage / profili moto | ✅ Implementato |
