@@ -1,0 +1,85 @@
+name: Publish verified MotoLink V1.8 official APK
+on:
+  push:
+    branches: ["release/v1.8-trofeo-wifi-recovery"]
+    paths: [".github/workflows/publish-v18-official.yml"]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Freeze source and block private documents
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:app)" = "616f571b55cd8af49d1f78aac67977ac66390edb"
+          test ! -e docs/MOTOLINK_MASTER_UNICO_CURRENT.md
+          grep -Fq 'versionCode = 34' app/build.gradle.kts
+          grep -Fq 'versionName = "1.8"' app/build.gradle.kts
+          python3 tools/v18_ble_regression.py
+      - name: Retrieve exact unsigned V1.8 from pinned build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p unsigned
+          gh run download 39447598611 --repo "$GITHUB_REPOSITORY" \
+            -n MotoLink_V1_8_UNSIGNED_ALIGNED -D unsigned
+          echo "e831a5d1b60eb466df055aad7f6ba2893c9118a4efb67b9e8f795f86502e51cb  unsigned/MotoLink1.8_unsigned_aligned.apk" | sha256sum -c -
+      - name: Reconstruct exact official-signature APK from public certificate data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/v18_release/rebuild_verified_v18.py \
+            unsigned/MotoLink1.8_unsigned_aligned.apk \
+            tools/v18_release/public_v18_signing_block.b64 MotoLink1.8.apk
+          echo "7775f37990a46f6a4544177920cbbb5abfc3e7e5e4f059624b8d58122aad89f6  MotoLink1.8.apk" | sha256sum -c -
+      - name: Verify original certificate and exact version
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/apksigner" verify --verbose --print-certs MotoLink1.8.apk | tee /tmp/verified.txt
+          grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' /tmp/verified.txt
+          grep -Fiq '9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100' /tmp/verified.txt
+          "$BT/aapt" dump badging MotoLink1.8.apk | tee /tmp/badging.txt
+          grep -q "package: name='it.motolink.app'" /tmp/badging.txt
+          grep -q "versionCode='34'" /tmp/badging.txt
+          grep -q "versionName='1.8'" /tmp/badging.txt
+          sha256sum MotoLink1.8.apk > MotoLink1.8_SHA256.txt
+      - name: Publish first official stable V1.8 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.8 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::V1.8 already exists; refusing to overwrite."
+            exit 1
+          fi
+          gh release create v1.8 MotoLink1.8.apk MotoLink1.8_SHA256.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "MotoLink V1.8" \
+            --notes-file docs/RELEASE_NOTES_V1.8.md \
+            --latest
+      - name: Download released asset and verify byte-for-byte
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p released
+          gh release download v1.8 --repo "$GITHUB_REPOSITORY" \
+            --pattern MotoLink1.8.apk --dir released
+          echo "7775f37990a46f6a4544177920cbbb5abfc3e7e5e4f059624b8d58122aad89f6  released/MotoLink1.8.apk" | sha256sum -c -
