@@ -2,7 +2,10 @@ name: MotoLink V1.8 unsigned reproducible candidate
 on:
   push:
     branches: ["release/v1.8-trofeo-wifi-recovery"]
-    paths: [".github/workflows/build-v18-unsigned-for-offline-sign.yml"]
+    paths:
+      - ".github/workflows/build-v18-unsigned-for-offline-sign.yml"
+      - "app/**"
+      - "tools/v18_ble_regression.py"
   workflow_dispatch:
 permissions:
   contents: read
