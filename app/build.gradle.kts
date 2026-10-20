@@ -13,8 +13,8 @@ android {
         applicationId = "it.motolink.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 33
-        versionName = "1.7"
+        versionCode = 34
+        versionName = "1.8"
     }
 
     buildTypes {
