@@ -58,3 +58,8 @@ Se il TFT cambia temporaneamente modalità mentre la rete della moto resta dispo
 ## Sicurezza durante la guida
 
 Configura profili, app, permessi e regolazioni a veicolo fermo. Non interagire con lo smartphone in modo da distrarti dalla guida.
+
+
+## Guida iniziale V1.8 — finestre adattive
+
+Le finestrelle della guida sono più ampie quando lo spazio sul display lo consente. Il pannello appare sopra o sotto il comando evidenziato, senza sovrapporvisi, e lascia liberi SALTA e la barra inferiore. Nei passaggi che occupano quasi tutto lo schermo il corpo del testo resta scorrevole.

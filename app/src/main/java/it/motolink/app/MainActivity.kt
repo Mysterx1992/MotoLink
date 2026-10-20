@@ -53,6 +53,7 @@ class MainActivity : Activity() {
         private const val REQ_QR_INTERNAL = 7006
         private const val REQ_QR_CAMERA_PERMISSION = 7007
         private const val REQ_BLE_NAV_PERMISSION = 7008
+        private const val REQ_TROFEO_RECOVERY_BLUETOOTH = 7010
         private const val PREF_INTRO_ENABLED = "v1_intro_enabled"
         private const val PREF_DYNAMIC_BACKGROUND_ENABLED = "v1_dynamic_background_enabled"
         private const val QR_MDNS_FALLBACK_MS = 6_000L
@@ -212,6 +213,7 @@ class MainActivity : Activity() {
             onGuideClick = { toggleGuideSetting() }
             onBackgroundToggleClick = { toggleDynamicBackgroundSetting() }
             onAdaptationClick = { toggleAdaptationSetting() }
+            onWifiRecoveryClick = { showWifiRecoveryPrompt() }
             onVersionClick = { showInstalledReleaseNotes() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
@@ -1857,6 +1859,23 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_TROFEO_RECOVERY_BLUETOOTH) {
+            val waiting = wifiRecoveryPermissionPending
+            wifiRecoveryPermissionPending = false
+            if (waiting && wifiRecoveryDialog?.isShowing == true) {
+                val granted = grantResults.isNotEmpty() &&
+                    grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+                if (granted) {
+                    AppLog.add("TROFEO WIFI RECOVERY: permessi Bluetooth autorizzati")
+                    startTrofeoWifiRecoveryOrRequestPermissions()
+                } else {
+                    wifiRecoveryState?.text = "Permesso negato: abilita Dispositivi nelle vicinanze dalle impostazioni Android e riprova."
+                    NeonDialogs.showInfo(this, "Permesso necessario",
+                        "Per cercare la Trofeo 500 MotoLink ha bisogno del permesso Dispositivi nelle vicinanze. Puoi concederlo dalle impostazioni dell'app.")
+                }
+            }
+            return
+        }
         if (requestCode == REQ_BLE_NAV_PERMISSION) {
             val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
             if (granted) {
@@ -2692,6 +2711,148 @@ class MainActivity : Activity() {
         )
     }
 
+
+    // Diagnostic is deliberately isolated from normal START and EasyConn.
+    private var wifiRecoveryLab: TrofeoWifiRecovery? = null
+    private var wifiRecoveryDialog: android.app.Dialog? = null
+    private var wifiRecoveryState: TextView? = null
+    private var wifiRecoveryGo: TextView? = null
+    private var wifiRecoveryPermissionPending = false
+
+    private fun showWifiRecoveryPrompt() {
+        if (wifiRecoveryDialog?.isShowing == true) return
+        NeonDialogs.showConfirm(
+            activity = this,
+            title = "Ripristino Wi-Fi · Trofeo 500",
+            message = "Usa questa funzione soltanto se la moto non si collega all'hotspot del telefono. I controlli Bluetooth e Wi-Fi possono influire temporaneamente sulle connessioni. Esegui il recupero a moto ferma. Continuare?",
+            positiveText = "SÌ",
+            negativeText = "NO",
+            onPositive = { showWifiRecoveryDialog() }
+        )
+    }
+
+    private fun showWifiRecoveryDialog() {
+        if (runSelection == RunSelection.START) {
+            NeonDialogs.showInfo(this, "Mirroring attivo",
+                "Interrompi il mirroring con STOP prima di utilizzare Ripristino Wi-Fi.")
+            return
+        }
+        val scale = resources.displayMetrics.density
+        fun dp(value: Int) = (value * scale).toInt()
+        val dialog = android.app.Dialog(this)
+        val column = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = NeonDialogs.rounded("#020A06", "#2A7A28", 1, 24, this@MainActivity)
+            setPadding(dp(19), dp(20), dp(19), dp(19))
+        }
+        val heading = TextView(this).apply {
+            text = "RIPRISTINO WI-FI"
+            setTextColor(Color.WHITE)
+            textSize = 21f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val subtitle = TextView(this).apply {
+            text = "VOGE TROFEO 500"
+            setTextColor(Color.parseColor("#5BFF2D"))
+            textSize = 13f
+            setPadding(0, dp(6), 0, dp(12))
+        }
+        val instruction = TextView(this).apply {
+            text = "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto."
+            setTextColor(Color.parseColor("#BECBC3"))
+            textSize = 14.5f
+            setPadding(0, 0, 0, dp(12))
+        }
+        val state = TextView(this).apply {
+            text = "Pronto. Premi AVVIA per iniziare."
+            setTextColor(Color.WHITE)
+            textSize = 15f
+            background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
+            setPadding(dp(14), dp(16), dp(14), dp(16))
+        }
+        wifiRecoveryState = state
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(18), 0, 0)
+        }
+        fun action(label: String, primary: Boolean): TextView = TextView(this).apply {
+            text = label
+            gravity = Gravity.CENTER
+            setTextColor(if (primary) Color.BLACK else Color.WHITE)
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            background = NeonDialogs.rounded(if (primary) "#5BFF2D" else "#07120B", "#2A7A28", 1, 15, this@MainActivity)
+            isClickable = true
+            isFocusable = true
+        }
+        val close = action("CHIUDI", false)
+        val start = action("AVVIA", true)
+        wifiRecoveryGo = start
+        close.setOnClickListener { dialog.dismiss() }
+        start.setOnClickListener { startTrofeoWifiRecoveryOrRequestPermissions() }
+        row.addView(close, LinearLayout.LayoutParams(0, dp(54), 1f).apply { rightMargin = dp(8) })
+        row.addView(start, LinearLayout.LayoutParams(0, dp(54), 1f))
+        column.addView(heading)
+        column.addView(subtitle)
+        column.addView(instruction)
+        column.addView(state)
+        column.addView(row)
+        dialog.setContentView(column)
+        dialog.setOnDismissListener {
+            wifiRecoveryPermissionPending = false
+            wifiRecoveryLab?.stop()
+            wifiRecoveryLab = null
+            wifiRecoveryDialog = null
+            wifiRecoveryState = null
+            wifiRecoveryGo = null
+        }
+        wifiRecoveryDialog = dialog
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+        dialog.show()
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.91f).toInt(),
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+
+    private fun startTrofeoWifiRecoveryOrRequestPermissions() {
+        if (wifiRecoveryDialog?.isShowing != true || wifiRecoveryLab != null) return
+        val adapter = getSystemService(android.bluetooth.BluetoothManager::class.java)?.adapter
+        if (adapter?.isEnabled != true) {
+            wifiRecoveryState?.text = "Accendi il Bluetooth del telefono e premi di nuovo AVVIA."
+            return
+        }
+        val needed = if (Build.VERSION.SDK_INT >= 31) {
+            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        } else arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val missing = needed.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isNotEmpty()) {
+            wifiRecoveryState?.text = "Autorizza Dispositivi nelle vicinanze per eseguire la diagnostica."
+            wifiRecoveryPermissionPending = true
+            requestPermissions(missing.toTypedArray(), REQ_TROFEO_RECOVERY_BLUETOOTH)
+            return
+        }
+        wifiRecoveryGo?.apply { isEnabled = false; alpha = 0.55f }
+        wifiRecoveryState?.text = "Ricerca avviata…"
+        val worker = TrofeoWifiRecovery(this, "") { message, finished ->
+            runOnUiThread {
+                if (wifiRecoveryDialog?.isShowing != true) return@runOnUiThread
+                wifiRecoveryState?.text = message
+                if (finished) {
+                    wifiRecoveryLab = null
+                    wifiRecoveryGo?.apply { isEnabled = true; alpha = 1f; text = "RIPROVA" }
+                    NeonDialogs.showInfo(
+                        this,
+                        "Controlli completati",
+                        "La diagnostica è terminata. Controlla se il simbolo Wi-Fi è tornato sul TFT e se la moto si collega davvero all'hotspot. Il ripristino non è confermato automaticamente."
+                    )
+                }
+            }
+        }
+        wifiRecoveryLab = worker
+        worker.start()
+    }
+
     private fun bikeCatalogOptions(): List<String> = listOf(
         "Voge Trofeo 500",
         "Voge Valico 525DSX",
@@ -3417,13 +3578,13 @@ class MainActivity : Activity() {
 
     private fun showInstalledReleaseNotes() {
         val version = runCatching {
-            packageManager.getPackageInfo(packageName, 0).versionName ?: "1.7"
-        }.getOrDefault("1.7")
+            packageManager.getPackageInfo(packageName, 0).versionName ?: "1.8"
+        }.getOrDefault("1.8")
         val displayVersion = if (version.startsWith("V", ignoreCase = true)) version else "V$version"
         NeonDialogs.showInfo(
             activity = this,
             title = "MotoLink $displayVersion",
-            message = MotoLinkLocale.releaseNotes17()
+            message = MotoLinkLocale.releaseNotes18()
         )
     }
 

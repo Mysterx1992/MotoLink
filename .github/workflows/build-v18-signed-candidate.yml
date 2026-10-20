@@ -1,0 +1,89 @@
+name: MotoLink V1.8 signed candidate
+on:
+  push:
+    branches: ["release/v1.8-trofeo-wifi-recovery"]
+    paths: [".github/workflows/build-v18-signed-candidate.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check version, guide and frozen BLE regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'applicationId = "it.motolink.app"' app/build.gradle.kts
+          grep -Fq 'versionCode = 34' app/build.gradle.kts
+          grep -Fq 'versionName = "1.8"' app/build.gradle.kts
+          grep -Fq 'MotoLinkLocale.releaseNotes18()' app/src/main/java/it/motolink/app/MainActivity.kt
+          grep -Fq 'onWifiRecoveryClick' app/src/main/java/it/motolink/app/TrofeoDashboardView.kt
+          python3 tools/v18_ble_regression.py
+      - name: Assemble release
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --stacktrace
+      - name: Sign with existing official keystore
+        env:
+          MOTOLINK_KEYSTORE_B64: ${{ secrets.MOTOLINK_KEYSTORE_B64 }}
+          MOTOLINK_KEYSTORE_PASSWORD: ${{ secrets.MOTOLINK_KEYSTORE_PASSWORD }}
+          MOTOLINK_KEY_ALIAS: ${{ secrets.MOTOLINK_KEY_ALIAS }}
+          MOTOLINK_KEY_PASSWORD: ${{ secrets.MOTOLINK_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$MOTOLINK_KEYSTORE_B64" ] || [ -z "$MOTOLINK_KEYSTORE_PASSWORD" ] || [ -z "$MOTOLINK_KEY_ALIAS" ] || [ -z "$MOTOLINK_KEY_PASSWORD" ]; then
+            echo "::error::Official signing credentials unavailable; no incompatible update published."
+            exit 1
+          fi
+          printf '%s' "$MOTOLINK_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/official.jks"
+          chmod 600 "$RUNNER_TEMP/official.jks"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/zipalign" -f -p 4 app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/official.jks" \
+            --ks-key-alias "$MOTOLINK_KEY_ALIAS" \
+            --ks-pass env:MOTOLINK_KEYSTORE_PASSWORD --key-pass env:MOTOLINK_KEY_PASSWORD \
+            --v2-signing-enabled true --v3-signing-enabled true \
+            --out MotoLink1.8.apk "$RUNNER_TEMP/aligned.apk"
+          rm -f "$RUNNER_TEMP/official.jks"
+      - name: Verify unchanged official certificate and version
+        shell: bash
+        run: |
+          set -euo pipefail
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/apksigner" verify --verbose --print-certs MotoLink1.8.apk | tee SIGNATURE_VERIFY.txt
+          grep -Fq 'Verified using v2 scheme (APK Signature Scheme v2): true' SIGNATURE_VERIFY.txt
+          grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' SIGNATURE_VERIFY.txt
+          grep -Fiq '9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100' SIGNATURE_VERIFY.txt
+          "$BT/aapt" dump badging MotoLink1.8.apk | tee APK_BADGING.txt
+          grep -q "package: name='it.motolink.app'" APK_BADGING.txt
+          grep -q "versionCode='34'" APK_BADGING.txt
+          grep -q "versionName='1.8'" APK_BADGING.txt
+          sha256sum MotoLink1.8.apk | tee MotoLink1.8_SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_OFFICIAL_SIGNED_CANDIDATE
+          path: |
+            MotoLink1.8.apk
+            MotoLink1.8_SHA256.txt
+            APK_BADGING.txt
+            SIGNATURE_VERIFY.txt
+          retention-days: 14
+          if-no-files-found: error

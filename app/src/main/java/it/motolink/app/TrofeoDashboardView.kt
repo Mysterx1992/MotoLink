@@ -77,6 +77,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onAssistantWhatsAppClick: (() -> Unit)? = null
     var onIntroToggleClick: (() -> Unit)? = null
     var onAdaptationClick: (() -> Unit)? = null
+    var onWifiRecoveryClick: (() -> Unit)? = null
     var onVersionClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
@@ -132,21 +133,21 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.FAVORITES,
             title = "PREFERITE · App",
             body = "In PREFERITE puoi configurare fino a 4 app.\n\nLe app selezionate vengono mostrate anche nella HOME per un accesso rapido.\n\nUsa Cambia per sostituire l’app di uno slot oppure X per rimuoverla.",
-            target = GuideTarget(125f, 350f, 700f, 870f)
+            target = GuideTarget(125f, 350f, 700f, 300f)
         ),
         GuideStep(
             Page.SUPPORT,
             SupportTab.LOG,
             title = "SUPPORTO · Log",
             body = "Il Log registra localmente gli eventi tecnici utili alla diagnosi e rimane disponibile finché non scegli Pulisci. Per mantenere MotoLink leggera, questa schermata mostra solo le ultime 50 righe; il file .txt locale e quello condiviso conservano invece il Log completo.\n\nCon Condividi puoi scegliere:\n\nESTERNO\nInvia il Log tramite le normali funzioni di condivisione Android.\n\nASSISTENTE\nInvia all’Assistente MotoLink una copia filtrata per quella singola richiesta. Il Log originale resta sul telefono.",
-            target = GuideTarget(90f, 185f, 760f, 1135f)
+            target = GuideTarget(481f, 1275f, 360f, 92f)
         ),
         GuideStep(
             Page.SUPPORT,
             SupportTab.ASSISTANT,
             title = "SUPPORTO · Assistente",
             body = "L’Assistente MotoLink è dedicato al supporto dell’app. Scrivi direttamente nel campo della chat e invia la domanda.\n\nIl Log non viene letto automaticamente. Per allegarlo usa SUPPORTO > Log > Condividi > Assistente.\n\nLa ⓘ accanto allo stato dell’Assistente spiega il funzionamento della chat, l’invio del Log e le informazioni sulla privacy.",
-            target = GuideTarget(90f, 185f, 760f, 1135f)
+            target = GuideTarget(101f, 198f, 740f, 78f)
         ),
         GuideStep(
             Page.SETTINGS,
@@ -180,15 +181,21 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         ),
         GuideStep(
             Page.SETTINGS,
+            title = "IMPOSTAZIONI · Ripristino Wi-Fi",
+            body = "TROFEO 500 · RECUPERO HOTSPOT\nUsa questo comando solo se il display della Trofeo 500 non si collega all'hotspot del telefono. A moto ferma, conferma SÌ e premi AVVIA.\n\nMotoLink esegue diagnosi Bluetooth Classic, SDP, BLE/GATT e scansione Wi-Fi. Può aiutare il collegamento, ma non modifica le credenziali e non garantisce il ripristino. La scritta Procedura completata richiede la verifica del simbolo Wi-Fi sul TFT.",
+            target = GuideTarget(58f, 1180f, 824f, 150f)
+        ),
+        GuideStep(
+            Page.SETTINGS,
             title = "IMPOSTAZIONI · Versione",
-            body = "VERSIONE\nTocca Versione app per vedere le novità e i bugfix della versione MotoLink installata. Le note sono disponibili anche senza connessione Internet e mostrano solo le modifiche della versione corrente.",
-            target = GuideTarget(58f, 1190f, 824f, 145f)
+            body = "VERSIONE\nTocca Versione app per vedere le novità e i bugfix della versione MotoLink installata. Le note sono disponibili anche senza connessione Internet e mostrano solo le modifiche della versione corrente.\n\nScorri le Impostazioni verso il basso per raggiungere questa voce.",
+            target = GuideTarget(58f, 1340f, 824f, 145f)
         ),
         GuideStep(
             Page.CREDITS,
             title = "CREDITI · Autore e Community",
             body = "In CREDITI trovi le informazioni sul progetto MotoLink e il collegamento alla community ufficiale.\n\nUsa Entra nel gruppo per aprire il gruppo WhatsApp MotoLink Mirroring dedicato a supporto, test e confronto tra utenti.",
-            target = GuideTarget(125f, 185f, 690f, 1025f)
+            target = GuideTarget(140f, 195f, 663f, 330f)
         ),
         GuideStep(
             Page.CREDITS,
@@ -235,6 +242,11 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
 
     private lateinit var bodyHost: FrameLayout
     private lateinit var navHost: FrameLayout
+
+    // Only Settings scrolls: navigation remains pinned at the bottom.
+    private var settingsScroll: ScrollView? = null
+    private var settingsScrollPosition = 0
+    private var settingsGuideScrollPosition = 0
 
     init {
         setBackgroundColor(Color.BLACK)
@@ -377,6 +389,8 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         if (width <= 0 || height <= 0) return
         assistantComposerEdit?.let { assistantDraft = it.text.toString() }
         assistantComposerEdit = null
+        if (page == Page.SETTINGS && !guideActive) settingsScroll?.let { settingsScrollPosition = it.scrollY }
+        settingsScroll = null
         removeAllViews()
         setBackgroundColor(Color.BLACK)
 
@@ -1155,13 +1169,40 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     // -----------------------------------------------------------------------------------------
 
     private fun buildSettings() {
-        bodyHost.addView(sectionTitle("Impostazioni"), lp(58f, 35f, 824f, 125f))
-        bodyHost.addView(settingCard(IconKind.POCKET, "Modalità tasca", "Disattiva schermo e comandi per evitare tocchi accidentali.", pocketModeEnabled, true) { onPocketModeClick?.invoke() }, lp(58f, 190f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.PLAY, "Animazione iniziale", "Riproduci l’animazione di apertura dell’app.", introEnabled, true) { onIntroToggleClick?.invoke() }, lp(58f, 395f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.BOOK, "Guida iniziale", "Mostra la guida completa alla prossima apertura.", guideNextLaunchEnabled, true) { onGuideClick?.invoke() }, lp(58f, 600f, 824f, 185f))
-        bodyHost.addView(settingCard(IconKind.WALLPAPER, "Sfondo", "Cambia lo sfondo in base alla moto collegata.", dynamicBackgroundEnabled, true) { onBackgroundToggleClick?.invoke() }, lp(58f, 805f, 824f, 170f))
-        bodyHost.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 995f, 824f, 175f))
-        bodyHost.addView(versionCard(), lp(58f, 1190f, 824f, 145f))
+        // Scrolling is local to the Settings page and cannot move the bottom navigation.
+        val scroller = ScrollView(context).apply {
+            isVerticalScrollBarEnabled = true
+            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            isFillViewport = false
+            clipToPadding = true
+        }
+        val inner = FrameLayout(context)
+        // The last card plus a generous bottom touch margin, at the same UI scale.
+        val contentHeight = pxH(1635f)
+        scroller.addView(inner, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, contentHeight))
+        bodyHost.addView(scroller, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        settingsScroll = scroller
+        inner.addView(sectionTitle("Impostazioni"), lp(58f, 35f, 824f, 125f))
+        inner.addView(settingCard(IconKind.POCKET, "Modalità tasca", "Disattiva schermo e comandi per evitare tocchi accidentali.", pocketModeEnabled, true) { onPocketModeClick?.invoke() }, lp(58f, 190f, 824f, 185f))
+        inner.addView(settingCard(IconKind.PLAY, "Animazione iniziale", "Riproduci l’animazione di apertura dell’app.", introEnabled, true) { onIntroToggleClick?.invoke() }, lp(58f, 395f, 824f, 185f))
+        inner.addView(settingCard(IconKind.BOOK, "Guida iniziale", "Mostra la guida completa alla prossima apertura.", guideNextLaunchEnabled, true) { onGuideClick?.invoke() }, lp(58f, 600f, 824f, 185f))
+        inner.addView(settingCard(IconKind.WALLPAPER, "Sfondo", "Cambia lo sfondo in base alla moto collegata.", dynamicBackgroundEnabled, true) { onBackgroundToggleClick?.invoke() }, lp(58f, 805f, 824f, 170f))
+        inner.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 995f, 824f, 175f))
+        inner.addView(settingCard(IconKind.GEAR, "Ripristino Wi-Fi", "Trofeo 500 · ripristino manuale hotspot", false, false) { onWifiRecoveryClick?.invoke() }, lp(58f, 1180f, 824f, 150f))
+        inner.addView(versionCard(), lp(58f, 1340f, 824f, 145f))
+
+        val viewportH = (height - topInset - bottomInset - navHeightPx).coerceAtLeast(1)
+        val maxScroll = (contentHeight - viewportH).coerceAtLeast(0)
+        val guideStep = guideSteps.getOrNull(guideStepIndex)
+        val desiredY = if (guideActive && guideStep?.page == Page.SETTINGS) {
+            // Automatically reveal every Settings card during the guided tour.
+            pxH((guideStep.target.y - 920f).coerceAtLeast(0f)).coerceIn(0, maxScroll)
+        } else settingsScrollPosition.coerceIn(0, maxScroll)
+        settingsGuideScrollPosition = desiredY
+        scroller.post {
+            scroller.scrollTo(0, desiredY)
+            if (!guideActive) settingsScrollPosition = scroller.scrollY
+        }
     }
 
     private fun settingCard(kind: IconKind, title: String, desc: String, enabled: Boolean, toggle: Boolean, click: () -> Unit): View {
@@ -1408,7 +1449,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
                     if (index < bikeProfiles.lastIndex) profilesHeight += 25f
                 }
             }
-            GuideTarget(58f, 285f, 824f, profilesHeight.coerceAtMost(875f))
+            GuideTarget(58f, 285f, 824f, profilesHeight.coerceAtMost(375f))
         } else if (step.page == Page.GARAGE && step.title == "GARAGE · Aggiungi moto") {
             // The QR card moves vertically depending on how many profiles are saved.
             // Mirror the exact Garage layout calculation so the spotlight always follows
@@ -1436,9 +1477,10 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         val padX = pxX(10f).toFloat()
         val padY = pxH(10f).toFloat()
         val left = pxX(target.x).toFloat() - padX
-        val top = topInset + pxY(target.y).toFloat() - padY
+        val settingsOffset = if (step.page == Page.SETTINGS) settingsGuideScrollPosition.toFloat() else 0f
+        val top = topInset + pxY(target.y).toFloat() - padY - settingsOffset
         val right = pxX(target.x + target.w).toFloat() + padX
-        val bottom = topInset + pxY(target.y).toFloat() + pxH(target.h).toFloat() + padY
+        val bottom = topInset + pxY(target.y).toFloat() + pxH(target.h).toFloat() + padY - settingsOffset
         return RectF(
             left.coerceAtLeast(4f),
             top.coerceAtLeast((topInset + 2).toFloat()),
@@ -1491,7 +1533,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         card.addView(guideTitleText(step.title), LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, pxH(52f)))
         val guideBodyText = accentedText(
             step.body,
-            20.5f,
+            23f,
             0xFFE1E5E2.toInt(),
             "HOME", "GARAGE", "PREFERITE", "SUPPORTO", "IMPOSTAZIONI", "CREDITI", "ADATTAMENTO", "MotoLink"
         ).apply {
@@ -1522,14 +1564,23 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         footer.addView(next, LinearLayout.LayoutParams(pxX(160f), pxH(62f)))
         card.addView(footer, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, pxH(70f)).apply { topMargin = pxH(12f) })
 
-        val cardParams = FrameLayout.LayoutParams(width - pxX(48f), pxH(375f))
-        cardParams.leftMargin = pxX(24f)
-        val placeTop = targetRect.centerY() > height * 0.58f
-        if (placeTop) {
-            cardParams.topMargin = topInset + pxH(92f)
-        } else {
-            cardParams.gravity = Gravity.BOTTOM
-            cardParams.bottomMargin = bottomInset + navHeightPx + pxH(20f)
+        // Fit the guide panel to the larger safe area above/below the spotlight.
+        // Never draw the panel across the highlighted control, SALTA or the navbar.
+        val margin = pxH(18f).toFloat()
+        val safeTop = topInset + pxH(102f).toFloat()
+        val safeBottom = (height - bottomInset - navHeightPx - pxH(16f)).toFloat()
+        val spaceAbove = (targetRect.top - margin - safeTop).coerceAtLeast(0f)
+        val spaceBelow = (safeBottom - targetRect.bottom - margin).coerceAtLeast(0f)
+        val above = spaceAbove >= spaceBelow
+        val space = if (above) spaceAbove else spaceBelow
+        // For unusually large spotlight regions the card must stay smaller.
+        // Its body is scrollable, rather than covering the target.
+        val cardHeight = min(space, pxH(680f).toFloat()).coerceAtLeast(1f)
+        val cardTop = if (above) targetRect.top - margin - cardHeight
+            else targetRect.bottom + margin
+        val cardParams = FrameLayout.LayoutParams(width - pxX(48f), cardHeight.roundToInt()).apply {
+            leftMargin = pxX(24f)
+            topMargin = cardTop.coerceIn(safeTop, (safeBottom - cardHeight).coerceAtLeast(safeTop)).roundToInt()
         }
         overlay.addView(card, cardParams)
     }

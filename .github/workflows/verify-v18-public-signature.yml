@@ -1,0 +1,59 @@
+name: Verify exact MotoLink V1.8 signed APK
+on:
+  push:
+    branches: ["release/v1.8-trofeo-wifi-recovery"]
+    paths: [".github/workflows/verify-v18-public-signature.yml"]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve frozen unsigned release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          gh run download 39447598611 --repo "$GITHUB_REPOSITORY" \
+            -n MotoLink_V1_8_UNSIGNED_ALIGNED -D candidate
+          echo "e831a5d1b60eb466df055aad7f6ba2893c9118a4efb67b9e8f795f86502e51cb  candidate/MotoLink1.8_unsigned_aligned.apk" | sha256sum -c -
+      - name: Reconstruct locally verified V1.8 signed APK from public data only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/v18_release/rebuild_verified_v18.py \
+            candidate/MotoLink1.8_unsigned_aligned.apk \
+            tools/v18_release/public_v18_signing_block.b64 MotoLink1.8.apk
+          echo "7775f37990a46f6a4544177920cbbb5abfc3e7e5e4f059624b8d58122aad89f6  MotoLink1.8.apk" | sha256sum -c -
+      - name: Verify official signature and exact package
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/apksigner" verify --verbose --print-certs MotoLink1.8.apk | tee VERIFY.txt
+          grep -Fq "Verified using v3 scheme (APK Signature Scheme v3): true" VERIFY.txt
+          grep -Fiq "9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100" VERIFY.txt
+          "$BT/aapt" dump badging MotoLink1.8.apk | tee BADGING.txt
+          grep -q "package: name='it.motolink.app'" BADGING.txt
+          grep -q "versionCode='34'" BADGING.txt
+          grep -q "versionName='1.8'" BADGING.txt
+          sha256sum MotoLink1.8.apk > MotoLink1.8_SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_PUBLIC_RECONSTRUCTION_VERIFIED
+          path: |
+            MotoLink1.8.apk
+            MotoLink1.8_SHA256.txt
+            BADGING.txt
+            VERIFY.txt
+          retention-days: 30
+          if-no-files-found: error
