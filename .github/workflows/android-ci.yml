@@ -44,6 +44,9 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      - name: Check 16 KiB ELF and APK ZIP alignment for all 64-bit native libraries
+        run: python3 scripts/check_android_16kb.py app/build/outputs/apk/debug/app-debug.apk
+
 # Questo workflow verifica che MotoLink compili correttamente.
 # Usa un runner standard ubuntu-latest su repository pubblico.
 # Non carica artefatti e non contiene né utilizza keystore, password
