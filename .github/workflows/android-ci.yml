@@ -47,6 +47,19 @@ jobs:
       - name: Check 16 KiB ELF and APK ZIP alignment for all 64-bit native libraries
         run: python3 scripts/check_android_16kb.py app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Build unsigned release App Bundle for Play compatibility
+        run: ./gradlew :app:bundleRelease --stacktrace
+
+      - name: Check App Bundle declares PAGE_ALIGNMENT_16K
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 -o /tmp/bundletool-all.jar \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          java -jar /tmp/bundletool-all.jar dump config \
+            --bundle=app/build/outputs/bundle/release/app-release.aab | tee /tmp/motolink_bundle_config.txt
+          grep -q 'PAGE_ALIGNMENT_16K' /tmp/motolink_bundle_config.txt
+
 # Questo workflow verifica che MotoLink compili correttamente.
 # Usa un runner standard ubuntu-latest su repository pubblico.
 # Non carica artefatti e non contiene né utilizza keystore, password
