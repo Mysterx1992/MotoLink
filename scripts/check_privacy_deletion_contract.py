@@ -78,7 +78,8 @@ check('SUPABASE_SERVICE_ROLE_KEY' not in client and
       'service_role' not in client.lower(),
       "service role is never embedded in Android client")
 check('motolink-assistant' not in handler and
-      "motolink-delete-session" in entry,
+      'from "./handler.ts"' in entry and
+      "motolink-delete-session" in handler,
       "existing production assistant not modified by deletion handler")
 
 check(all(EMAIL in x for x in [privacy, deletion, readme]),
