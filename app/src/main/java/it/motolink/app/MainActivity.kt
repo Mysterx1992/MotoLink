@@ -216,8 +216,7 @@ class MainActivity : Activity() {
             onWifiRecoveryClick = { showWifiRecoveryPrompt() }
             onVersionClick = { showInstalledReleaseNotes() }
             onPrivacyClick = { openPrivacyPolicy() }
-            onDeleteAssistantSessionClick = { confirmDeleteAssistantSession() }
-            onClearLogClick = { clearLocalLog() }
+            onClearLogClick = { showSupportCleanupChoices() }
             onCreditsGroupClick = { openWhatsAppGroup() }
             onCreditsDonateClick = { openPayPalDonation() }
             onOnboardingFinished = {
@@ -3488,6 +3487,26 @@ class MainActivity : Activity() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         @Suppress("DEPRECATION")
         startActivityForResult(intent, REQ_PROFILE_CAMERA)
+    }
+
+    // Pulisci is a safe entry point to two different operations: local Log cleanup
+    // or a separately confirmed remote anonymous Assistant account deletion.
+    private fun showSupportCleanupChoices() {
+        NeonDialogs.showCustom(
+            activity = this,
+            title = "Pulisci · Supporto",
+            message = "Scegli cosa vuoi pulire.\n\n" +
+                "PULISCI LOG rimuove soltanto il Log tecnico salvato su questo telefono.\n\n" +
+                "SESSIONE IA apre un'altra schermata di conferma per eliminare " +
+                "l'identità anonima dell'Assistente dal server. " +
+                "Non vengono rimossi i profili moto o le impostazioni.\n\n" +
+                "Puoi chiudere con X senza eliminare nulla.",
+            contentView = null,
+            positiveText = "PULISCI LOG",
+            negativeText = "SESSIONE IA",
+            onPositive = { clearLocalLog() },
+            onNegative = { confirmDeleteAssistantSession() }
+        )
     }
 
     private fun clearLocalLog() {
