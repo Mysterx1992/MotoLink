@@ -6,6 +6,7 @@ Supabase mutation, App Store submission or deletion.
 """
 from pathlib import Path
 import sys
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 EMAIL = "motolinkofficial.app@gmail.com"
@@ -75,7 +76,7 @@ check('user.id' in handler and
 check('Deno.serve(' in entry and
       '"SUPABASE_SERVICE_ROLE_KEY"' in entry,
       "server-only secret wired through Edge Function environment")
-check("[functions.motolink-delete-session]\\nverify_jwt = true".replace("\\\\n", "\\n") in supabase_cfg,
+check(tomllib.loads(supabase_cfg).get("functions", {}).get("motolink-delete-session", {}).get("verify_jwt") is True,
       "Supabase gateway requires JWT for self-deletion endpoint")
 check('SUPABASE_SERVICE_ROLE_KEY' not in client and
       'service_role' not in client.lower(),
