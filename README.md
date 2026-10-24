@@ -168,6 +168,7 @@ Per maggiori informazioni consulta [`PRIVACY.md`](PRIVACY.md).
 
 ## Supporto e community
 
+- **Email ufficiale per privacy e assistenza:** [motolinkofficial.app@gmail.com](mailto:motolinkofficial.app@gmail.com)
 - **Assistente integrato:** Supporto → Assistente
 - **Log tecnico:** Supporto → Log
 - **Community MotoLink Mirroring:** [gruppo WhatsApp](https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4)
