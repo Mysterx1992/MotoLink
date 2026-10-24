@@ -3503,7 +3503,7 @@ class MainActivity : Activity() {
                 "Puoi chiudere con X senza eliminare nulla.",
             contentView = null,
             positiveText = "PULISCI LOG",
-            negativeText = "SESSIONE IA",
+            negativeText = "ELIMINA SESSIONE",
             onPositive = { clearLocalLog() },
             onNegative = { confirmDeleteAssistantSession() }
         )
