@@ -216,6 +216,7 @@ class MainActivity : Activity() {
             onWifiRecoveryClick = { showWifiRecoveryPrompt() }
             onVersionClick = { showInstalledReleaseNotes() }
             onPrivacyClick = { openPrivacyPolicy() }
+            onDeleteAssistantSessionClick = { confirmDeleteAssistantSession() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
             onCreditsDonateClick = { openPayPalDonation() }
@@ -3630,6 +3631,48 @@ class MainActivity : Activity() {
                             ?: "Assistente temporaneamente non disponibile. Riprova più tardi."
                     )
                     AppLog.add("ASSISTENTE IA: richiesta fallita ${error.javaClass.simpleName}")
+                }
+            }
+        }
+    }
+
+    private fun confirmDeleteAssistantSession() {
+        NeonDialogs.showCustom(
+            this,
+            "Elimina sessione Assistente",
+            "Vuoi richiedere la cancellazione permanente della tua identità tecnica anonima dal server? " +
+                "Le impostazioni della moto e il Log sul telefono non saranno cancellati. " +
+                "Se utilizzerai di nuovo l'Assistente verrà creata una nuova identità anonima.",
+            null,
+            "ELIMINA",
+            "ANNULLA",
+            onPositive = { deleteAssistantSession() },
+            onNegative = {}
+        )
+    }
+
+    private fun deleteAssistantSession() {
+        aiIo.execute {
+            val result = MotoLinkAiClient(this).deleteAnonymousSession()
+            runOnUiThread {
+                result.onSuccess { deleted ->
+                    NeonDialogs.showInfo(
+                        this,
+                        "Elimina sessione Assistente",
+                        if (deleted)
+                            "Identità anonima eliminata dal server. I dati locali delle moto non sono stati modificati."
+                        else
+                            "Non è presente una sessione anonima salvata su questo telefono."
+                    )
+                    AppLog.add("PRIVACY: richiesta cancellazione sessione elaborata; eliminata=$deleted")
+                }.onFailure { err ->
+                    AppLog.add("PRIVACY: cancellazione sessione non confermata ${err.javaClass.simpleName}")
+                    NeonDialogs.showInfo(
+                        this,
+                        "Eliminazione non completata",
+                        "Il server non ha confermato la cancellazione. I dati di sessione sono rimasti sul telefono per un nuovo tentativo. " +
+                            "Riprova o scrivi a motolinkofficial.app@gmail.com."
+                    )
                 }
             }
         }
