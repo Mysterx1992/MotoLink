@@ -56,6 +56,21 @@ jobs:
       - name: Audit anonymous-session deletion and public privacy documentation
         run: python3 scripts/check_privacy_deletion_contract.py
 
+      - name: Parse manual disposable-user PowerShell test without executing
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/test_supabase_delete_disposable.ps1).Path,
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          Write-Host 'PASS: syntax-only PowerShell disposable account test'
+
       - name: Set up Deno for offline Supabase deletion tests
         uses: denoland/setup-deno@v2
         with:
