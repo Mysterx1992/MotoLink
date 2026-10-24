@@ -49,7 +49,15 @@ MotoLink non richiede `QUERY_ALL_PACKAGES`: la visibilità delle app è limitata
 
 ## Eliminazione e richieste sui dati
 
-I dati locali possono essere eliminati tramite **Impostazioni Android → MotoLink → Spazio di archiviazione → Cancella dati** o disinstallando l'app. Cancellare dati o disinstallare l'app **non equivale necessariamente a eliminare il record della sessione anonima conservato da Supabase**. Per informazioni o per richiedere la verifica e, ove possibile, la cancellazione dei dati associati alla sessione tecnica lato server, scrivere a **motolinkofficial.app@gmail.com**. La procedura tecnica di identificazione della sessione e cancellazione dei record Supabase deve ancora essere completata e validata prima della distribuzione su Google Play.
+**Contatto ufficiale:** [motolinkofficial.app@gmail.com](mailto:motolinkofficial.app@gmail.com). La procedura e le istruzioni aggiornate per le richieste sono disponibili nella [pagina pubblica Eliminazione dati](DATA_DELETION.md).
+
+I dati locali possono essere eliminati tramite **Impostazioni Android → MotoLink → Spazio di archiviazione → Cancella dati** oppure disinstallando l'app. Il Log locale può essere cancellato separatamente mediante **Supporto → Log → Pulisci**.
+
+L'Assistente utilizza un'identità tecnica anonima Supabase Auth che **non viene cancellata automaticamente** quando l'app è disinstallata o quando si cancellano i dati del telefono.
+
+Nella versione in preparazione è previsto un comando **Impostazioni → Elimina sessione Assistente**. A seguito di una conferma esplicita, MotoLink chiederà a un endpoint Supabase autenticato di eliminare l'identità tecnica anonima associata alla sessione corrente. I token locali saranno rimossi **solo dopo** conferma positiva del server. Se l'utente ricomincia a usare l'Assistente verrà creata una nuova sessione anonima.
+
+**La cancellazione automatica lato server non è ancora disponibile nella V1.8 pubblicata:** è una modifica in preparazione che richiede l'attivazione e verifica dell'endpoint sul backend. Per richieste relative ai dati, compresi i casi senza app installata, consultare la pagina di eliminazione dati e scrivere all'email ufficiale. Non inviare password, token, codici QR, log completi o credenziali.
 
 ## Documenti dei fornitori
 
