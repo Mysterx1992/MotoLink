@@ -3497,7 +3497,7 @@ class MainActivity : Activity() {
             title = "Pulisci · Supporto",
             message = "Scegli cosa vuoi pulire.\n\n" +
                 "PULISCI LOG rimuove soltanto il Log tecnico salvato su questo telefono.\n\n" +
-                "SESSIONE IA apre un'altra schermata di conferma per eliminare " +
+                "ELIMINA SESSIONE apre un'altra schermata di conferma per eliminare " +
                 "l'identità anonima dell'Assistente dal server. " +
                 "Non vengono rimossi i profili moto o le impostazioni.\n\n" +
                 "Puoi chiudere con X senza eliminare nulla.",
