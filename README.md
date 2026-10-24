@@ -164,10 +164,13 @@ Le funzioni tecniche possono richiedere:
 
 Per maggiori informazioni consulta [`PRIVACY.md`](PRIVACY.md).
 
+Per informazioni sulle richieste di cancellazione della sessione tecnica dell'Assistente e dei dati, consulta [`DATA_DELETION.md`](DATA_DELETION.md). La cancellazione automatica dal telefono è ancora in preparazione e non è inclusa nella V1.8 ufficiale.
+
 ---
 
 ## Supporto e community
 
+- **Email ufficiale per privacy e assistenza:** [motolinkofficial.app@gmail.com](mailto:motolinkofficial.app@gmail.com)
 - **Assistente integrato:** Supporto → Assistente
 - **Log tecnico:** Supporto → Log
 - **Community MotoLink Mirroring:** [gruppo WhatsApp](https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4)

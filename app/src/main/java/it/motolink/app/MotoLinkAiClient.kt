@@ -55,6 +55,47 @@ class MotoLinkAiClient(context: Context) {
         }
     }
 
+    /**
+     * Delete ONLY the current anonymous assistant identity. Never create a new
+     * session merely to delete it. Local credentials remain until server confirms.
+     *
+     * Requires deployed motolink-delete-session Edge Function with verify_jwt=true.
+     */
+    fun deleteAnonymousSession(): Result<Boolean> = runCatching {
+        val access = prefs.getString("access_token", null)
+        val refresh = prefs.getString("refresh_token", null)
+        if (access.isNullOrBlank() && refresh.isNullOrBlank()) return@runCatching false
+
+        val token = if (!access.isNullOrBlank() &&
+            prefs.getLong("expires_at_ms", 0L) > System.currentTimeMillis() + 60_000L
+        ) {
+            access
+        } else {
+            if (refresh.isNullOrBlank()) {
+                throw IllegalStateException("Sessione non recuperabile. Scrivi a motolinkofficial.app@gmail.com per assistenza.")
+            }
+            refreshSession(refresh)
+        }
+
+        val conn = open("$supabaseUrl/functions/v1/motolink-delete-session", "POST").apply {
+            setRequestProperty("apikey", publishableKey)
+            setRequestProperty("Authorization", "Bearer $token")
+        }
+        try {
+            writeJson(conn, JSONObject())
+            val status = conn.responseCode
+            val body = readBody(conn)
+            if (status !in 200..299 || !JSONObject(body).optBoolean("deleted", false)) {
+                throw IllegalStateException("Cancellazione non confermata dal server (HTTP $status). Riprova più tardi.")
+            }
+            // Never erase the only client-side proof of identity on failure.
+            clearSession()
+            true
+        } finally {
+            conn.disconnect()
+        }
+    }
+
     private fun ensureAccessToken(): String {
         val now = System.currentTimeMillis()
         val access = prefs.getString("access_token", null)

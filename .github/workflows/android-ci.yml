@@ -44,7 +44,80 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      - name: Check 16 KiB ELF and APK ZIP alignment for all 64-bit native libraries
+        run: python3 scripts/check_android_16kb.py app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Verify isolated test package identity and archive checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/motolink_test_badging.txt
+          grep -Fq "package: name='it.motolink.app.preplaytest2'" /tmp/motolink_test_badging.txt
+          grep -Fq "application-label:'MotoLink TEST 2'" /tmp/motolink_test_badging.txt
+          sha256sum "$APK" | tee "${APK}.sha256"
+
+      - name: Upload isolated MotoLink TEST installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_PREPLAY_TEST2_DEBUG_APK
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Audit MediaProjection foreground service and Google Maps notification contract
+        run: python3 scripts/check_play_permissions.py
+
+      - name: Audit overlay permission and internet/LAN network policy
+        run: python3 scripts/check_play_overlay_network.py
+
+      - name: Audit anonymous-session deletion and public privacy documentation
+        run: python3 scripts/check_privacy_deletion_contract.py
+
+      - name: Parse manual disposable-user PowerShell test without executing
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/test_supabase_delete_disposable.ps1).Path,
+            [ref]$tokens, [ref]$errors
+          )
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+          Write-Host 'PASS: syntax-only PowerShell disposable account test'
+
+      - name: Set up Deno for offline Supabase deletion tests
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check anonymous-session deletion Edge Function
+        run: deno check supabase/functions/motolink-delete-session/index.ts
+
+      - name: Synthetic Supabase deletion tests (NO production access)
+        run: deno test --no-remote supabase/functions/motolink-delete-session/handler_test.ts
+
+      - name: Build unsigned release App Bundle for Play compatibility
+        run: ./gradlew :app:bundleRelease --stacktrace
+
+      - name: Check App Bundle declares PAGE_ALIGNMENT_16K
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 -o /tmp/bundletool-all.jar \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          java -jar /tmp/bundletool-all.jar dump config \
+            --bundle=app/build/outputs/bundle/release/app-release.aab | tee /tmp/motolink_bundle_config.txt
+          grep -q 'PAGE_ALIGNMENT_16K' /tmp/motolink_bundle_config.txt
+
+# COMBINED PREPUBLISH VALIDATION ONLY (PR draft): V1.8 release untouched.
 # Questo workflow verifica che MotoLink compili correttamente.
 # Usa un runner standard ubuntu-latest su repository pubblico.
-# Non carica artefatti e non contiene né utilizza keystore, password
-# o credenziali di firma release.
+# Carica solo APK DEBUG con package isolato it.motolink.app.preplaytest2,
+# firmato dalla chiave DEBUG temporanea del runner per test fisici.
+# Non contiene né utilizza keystore, password o credenziali di firma release.

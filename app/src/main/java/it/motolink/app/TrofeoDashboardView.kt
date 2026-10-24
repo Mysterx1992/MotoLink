@@ -79,6 +79,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onAdaptationClick: (() -> Unit)? = null
     var onWifiRecoveryClick: (() -> Unit)? = null
     var onVersionClick: (() -> Unit)? = null
+    var onPrivacyClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
     var onCreditsDonateClick: (() -> Unit)? = null
@@ -96,7 +97,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.HOME,
             title = "HOME · Navigazione",
-            body = "HOME\nLa schermata principale: avvio del mirroring, stato della connessione e accesso rapido alle app preferite.\n\nGARAGE\nGestisci i profili delle tue moto e le relative impostazioni personali.\n\nPREFERITE\nScegli le app che vuoi avere sempre a portata di mano.\n\nSUPPORTO\nConsulta il Log tecnico o chiedi aiuto all’Assistente MotoLink.\n\nIMPOSTAZIONI\nPersonalizza il comportamento dell’app e del mirroring.\n\nCREDITI\nInformazioni sul progetto, community ufficiale e possibilità di sostenere MotoLink con una donazione volontaria PayPal.",
+            body = "HOME\nLa schermata principale: avvio del mirroring, stato della connessione e accesso rapido alle app preferite.\n\nGARAGE\nGestisci i profili delle tue moto e le relative impostazioni personali.\n\nPREFERITE\nScegli le app che vuoi avere sempre a portata di mano.\n\nSUPPORTO\nConsulta il Log tecnico, pulisci il Log locale o gestisci la sessione anonima dell’Assistente; puoi anche chiedere aiuto all’Assistente MotoLink.\n\nIMPOSTAZIONI\nPersonalizza il comportamento dell’app e del mirroring.\n\nCREDITI\nInformazioni sul progetto, community ufficiale e possibilità di sostenere MotoLink con una donazione volontaria PayPal.",
             target = GuideTarget(35f, 1500f, 870f, 150f)
         ),
         GuideStep(
@@ -139,8 +140,15 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.SUPPORT,
             SupportTab.LOG,
             title = "SUPPORTO · Log",
-            body = "Il Log registra localmente gli eventi tecnici utili alla diagnosi e rimane disponibile finché non scegli Pulisci. Per mantenere MotoLink leggera, questa schermata mostra solo le ultime 50 righe; il file .txt locale e quello condiviso conservano invece il Log completo.\n\nCon Condividi puoi scegliere:\n\nESTERNO\nInvia il Log tramite le normali funzioni di condivisione Android.\n\nASSISTENTE\nInvia all’Assistente MotoLink una copia filtrata per quella singola richiesta. Il Log originale resta sul telefono.",
+            body = "Il Log registra localmente gli eventi tecnici utili alla diagnosi. Per mantenere MotoLink leggera, questa schermata mostra solo le ultime 50 righe; il file .txt locale e quello condiviso conservano invece il Log completo.\n\nPULISCI apre una scelta separata fra rimozione del solo Log locale e gestione della sessione anonima Assistente. Non elimina automaticamente la sessione: è necessaria un'ulteriore conferma.\n\nCon Condividi puoi scegliere:\n\nESTERNO\nInvia il Log tramite le normali funzioni di condivisione Android.\n\nASSISTENTE\nInvia all’Assistente MotoLink una copia filtrata per quella singola richiesta. Il Log originale resta sul telefono.",
             target = GuideTarget(481f, 1275f, 360f, 92f)
+        ),
+        GuideStep(
+            Page.SUPPORT,
+            SupportTab.LOG,
+            title = "SUPPORTO · Pulisci e sessione",
+            body = "Tocca Pulisci per aprire il menu di gestione dati.\n\nPULISCI LOG cancella solo i Log tecnici memorizzati sul telefono.\n\nELIMINA SESSIONE apre un'ulteriore schermata di conferma prima di richiedere a Supabase la cancellazione della tua identità anonima dell'Assistente. Le moto e le preferenze non vengono cancellate. Se non confermi, nessun account viene eliminato.",
+            target = GuideTarget(101f, 1275f, 360f, 92f)
         ),
         GuideStep(
             Page.SUPPORT,
@@ -192,6 +200,12 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             target = GuideTarget(58f, 1340f, 824f, 145f)
         ),
         GuideStep(
+            Page.SETTINGS,
+            title = "IMPOSTAZIONI · Informativa privacy",
+            body = "Apri Informativa privacy per leggere quali dati vengono trattati, come vengono utilizzati l'Assistente e i Log e quali sono i tuoi diritti.\n\nPer cancellare la sessione anonima dell'Assistente, vai invece in SUPPORTO > Log > Pulisci > Elimina sessione: l'eliminazione dal server richiede una conferma separata.",
+            target = GuideTarget(58f, 1505f, 824f, 150f)
+        ),
+        GuideStep(
             Page.CREDITS,
             title = "CREDITI · Autore e Community",
             body = "In CREDITI trovi le informazioni sul progetto MotoLink e il collegamento alla community ufficiale.\n\nUsa Entra nel gruppo per aprire il gruppo WhatsApp MotoLink Mirroring dedicato a supporto, test e confronto tra utenti.",
@@ -200,8 +214,8 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.CREDITS,
             title = "CREDITI · Donazioni",
-            body = "Sotto le sezioni Autore e Community trovi il pulsante ufficiale PayPal per sostenere MotoLink.\n\nLa donazione è completamente volontaria: non sblocca funzioni e non limita l'app. Le donazioni verranno utilizzate esclusivamente per migliorare MotoLink: sviluppo, test, compatibilità, manutenzione, correzione bug e stabilità dell'app. Toccando il pulsante si apre la pagina PayPal esterna.\n\nHai completato la guida. Premi FINE per tornare alla HOME.",
-            target = GuideTarget(125f, 1245f, 690f, 120f)
+            body = "In CREDITI il pulsante PayPal Donazione si trova subito sopra la scritta © 2026 dell'autore, dopo le schede Autore e Community.\n\nLa donazione è completamente volontaria: non sblocca funzioni e non limita l'app. Serve a sostenere lo sviluppo e i test di MotoLink. Toccando il pulsante si apre la pagina PayPal esterna.\n\nHai completato la guida. Premi FINE per tornare alla HOME.",
+            target = GuideTarget(125f, 1200f, 690f, 110f)
         )
     )
 
@@ -1178,7 +1192,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         }
         val inner = FrameLayout(context)
         // The last card plus a generous bottom touch margin, at the same UI scale.
-        val contentHeight = pxH(1635f)
+        val contentHeight = pxH(1830f)
         scroller.addView(inner, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, contentHeight))
         bodyHost.addView(scroller, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         settingsScroll = scroller
@@ -1190,7 +1204,14 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         inner.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 995f, 824f, 175f))
         inner.addView(settingCard(IconKind.GEAR, "Ripristino Wi-Fi", "Trofeo 500 · ripristino manuale hotspot", false, false) { onWifiRecoveryClick?.invoke() }, lp(58f, 1180f, 824f, 150f))
         inner.addView(versionCard(), lp(58f, 1340f, 824f, 145f))
-
+        // Google Play: discoverable, user-initiated privacy policy link.
+        // Kept below Versione app within the existing scroll container.
+        inner.addView(
+            settingCard(IconKind.INFO, "Informativa privacy", "Leggi come vengono trattati i dati.", false, false) {
+                onPrivacyClick?.invoke()
+            },
+            lp(58f, 1505f, 824f, 150f)
+        )
         val viewportH = (height - topInset - bottomInset - navHeightPx).coerceAtLeast(1)
         val maxScroll = (contentHeight - viewportH).coerceAtLeast(0)
         val guideStep = guideSteps.getOrNull(guideStepIndex)
@@ -1268,15 +1289,14 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         bodyHost.addView(authorCard(), lp(140f, 195f, 663f, 530f))
         bodyHost.addView(communityCard(), lp(140f, 745f, 663f, 455f))
 
+        // PayPal Donate comes before the copyright credit; no WebView behavior changes.
+        bodyHost.addView(payPalDonateButton(), lp(140f, 1210f, 663f, 90f))
         bodyHost.addView(
             text("© 2026 Emanuele. Tutti i diritti riservati.", 21f, 0xFF9D9D9D.toInt(), false).apply {
                 gravity = Gravity.CENTER
             },
-            lp(165f, 1210f, 615f, 35f)
+            lp(165f, 1310f, 615f, 35f)
         )
-
-        // Official PayPal Donate button: last element of the page, outside both cards.
-        bodyHost.addView(payPalDonateButton(), lp(140f, 1260f, 663f, 90f))
     }
 
     private fun authorCard(): View {
