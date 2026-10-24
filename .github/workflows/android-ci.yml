@@ -47,6 +47,26 @@ jobs:
       - name: Check 16 KiB ELF and APK ZIP alignment for all 64-bit native libraries
         run: python3 scripts/check_android_16kb.py app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Verify isolated test package identity and archive checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0/aapt" dump badging "$APK" | tee /tmp/motolink_test_badging.txt
+          grep -Fq "package: name='it.motolink.app.preplaytest'" /tmp/motolink_test_badging.txt
+          grep -Fq "application-label:'MotoLink TEST'" /tmp/motolink_test_badging.txt
+          sha256sum "$APK" | tee "${APK}.sha256"
+
+      - name: Upload isolated MotoLink TEST installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_PREPLAY_TEST_DEBUG_APK
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Audit MediaProjection foreground service and Google Maps notification contract
         run: python3 scripts/check_play_permissions.py
 
@@ -98,5 +118,6 @@ jobs:
 # COMBINED PREPUBLISH VALIDATION ONLY (PR draft): V1.8 release untouched.
 # Questo workflow verifica che MotoLink compili correttamente.
 # Usa un runner standard ubuntu-latest su repository pubblico.
-# Non carica artefatti e non contiene né utilizza keystore, password
-# o credenziali di firma release.
+# Carica solo APK DEBUG con package isolato it.motolink.app.preplaytest,
+# firmato dalla chiave DEBUG temporanea del runner per test fisici.
+# Non contiene né utilizza keystore, password o credenziali di firma release.
