@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <!-- Distinct task identity for the debug-only side-by-side test app. -->
+        <activity
+            android:name="it.motolink.app.ProximityGateActivity"
+            android:taskAffinity="it.motolink.app.preplaytest.proximitygate"
+            tools:replace="android:taskAffinity" />
+    </application>
+</manifest>
