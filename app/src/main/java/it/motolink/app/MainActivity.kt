@@ -215,6 +215,7 @@ class MainActivity : Activity() {
             onAdaptationClick = { toggleAdaptationSetting() }
             onWifiRecoveryClick = { showWifiRecoveryPrompt() }
             onVersionClick = { showInstalledReleaseNotes() }
+            onPrivacyClick = { openPrivacyPolicy() }
             onClearLogClick = { clearLocalLog() }
             onCreditsGroupClick = { openWhatsAppGroup() }
             onCreditsDonateClick = { openPayPalDonation() }
@@ -3631,6 +3632,21 @@ class MainActivity : Activity() {
                     AppLog.add("ASSISTENTE IA: richiesta fallita ${error.javaClass.simpleName}")
                 }
             }
+        }
+    }
+
+    private fun openPrivacyPolicy() {
+        val policyUrl = "https://github.com/Mysterx1992/MotoLink/blob/main/PRIVACY.md"
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(policyUrl)))
+            AppLog.add("PRIVACY: apertura informativa pubblica richiesta dall'utente")
+        } catch (t: Throwable) {
+            AppLog.add("PRIVACY: apertura informativa non riuscita ${t.javaClass.simpleName}")
+            NeonDialogs.showInfo(
+                this,
+                "Informativa privacy",
+                "Impossibile aprire la pagina. Consulta PRIVACY.md nel repository ufficiale MotoLink su GitHub."
+            )
         }
     }
 
