@@ -79,6 +79,8 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onAdaptationClick: (() -> Unit)? = null
     var onWifiRecoveryClick: (() -> Unit)? = null
     var onVersionClick: (() -> Unit)? = null
+    var onPrivacyClick: (() -> Unit)? = null
+    var onDeleteAssistantSessionClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
     var onCreditsDonateClick: (() -> Unit)? = null
@@ -1178,7 +1180,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         }
         val inner = FrameLayout(context)
         // The last card plus a generous bottom touch margin, at the same UI scale.
-        val contentHeight = pxH(1635f)
+        val contentHeight = pxH(2020f)
         scroller.addView(inner, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, contentHeight))
         bodyHost.addView(scroller, FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         settingsScroll = scroller
@@ -1190,6 +1192,22 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         inner.addView(settingCard(IconKind.ZOOM, "Adattamento", MirrorAdaptationConfig.SETTINGS_DESCRIPTION, adaptationEnabled, true) { onAdaptationClick?.invoke() }, lp(58f, 995f, 824f, 175f))
         inner.addView(settingCard(IconKind.GEAR, "Ripristino Wi-Fi", "Trofeo 500 · ripristino manuale hotspot", false, false) { onWifiRecoveryClick?.invoke() }, lp(58f, 1180f, 824f, 150f))
         inner.addView(versionCard(), lp(58f, 1340f, 824f, 145f))
+        // Google Play: discoverable, user-initiated privacy policy link.
+        // Kept below Versione app within the existing scroll container.
+        inner.addView(
+            settingCard(IconKind.INFO, "Informativa privacy", "Leggi come vengono trattati i dati.", false, false) {
+                onPrivacyClick?.invoke()
+            },
+            lp(58f, 1505f, 824f, 150f)
+        )
+        // The anonymous Supabase Auth identity is only used by the optional
+        // support assistant; it is not related to the motorcycle profiles.
+        inner.addView(
+            settingCard(IconKind.TRASH, "Elimina sessione Assistente", "Rimuovi l'identità tecnica anonima dal server.", false, false) {
+                onDeleteAssistantSessionClick?.invoke()
+            },
+            lp(58f, 1675f, 824f, 165f)
+        )
 
         val viewportH = (height - topInset - bottomInset - navHeightPx).coerceAtLeast(1)
         val maxScroll = (contentHeight - viewportH).coerceAtLeast(0)
