@@ -55,14 +55,25 @@ success_position = delete_method.find("clearSession()")
 ack_position = delete_method.find("if (status !in 200..299")
 check(success_position > ack_position > 0, "client cannot clear identity before server confirmation")
 
-check("onDeleteAssistantSessionClick = { confirmDeleteAssistantSession() }" in activity and
+check("onClearLogClick = { showSupportCleanupChoices() }" in activity and
+      "onNegative = { confirmDeleteAssistantSession() }" in activity and
+      "onPositive = { clearLocalLog() }" in activity and
       "onPositive = { deleteAssistantSession() }" in activity and
       "aiIo.execute {" in activity and
       "fun deleteAssistantSession()" in activity,
-      "confirmation, user-initiated action and background IO correctly wired")
-check('Elimina sessione Assistente' in ui and
-      'onDeleteAssistantSessionClick?.invoke()' in ui,
-      "deletion control discoverable in Settings")
+      "Support cleanup choice, separate confirmation and background IO wired")
+check('onClearLogClick?.invoke()' in ui and
+      'SUPPORTO · Pulisci e sessione' in ui and
+      'IMPOSTAZIONI · Informativa privacy' in ui and
+      "onPrivacyClick?.invoke()" in ui,
+      "Support cleanup and privacy onboarding are discoverable")
+check('settingCard(IconKind.TRASH, "Elimina sessione Assistente"' not in ui and
+      'onDeleteAssistantSessionClick?.invoke()' not in ui,
+      "old duplicate deletion card removed from Settings")
+donate_index = ui.find('bodyHost.addView(payPalDonateButton(),')
+copyright_index = ui.find('text("© 2026 Emanuele.')
+check(donate_index >= 0 and copyright_index > donate_index,
+      "PayPal donate placed before copyright line")
 
 check('verify_jwt=true' in handler and
       "req.headers" not in handler,
