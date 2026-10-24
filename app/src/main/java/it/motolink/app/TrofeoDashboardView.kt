@@ -80,7 +80,6 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     var onWifiRecoveryClick: (() -> Unit)? = null
     var onVersionClick: (() -> Unit)? = null
     var onPrivacyClick: (() -> Unit)? = null
-    var onDeleteAssistantSessionClick: (() -> Unit)? = null
     var onClearLogClick: (() -> Unit)? = null
     var onCreditsGroupClick: (() -> Unit)? = null
     var onCreditsDonateClick: (() -> Unit)? = null
@@ -148,7 +147,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             Page.SUPPORT,
             SupportTab.LOG,
             title = "SUPPORTO · Pulisci e sessione",
-            body = "Tocca Pulisci per aprire il menu di gestione dati.\n\nPULISCI LOG cancella solo i Log tecnici memorizzati sul telefono.\n\nELIMINA SESSIONE apre un'ulteriore schermata di conferma prima di richiedere a Supabase la cancellazione della tua identità anonima dell'Assistente. Le moto e le preferenze non vengono cancellate. Se non confermi, nessun account viene eliminato.",
+            body = "Tocca Pulisci per aprire il menu di gestione dati.\n\nPULISCI LOG cancella solo i Log tecnici memorizzati sul telefono.\n\nSESSIONE IA apre un'ulteriore schermata di conferma prima di richiedere a Supabase la cancellazione della tua identità anonima dell'Assistente. Le moto e le preferenze non vengono cancellate. Se non confermi, nessun account viene eliminato.",
             target = GuideTarget(101f, 1275f, 360f, 92f)
         ),
         GuideStep(
@@ -203,7 +202,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         GuideStep(
             Page.SETTINGS,
             title = "IMPOSTAZIONI · Informativa privacy",
-            body = "Apri Informativa privacy per leggere quali dati vengono trattati, come vengono utilizzati l'Assistente e i Log e quali sono i tuoi diritti.\n\nPer cancellare la sessione anonima dell'Assistente, vai invece in SUPPORTO > Log > Pulisci > Elimina sessione: l'eliminazione dal server richiede una conferma separata.",
+            body = "Apri Informativa privacy per leggere quali dati vengono trattati, come vengono utilizzati l'Assistente e i Log e quali sono i tuoi diritti.\n\nPer cancellare la sessione anonima dell'Assistente, vai invece in SUPPORTO > Log > Pulisci > Sessione IA: l'eliminazione dal server richiede una conferma separata.",
             target = GuideTarget(58f, 1505f, 824f, 150f)
         ),
         GuideStep(
