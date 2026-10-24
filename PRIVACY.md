@@ -4,6 +4,12 @@ Ultimo aggiornamento: 24 ottobre 2026.
 
 Questa informativa descrive l'uso dei dati da parte dell'app Android **MotoLink** (`it.motolink.app`), inclusi gli strumenti di mirroring, navigazione BLE e supporto. Le funzioni facoltative richiedono autorizzazioni o azioni esplicite dell'utente.
 
+## Contatto privacy e assistenza
+
+**MotoLink — email ufficiale:** [motolinkofficial.app@gmail.com](mailto:motolinkofficial.app@gmail.com).
+
+Puoi utilizzare questo indirizzo per richieste sulla privacy, per il supporto all'app e per chiedere informazioni sul trattamento o sulla cancellazione dei dati lato server. Le richieste vengono valutate in base ai dati effettivamente disponibili e alle possibilità tecniche; questa indicazione non implica una funzione automatica di eliminazione delle sessioni anonime.
+
 ## Dati e impostazioni conservati sul telefono
 
 MotoLink può conservare sul dispositivo i profili delle moto, i dati di collegamento inseriti/scansionati, le preferenze relative ad app, schermata, orientamento e adattamento del display, le impostazioni delle funzioni e il **Log tecnico MotoLink**.
@@ -43,7 +49,7 @@ MotoLink non richiede `QUERY_ALL_PACKAGES`: la visibilità delle app è limitata
 
 ## Eliminazione e richieste sui dati
 
-I dati locali possono essere eliminati tramite **Impostazioni Android → MotoLink → Spazio di archiviazione → Cancella dati** o disinstallando l'app. Cancellare dati o disinstallare l'app **non equivale necessariamente a eliminare il record della sessione anonima conservato da Supabase**. La procedura per eventuali richieste di cancellazione lato server e il contatto privacy ufficiale devono essere pubblicati prima della distribuzione su Google Play.
+I dati locali possono essere eliminati tramite **Impostazioni Android → MotoLink → Spazio di archiviazione → Cancella dati** o disinstallando l'app. Cancellare dati o disinstallare l'app **non equivale necessariamente a eliminare il record della sessione anonima conservato da Supabase**. Per informazioni o per richiedere la verifica e, ove possibile, la cancellazione dei dati associati alla sessione tecnica lato server, scrivere a **motolinkofficial.app@gmail.com**. La procedura tecnica di identificazione della sessione e cancellazione dei record Supabase deve ancora essere completata e validata prima della distribuzione su Google Play.
 
 ## Documenti dei fornitori
 
