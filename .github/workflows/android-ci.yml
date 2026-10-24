@@ -44,6 +44,9 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      - name: Check Play MediaProjection and notification access contract
+        run: python3 scripts/check_play_permissions.py
+
 # Questo workflow verifica che MotoLink compili correttamente.
 # Usa un runner standard ubuntu-latest su repository pubblico.
 # Non carica artefatti e non contiene né utilizza keystore, password
