@@ -44,6 +44,17 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      - name: Set up Deno for isolated privacy function tests
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check anonymous-session deletion Edge Function
+        run: deno check supabase/functions/motolink-delete-session/index.ts
+
+      - name: Synthetic self-deletion authorization tests (no network)
+        run: deno test --no-remote supabase/functions/motolink-delete-session/handler_test.ts
+
 # Questo workflow verifica che MotoLink compili correttamente.
 # Usa un runner standard ubuntu-latest su repository pubblico.
 # Non carica artefatti e non contiene né utilizza keystore, password
