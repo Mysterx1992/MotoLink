@@ -1,70 +1,55 @@
-# Privacy — MotoLink
+# Informativa privacy — MotoLink
 
-Questa pagina descrive il comportamento tecnico di MotoLink rispetto ai dati dell'utente.
+Ultimo aggiornamento: 24 ottobre 2026.
 
-## Dati conservati sul telefono
+Questa informativa descrive l'uso dei dati da parte dell'app Android **MotoLink** (`it.motolink.app`), inclusi gli strumenti di mirroring, navigazione BLE e supporto. Le funzioni facoltative richiedono autorizzazioni o azioni esplicite dell'utente.
 
-MotoLink può conservare localmente:
+## Dati e impostazioni conservati sul telefono
 
-- profili moto e relative preferenze;
-- app preferite;
-- impostazioni dell'interfaccia e dell'adattamento;
-- stato delle funzioni configurate dall'utente;
-- Log tecnico MotoLink.
+MotoLink può conservare sul dispositivo i profili delle moto, i dati di collegamento inseriti/scansionati, le preferenze relative ad app, schermata, orientamento e adattamento del display, le impostazioni delle funzioni e il **Log tecnico MotoLink**.
 
-Il Log locale non viene cancellato automaticamente dall'app: resta disponibile fino al comando esplicito **Pulisci** o alla cancellazione dei dati dell'app.
+Il Log può contenere informazioni tecniche sulla connessione, sui dispositivi e sugli errori. Il Log locale non è cancellato automaticamente: per rimuoverlo, utilizzare **Supporto → Log → Pulisci**, oppure eliminare i dati dell'app dalle impostazioni Android. Le preferenze si rimuovono cancellando i dati dell'app o disinstallandola.
 
-## Log e diagnostica
+## Mirroring, rete locale, scansione QR e navigazione
 
-Una normale conversazione con l'Assistente **non invia automaticamente il Log**.
+- **Mirroring:** la funzione di acquisizione dello schermo utilizza l'autorizzazione MediaProjection concessa tramite Android. I contenuti catturati sono destinati al trasferimento sul TFT/dispositivo compatibile tramite la connessione locale. La funzione non invia il video al backend dell'Assistente MotoLink.
+- **Connessione moto:** l'app utilizza i permessi Android necessari per Wi-Fi, Bluetooth/BLE, diagnostica di collegamento e, ove previsto dalla versione Android, autorizzazioni legacy di posizione. Alcuni dettagli tecnici possono comparire nel Log locale.
+- **QR:** MotoLink usa Google Code Scanner e, se necessario, lo scanner interno CameraX. I servizi Google coinvolti possono trattare dati tecnici secondo le proprie informative.
+- **Google Maps:** con l'accesso alle notifiche abilitato dall'utente, il listener MotoLink seleziona le notifiche provenienti da Google Maps (`com.google.android.apps.maps`) e ne interpreta le indicazioni di navigazione da inviare al TFT via BLE. L'accesso viene gestito nelle impostazioni Android e può essere revocato dall'utente.
 
-Il Log può lasciare il dispositivo soltanto su azione volontaria dell'utente:
+## Assistente MotoLink e servizi esterni
 
-- **Condividi esternamente**: Android apre il normale pannello di condivisione;
-- **Invia all'Assistente**: MotoLink prepara una diagnostica filtrata e la invia con la richiesta di assistenza.
+L'**Assistente** è facoltativo e necessita di Internet. Quando viene utilizzato:
 
-Prima dell'invio all'Assistente viene applicato un filtro locale. Il backend applica inoltre un secondo filtro server-side.
+1. L'app crea o aggiorna una **sessione tecnica anonima** con **Supabase Auth**. I relativi token vengono conservati localmente nell'archivio privato dell'app, per consentire l'autenticazione delle richieste. Supabase gestisce i record e i metadati della sessione sul proprio servizio.
+2. Alla pressione di **Invia**, MotoLink trasmette via HTTPS al backend Supabase il testo della domanda (massimo 1.200 caratteri), la versione dell'app e i metadati necessari al funzionamento della richiesta.
+3. Il backend può rispondere tramite la propria knowledge base. Quando è necessario, può inoltrare il contenuto della domanda al fornitore di intelligenza artificiale **Groq** per ottenere una risposta.
+4. Solo se l'utente seleziona **Supporto → Log → Condividi → Assistente**, MotoLink allega un estratto filtrato del Log, limitato a 6.000 caratteri. Il Log completo non viene inviato automaticamente. Il filtraggio locale e quello lato server riducono alcuni dati tecnici ma non garantiscono la rimozione di qualsiasi informazione che l'utente possa avere inserito nei messaggi.
 
-## Assistente MotoLink
+**Non inserire password, codici, documenti o altri dati personali riservati nelle domande o nei Log da condividere.**
 
-Per utilizzare l'Assistente, MotoLink crea una sessione tecnica anonima tramite Supabase Auth.
+Secondo l'implementazione attuale, il **database applicativo MotoLink** non conserva il testo delle domande, le risposte o i Log inviati all'Assistente. Mantiene un contatore tecnico aggregato giornaliero per limitare l'uso del provider IA. Questa affermazione non esclude i record di autenticazione Supabase né eventuali log infrastrutturali o trattamenti effettuati da Supabase, Groq o dai relativi fornitori secondo le loro condizioni. I tempi di conservazione di tali sistemi non sono controllati direttamente dall'app Android.
 
-Quando l'utente invia una domanda, il backend può ricevere:
+## Condivisione esterna e donazioni
 
-- testo della domanda;
-- versione dell'app;
-- eventuale diagnostica filtrata allegata volontariamente.
-
-Le domande possono essere risolte dalla knowledge base MotoLink. Quando non è sufficiente, il backend può utilizzare il modello configurato tramite provider IA.
-
-## Dati non conservati nel database applicativo MotoLink
-
-L'architettura non prevede la memorizzazione nel database applicativo di:
-
-- cronologia delle chat;
-- testo delle domande;
-- testo delle risposte;
-- contenuto dei Log inviati all'Assistente.
-
-Il backend mantiene un contatore tecnico aggregato composto da **giorno + numero di chiamate provider IA** per applicare il limite configurato.
-
-## Fornitori
-
-Supabase, provider IA, Android/Google e altri servizi coinvolti possono elaborare metadati tecnici o log infrastrutturali secondo le rispettive condizioni e policy.
+- **Condividi Log → Esterno:** soltanto dopo un'azione volontaria viene aperto il pannello di condivisione Android; il destinatario scelto dall'utente gestisce i dati ricevuti secondo le proprie condizioni.
+- **Crediti / PayPal:** la schermata include elementi web caricati da PayPal (immagine del pulsante e risorsa di misurazione); il loro caricamento può comunicare informazioni tecniche di connessione al servizio. Se l'utente decide di sostenere MotoLink, il pagamento viene aperto fuori dall'app sul sito PayPal. MotoLink non riceve direttamente i dati della carta attraverso questa funzione. Le eventuali donazioni sono facoltative e non sbloccano funzioni.
 
 ## Permessi Android
 
-In base alla funzione utilizzata MotoLink può richiedere autorizzazioni relative a:
+In funzione delle caratteristiche e dei servizi usati, l'app può richiedere Internet, accesso/stato Wi-Fi, dispositivi vicini Bluetooth/BLE, fotocamera per scanner QR di riserva, posizione legacy su versioni Android precedenti, MediaProjection, servizio in primo piano, overlay e funzioni di prossimità/wake lock.
 
-- Internet e stato della rete;
-- posizione su versioni Android precedenti quando richiesta dalle API Wi-Fi legacy;
-- MediaProjection;
-- servizio in primo piano;
-- visualizzazione sopra altre app;
-- wake lock e funzioni di prossimità previste dall'app.
+MotoLink non richiede `QUERY_ALL_PACKAGES`: la visibilità delle app è limitata alle attività avviabili per la funzione App preferite. I permessi possono essere consultati o revocati nelle impostazioni Android; la revoca può limitare le relative funzioni.
 
-MotoLink non richiede `QUERY_ALL_PACKAGES`: la visibilità delle app è limitata alle attività avviabili previste dal Manifest Android.
+## Eliminazione e richieste sui dati
 
-## Eliminazione dei dati locali
+I dati locali possono essere eliminati tramite **Impostazioni Android → MotoLink → Spazio di archiviazione → Cancella dati** o disinstallando l'app. Cancellare dati o disinstallare l'app **non equivale necessariamente a eliminare il record della sessione anonima conservato da Supabase**. La procedura per eventuali richieste di cancellazione lato server e il contatto privacy ufficiale devono essere pubblicati prima della distribuzione su Google Play.
 
-I dati locali possono essere rimossi dalle impostazioni Android dell'app oppure disinstallando MotoLink.
+## Documenti dei fornitori
+
+- [Supabase — Privacy Policy](https://supabase.com/privacy)
+- [Groq — Privacy Policy](https://groq.com/privacy-policy/)
+- [Google — Privacy Policy](https://policies.google.com/privacy)
+- [PayPal — Privacy Statement](https://www.paypal.com/it/legalhub/paypal/privacy-full)
+
+Questa informativa va mantenuta coerente con le dichiarazioni **Sicurezza dei dati** in Google Play Console e aggiornata se cambiano funzionalità o fornitori.
