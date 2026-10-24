@@ -88,3 +88,72 @@ Deno.test("missing configuration never uses network", async () => {
   insist((await handleDeletionRequest(req(), { supabaseUrl: BASE }, m.mock)).status === 503, "reject missing secrets");
   insist(m.seen.length === 0, "no request");
 });
+
+
+Deno.test("forged user ID in request body is ignored in favor of verified Auth identity", async () => {
+  const m = mockAuth({ id: USER_ID, is_anonymous: true });
+  const forged = JSON.stringify({ user_id: "22222222-2222-4222-8222-222222222222", is_anonymous: true });
+  const result = await handleDeletionRequest(req("POST", TOKEN, forged), CFG, m.mock);
+  insist(result.status === 200, "own account deletion must still succeed");
+  insist(m.seen.length === 2, "exactly one verification and one deletion");
+  insist(m.seen[1].url === `${BASE}/auth/v1/admin/users/${USER_ID}`, "cannot select another identity");
+});
+
+Deno.test("malformed authentication is rejected before reaching Auth", async () => {
+  const m = mockAuth({ id: USER_ID, is_anonymous: true });
+  for (const h of [
+    "Basic dXNlcjpwYXNz", "Bearer short", "Bearer " + TOKEN + " extra",
+    "Bearer user-with-newline", "Bearer ", "bearer " + TOKEN,
+  ]) {
+    const request = new Request("https://motolink.test/", { method: "POST", headers: { Authorization: h } });
+    const response = await handleDeletionRequest(request, CFG, m.mock);
+    insist(response.status === 401, "bad bearer header must be rejected");
+  }
+  insist(m.seen.length === 0, "no network on malformed authorization");
+});
+
+Deno.test("verification body missing anonymous status cannot trigger admin call", async () => {
+  const m = mockAuth({ id: USER_ID });
+  const response = await handleDeletionRequest(req(), CFG, m.mock);
+  insist(response.status === 403, "unknown user category must not be deleted");
+  insist(m.seen.length === 1, "admin call blocked");
+});
+
+Deno.test("Auth lookup connection error must fail closed", async () => {
+  const seen: string[] = [];
+  const failingFetch = (async (url: RequestInfo | URL) => {
+    seen.push(String(url));
+    throw new Error("synthetic transport interruption");
+  }) as typeof fetch;
+  const response = await handleDeletionRequest(req(), CFG, failingFetch);
+  insist(response.status === 503 && (await response.json()).deleted !== true, "no success on network error");
+  insist(seen.length === 1 && seen[0] === `${BASE}/auth/v1/user`, "no administrative deletion");
+});
+
+Deno.test("unexpected Auth user response must fail closed", async () => {
+  let count = 0;
+  const badJson = (async () => {
+    count++;
+    return new Response("not-json", { status: 200 });
+  }) as typeof fetch;
+  const response = await handleDeletionRequest(req(), CFG, badJson);
+  insist(response.status === 503, "invalid Auth response is not a deletion approval");
+  insist(count === 1, "admin deletion never reached");
+});
+
+Deno.test("non-TLS Auth host configuration must be rejected", async () => {
+  const m = mockAuth({ id: USER_ID, is_anonymous: true });
+  const response = await handleDeletionRequest(req(), { ...CFG, supabaseUrl: "http://supabase.test" }, m.mock);
+  insist(response.status === 503, "plain HTTP backend must be rejected");
+  insist(m.seen.length === 0, "reject before network");
+});
+
+Deno.test("failed admin delete is never signalled as successful", async () => {
+  for (const status of [401, 403, 404, 409, 429, 500]) {
+    const m = mockAuth({ id: USER_ID, is_anonymous: true }, 200, status);
+    const response = await handleDeletionRequest(req(), CFG, m.mock);
+    insist(response.status === 503, "non-2xx admin result must be rejected");
+    insist((await response.json()).deleted !== true, "must not tell Android to erase its only tokens");
+    insist(m.seen.length === 2, "only one admin deletion attempt");
+  }
+});
