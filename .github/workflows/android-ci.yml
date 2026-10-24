@@ -44,7 +44,19 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Set up Deno for isolated privacy function tests
+      - name: Check 16 KiB ELF and APK ZIP alignment for all 64-bit native libraries
+        run: python3 scripts/check_android_16kb.py app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Audit MediaProjection foreground service and Google Maps notification contract
+        run: python3 scripts/check_play_permissions.py
+
+      - name: Audit overlay permission and internet/LAN network policy
+        run: python3 scripts/check_play_overlay_network.py
+
+      - name: Audit anonymous-session deletion and public privacy documentation
+        run: python3 scripts/check_privacy_deletion_contract.py
+
+      - name: Set up Deno for offline Supabase deletion tests
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -52,12 +64,23 @@ jobs:
       - name: Type-check anonymous-session deletion Edge Function
         run: deno check supabase/functions/motolink-delete-session/index.ts
 
-      - name: Synthetic self-deletion authorization tests (no network)
+      - name: Synthetic Supabase deletion tests (NO production access)
         run: deno test --no-remote supabase/functions/motolink-delete-session/handler_test.ts
 
-      - name: Verify Android-to-Supabase deletion and public privacy contract
-        run: python3 scripts/check_privacy_deletion_contract.py
+      - name: Build unsigned release App Bundle for Play compatibility
+        run: ./gradlew :app:bundleRelease --stacktrace
 
+      - name: Check App Bundle declares PAGE_ALIGNMENT_16K
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --retry-delay 2 -o /tmp/bundletool-all.jar \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          java -jar /tmp/bundletool-all.jar dump config \
+            --bundle=app/build/outputs/bundle/release/app-release.aab | tee /tmp/motolink_bundle_config.txt
+          grep -q 'PAGE_ALIGNMENT_16K' /tmp/motolink_bundle_config.txt
+
+# COMBINED PREPUBLISH VALIDATION ONLY (PR draft): V1.8 release untouched.
 # Questo workflow verifica che MotoLink compili correttamente.
 # Usa un runner standard ubuntu-latest su repository pubblico.
 # Non carica artefatti e non contiene né utilizza keystore, password
