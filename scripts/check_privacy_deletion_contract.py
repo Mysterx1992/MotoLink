@@ -27,6 +27,7 @@ activity = read("app/src/main/java/it/motolink/app/MainActivity.kt")
 ui = read("app/src/main/java/it/motolink/app/TrofeoDashboardView.kt")
 handler = read("supabase/functions/motolink-delete-session/handler.ts")
 entry = read("supabase/functions/motolink-delete-session/index.ts")
+supabase_cfg = read("supabase/config.toml")
 privacy = read("PRIVACY.md")
 deletion = read("DATA_DELETION.md")
 readme = read("README.md")
@@ -74,6 +75,8 @@ check('user.id' in handler and
 check('Deno.serve(' in entry and
       '"SUPABASE_SERVICE_ROLE_KEY"' in entry,
       "server-only secret wired through Edge Function environment")
+check("[functions.motolink-delete-session]\\nverify_jwt = true".replace("\\\\n", "\\n") in supabase_cfg,
+      "Supabase gateway requires JWT for self-deletion endpoint")
 check('SUPABASE_SERVICE_ROLE_KEY' not in client and
       'service_role' not in client.lower(),
       "service role is never embedded in Android client")
