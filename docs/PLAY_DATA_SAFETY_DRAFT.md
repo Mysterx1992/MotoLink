@@ -18,7 +18,8 @@ _24/10/2026 — solo revisione delle funzioni esistenti. Non contiene dati priva
 
 ## Decisioni / controlli ancora aperti
 
-- [ ] Identità pubblica del titolare e **email dedicata privacy/supporto** da confermare con il titolare del progetto; non inventare recapiti.
+- [x] **Email pubblica ufficiale per privacy e assistenza:** motolinkofficial.app@gmail.com (confermata dall'autore; coincide con quella usata per le donazioni PayPal).
+- [ ] **Identità legale/pubblica del titolare o publisher** da completare in Play Console in base alla tipologia di account; non dedurre dall'indirizzo email.
 - [ ] Decidere se il semplice account tecnico Supabase Auth anonimo rientra nel requisito di cancellazione account di Play; in ogni caso definire risposta alle richieste di eliminazione di identità lato server.
 - [ ] Confermare tempi di conservazione / trattamento dati personali presso Supabase (incluse sessioni) e Groq (Customer Data soggetti a Services Agreement / DPA, non solo privacy generica).
 - [ ] Confermare le risposte esatte alla schermata **Sicurezza dei dati** nella Play Console sulla base del comportamento dell'AAB definitivo e degli SDK.
