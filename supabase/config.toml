@@ -5,3 +5,7 @@ enable_anonymous_sign_ins = true
 
 [functions.motolink-assistant]
 verify_jwt = true
+
+# Google Play account deletion: JWT MUST be verified at gateway and in handler.
+[functions.motolink-delete-session]
+verify_jwt = true
