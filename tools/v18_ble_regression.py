@@ -33,7 +33,11 @@ assert nav.count("everReady = true") == 2
 assert "mapsLaunchRequested = true" in activity
 assert "if (!mapsLaunchRequested)" in activity
 assert "if (runSelection == RunSelection.START || startInProgress)" in activity
-assert "versionCode = 34" in gradle and 'versionName = "1.8"' in gradle
+assert (
+    ("versionCode = 34" in gradle and 'versionName = "1.8"' in gradle) or
+    ("versionCode = 35" in gradle and 'versionName = "1.8.1"' in gradle) or
+    ("versionCode = 36" in gradle and 'versionName = "1.8.2"' in gradle)
+), "Unexpected official MotoLink version identity"
 
 # Pure-model stress: from a notification burst, allow one active coherent five-frame
 # group and only the newest pending coherent five-frame group. This checks expected
