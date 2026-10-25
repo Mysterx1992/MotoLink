@@ -1,0 +1,127 @@
+name: MotoLink V1.8.1 official signed update
+on:
+  push:
+    branches:
+      - release/official-v1-8-1-ble-resync-20261025
+      - main
+    paths:
+      - "app/src/main/java/it/motolink/app/MainActivity.kt"
+      - "app/src/main/java/it/motolink/app/V16Navigation.kt"
+      - "app/build.gradle.kts"
+      - "scripts/check_ble_navigation_resync.py"
+      - ".github/workflows/publish-v181-official.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  official:
+    name: Build and verify matching official update certificate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK API 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "platform-tools" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify official package, bump and BLE safety contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'applicationId = "it.motolink.app"' app/build.gradle.kts
+          grep -Fq 'versionCode = 35' app/build.gradle.kts
+          grep -Fq 'versionName = "1.8.1"' app/build.gradle.kts
+          ! grep -Eq 'applicationIdSuffix\s*=' app/build.gradle.kts
+          python3 scripts/check_ble_navigation_resync.py
+          python3 tools/v18_ble_regression.py
+      - name: Assemble official release unsigned
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --stacktrace
+      - name: Sign with original MotoLink release keystore
+        env:
+          MOTOLINK_KEYSTORE_B64: ${{ secrets.MOTOLINK_KEYSTORE_B64 }}
+          MOTOLINK_KEYSTORE_PASSWORD: ${{ secrets.MOTOLINK_KEYSTORE_PASSWORD }}
+          MOTOLINK_KEY_ALIAS: ${{ secrets.MOTOLINK_KEY_ALIAS }}
+          MOTOLINK_KEY_PASSWORD: ${{ secrets.MOTOLINK_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$MOTOLINK_KEYSTORE_B64" ] || [ -z "$MOTOLINK_KEYSTORE_PASSWORD" ] || [ -z "$MOTOLINK_KEY_ALIAS" ] || [ -z "$MOTOLINK_KEY_PASSWORD" ]; then
+            echo "::error::Original release keystore credentials not configured; cannot issue an in-place update."
+            exit 1
+          fi
+          printf '%s' "$MOTOLINK_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/motolink-v181.jks"
+          chmod 600 "$RUNNER_TEMP/motolink-v181.jks"
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0"
+          INPUT=app/build/outputs/apk/release/app-release-unsigned.apk
+          if [ ! -f "$INPUT" ]; then INPUT=app/build/outputs/apk/release/app-release.apk; fi
+          test -f "$INPUT"
+          "$BT/zipalign" -f -p 4 "$INPUT" "$RUNNER_TEMP/motolink-v181-aligned.apk"
+          "$BT/apksigner" sign \
+            --ks "$RUNNER_TEMP/motolink-v181.jks" \
+            --ks-key-alias "$MOTOLINK_KEY_ALIAS" \
+            --ks-pass env:MOTOLINK_KEYSTORE_PASSWORD \
+            --key-pass env:MOTOLINK_KEY_PASSWORD \
+            --v2-signing-enabled true --v3-signing-enabled true \
+            --out MotoLink1.8.1.apk "$RUNNER_TEMP/motolink-v181-aligned.apk"
+          rm -f "$RUNNER_TEMP/motolink-v181.jks"
+      - name: Verify actual official signature, package and versionCode
+        shell: bash
+        run: |
+          set -euo pipefail
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0"
+          "$BT/apksigner" verify --verbose --print-certs MotoLink1.8.1.apk | tee SIGNATURE_VERIFY.txt
+          grep -Fq 'Verified using v2 scheme (APK Signature Scheme v2): true' SIGNATURE_VERIFY.txt
+          grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' SIGNATURE_VERIFY.txt
+          grep -Fiq '9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100' SIGNATURE_VERIFY.txt
+          "$BT/aapt" dump badging MotoLink1.8.1.apk | tee APK_BADGING.txt
+          grep -Fq "package: name='it.motolink.app'" APK_BADGING.txt
+          grep -Fq "versionCode='35'" APK_BADGING.txt
+          grep -Fq "versionName='1.8.1'" APK_BADGING.txt
+          sha256sum MotoLink1.8.1.apk | tee MotoLink1.8.1_SHA256.txt
+      - name: Upload signed APK build candidate and verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_1_OFFICIAL_SIGNED_APK
+          path: |
+            MotoLink1.8.1.apk
+            MotoLink1.8.1_SHA256.txt
+            SIGNATURE_VERIFY.txt
+            APK_BADGING.txt
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish immutable versioned GitHub Release from main only
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.8.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release v1.8.1 already exists: refusing to replace APK."
+            exit 1
+          fi
+          gh release create v1.8.1 \
+            MotoLink1.8.1.apk MotoLink1.8.1_SHA256.txt \
+            SIGNATURE_VERIFY.txt APK_BADGING.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "MotoLink V1.8.1 — BLE Navigation Resync" \
+            --notes-file docs/RELEASE_NOTES_V1.8.1.md --latest
+          mkdir -p release-check
+          gh release download v1.8.1 --repo "$GITHUB_REPOSITORY" \
+            --pattern MotoLink1.8.1.apk --dir release-check
+          cmp -s MotoLink1.8.1.apk release-check/MotoLink1.8.1.apk
