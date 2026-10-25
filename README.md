@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Mysterx1992/MotoLink/releases/latest">
-    <img src="https://img.shields.io/badge/SCARICA%20MOTOLINK-ULTIMA%20RELEASE-5BFF2D?style=for-the-badge&labelColor=102218&logo=android&logoColor=ffffff" alt="Apri ultima release MotoLink su GitHub" height="34">
+  <a href="https://github.com/Mysterx1992/MotoLink/releases/download/v1.8.1/MotoLink1.8.1.apk">
+    <img src="https://img.shields.io/badge/SCARICA%20MOTOLINK-V1.8.1-5BFF2D?style=for-the-badge&labelColor=102218&logo=android&logoColor=ffffff" alt="Scarica direttamente MotoLink V1.8.1 APK" height="34">
   </a>
   &nbsp;
   <a href="https://chat.whatsapp.com/BNTmFxXQuOkGdYWHrX2rV0?s=cl&p=a&mlu=4">
@@ -23,7 +23,7 @@ MotoLink è un'app Android progettata per gestire in un unico ambiente il colleg
 
 ---
 
-## 🆕 MotoLink V1.8.1 — novità e stato di distribuzione
+## 🆕 MotoLink V1.8.1 — aggiornamento ufficiale disponibile
 
 La **V1.8.1** aggiunge il ripristino della navigazione **Google Maps sul TFT dopo la riconnessione Bluetooth BLE**. Il caso è stato segnalato da un tester che, lasciando la navigazione attiva e spegnendo il quadro per alcuni minuti, doveva premere STOP/START per far ricomparire le indicazioni.
 
@@ -35,15 +35,15 @@ La **V1.8.1** aggiunge il ripristino della navigazione **Google Maps sul TFT dop
 - **Nessuna regressione prevista sui collegamenti esistenti:** geometria EasyConn, Hotspot, QR, encoding dei pacchetti BLE e profili Garage non sono stati modificati.
 - **Diagnostica aggiuntiva:** nel Log sono presenti i messaggi `BLE NAV RESYNC V1` e `MAPS NAV BLE RESYNC` per verificare l'effettivo ripristino.
 
-**Identità APK V1.8.1:** `it.motolink.app` · `versionCode 35` · `versionName 1.8.1`. L'APK è stato compilato e firmato con il certificato ufficiale V1.8, ma **non è ancora stato caricato come asset della release pubblica GitHub**. Il collaudo di riaccensione del TFT con questa correzione resta da completare.
+**Identità APK V1.8.1:** `it.motolink.app` · `versionCode 35` · `versionName 1.8.1`. L'APK è stato compilato, firmato con il certificato ufficiale V1.8 e **pubblicato su GitHub Release v1.8.1**. Il collaudo fisico di riaccensione del TFT con questa correzione resta da completare.
 
-> **Distribuzione:** finché GitHub non espone la release `v1.8.1` con il file verificato `MotoLink1.8.1.apk`, il pulsante in alto conduce alla **più recente release effettivamente pubblicata** (attualmente V1.8). Non presentiamo un download V1.8.1 inesistente.
+> **Download diretto disponibile:** il pulsante verde **SCARICA MOTOLINK V1.8.1** scarica l'APK ufficiale, firmato con lo stesso certificato della V1.8. **Non disinstallare la V1.8:** installa la V1.8.1 sopra quella esistente per conservare profili e dati. SHA-256 dell'APK: `1d01d0886e13f44538d20c8cbbab9c86efe0cf722effa48dc9de6f64b5677b30`.
 
-**Dettagli:** [Note tecniche V1.8.1](docs/RELEASE_NOTES_V1.8.1.md) · [Correzione ufficiale e verifiche su GitHub](https://github.com/Mysterx1992/MotoLink/pull/24).
+**Dettagli:** [Note tecniche V1.8.1](docs/RELEASE_NOTES_V1.8.1.md) · [Correzione ufficiale e verifiche su GitHub](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8.1).
 
 ---
 
-## MotoLink V1.8 — versione pubblicata su GitHub
+## MotoLink V1.8 — funzioni delle versioni precedenti
 
 La V1.8 introduce un **recupero Wi-Fi guidato per VOGE Trofeo 500** e rende più comode le Impostazioni e la guida iniziale, mantenendo le funzioni di mirroring e navigazione già presenti.
 
@@ -61,18 +61,18 @@ La V1.8 introduce un **recupero Wi-Fi guidato per VOGE Trofeo 500** e rende più
 
 ## Scarica MotoLink
 
-**[⬇️ Vai all'ultima release MotoLink pubblicata](https://github.com/Mysterx1992/MotoLink/releases/latest)**
+**[⬇️ SCARICA DIRETTAMENTE MOTOLINK V1.8.1 APK](https://github.com/Mysterx1992/MotoLink/releases/download/v1.8.1/MotoLink1.8.1.apk)**
 
-**[Scarica direttamente MotoLink V1.8 (release attualmente disponibile)](https://github.com/Mysterx1992/MotoLink/releases/download/v1.8/MotoLink1.8.apk)**
+[Consulta la release V1.8.1, le verifiche e i file SHA-256](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8.1) · [Versione precedente V1.8](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8)
 
-> L'APK **V1.8.1** firmato è stato generato e verificato fuori dal repository, ma **non è ancora un download pubblico GitHub**. Quando sarà presente come asset nella release `v1.8.1`, il collegamento **Ultima release** in alto punterà automaticamente alla nuova versione.
+> Il file `MotoLink1.8.1.apk` è **già disponibile come asset pubblico GitHub**, versione 35, stesso package e firma della V1.8. La distribuzione è confermata da GitHub Actions con verifica byte-per-byte e SHA-256.
 
-**Ultima release pubblicata qui:** MotoLink V1.8 · `versionCode 34` · `versionName 1.8`  
+**Ultima release pubblicata qui:** MotoLink V1.8.1 · `versionCode 35` · `versionName 1.8.1`  
 **Package:** `it.motolink.app`  
-**Release:** https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8  
-**Novità:** [Note ufficiali V1.8](docs/RELEASE_NOTES_V1.8.md)
+**Release:** https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8.1  
+**Novità:** [Note ufficiali V1.8.1](docs/RELEASE_NOTES_V1.8.1.md)
 
-La precedente V1.7 resta disponibile per chi ne ha bisogno nella sezione Release GitHub.
+Le precedenti V1.8 e V1.7 restano disponibili nella sezione Release GitHub.
 
 ---
 
