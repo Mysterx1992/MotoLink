@@ -1428,6 +1428,16 @@ class MainActivity : Activity() {
                         mapsLaunchRequested = true
                         ensureMapsNotificationAccessThenLaunch()
                     }
+                    // Resynchronize the *current* Maps notification on first GATT
+                    // READY and each automatic BLE reattach without opening Maps again.
+                    // The listener still enforces live-notification freshness, reliable
+                    // distance, nonzero distance and a known maneuver.
+                    mainHandler.postDelayed({
+                        if (runSelection == RunSelection.START && VogeBleNavigationManager.isReady) {
+                            val queued = MapsNavigationListenerService.resyncOnBleReady()
+                            AppLog.add("BLE NAV RESYNC V1: GATT READY -> active Maps snapshot queued=$queued")
+                        }
+                    }, 350L)
                 }
             }
 
