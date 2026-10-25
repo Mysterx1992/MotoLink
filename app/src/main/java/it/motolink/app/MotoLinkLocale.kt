@@ -22,6 +22,48 @@ object MotoLinkLocale {
         return locale.language.lowercase(Locale.ROOT)
     }
 
+    fun releaseNotes182(): String = when (language()) {
+        "it" -> "• Corretta la traduzione delle etichette HOME, inclusi PRONTO, STATO, COLLEGATO A e NESSUN COLLEGAMENTO.\n" +
+            "• Tradotti in inglese, russo e cinese i titoli, gli stati e i controlli di ripristino Wi-Fi, Garage, QR e Preferite.\n" +
+            "• Stato della connessione mantenuto internamente invariato: i testi vengono tradotti solo sullo schermo.\n" +
+            "• Riconnessione automatica BLE e risincronizzazione Google Maps introdotte in 1.8.1 conservate.\n\n" +
+            "Per le lingue non supportate è previsto l'inglese. Verificare i collegamenti a moto ferma."
+        "ru" -> "• Исправлен перевод статусов HOME, включая ГОТОВО, СТАТУС, ПОДКЛЮЧЕНО К и НЕТ ПОДКЛЮЧЕНИЯ.\n" +
+            "• Локализованы экраны Wi-Fi, гаража, QR и избранных приложений.\n" +
+            "• Внутренний статус соединения теперь остаётся неизменным: перевод выполняется только при отображении.\n" +
+            "• Автоматическое переподключение BLE и синхронизация Google Maps из версии 1.8.1 сохранены.\n\n" +
+            "Для других языков используется английский. Проверяйте соединение на остановленном мотоцикле."
+        "zh" -> "• 修复首页状态、就绪、连接对象和未连接提示的翻译。\n" +
+            "• 补充 Wi-Fi 恢复、车库、二维码和收藏应用页面的本地化。\n" +
+            "• 连接状态在内部保持原始值，仅在屏幕显示时进行翻译。\n" +
+            "• 保留 1.8.1 的 BLE 自动重连和 Google Maps 导航同步功能。\n\n" +
+            "不支持的语言默认使用英语。请停车后检查连接。"
+        else -> "• Fixed translations for HOME status, READY, STATUS, CONNECTED TO and NO CONNECTION.\n" +
+            "• Localized additional Wi-Fi recovery, Garage, QR and favorite-app screens.\n" +
+            "• Internal connection status remains stable; translation occurs only when displayed.\n" +
+            "• Automatic BLE reconnection and Google Maps synchronization from 1.8.1 are preserved.\n\n" +
+            "Unsupported languages fall back to English. Test connections while parked."
+    }
+
+    fun releaseNotes181(): String = when (language()) {
+        "it" -> "• Dopo una riconnessione Bluetooth BLE, MotoLink prova a ripristinare automaticamente la navigazione Google Maps sul TFT senza premere STOP/START.\n" +
+            "• Utilizza solo l'indicazione attiva con manovra e distanza reali. I dati assenti o non aggiornati vengono ignorati per sicurezza.\n" +
+            "• Protocollo BLE, mirroring Hotspot/QR e profili moto invariati.\n\n" +
+            "Il risultato dipende dalle notifiche disponibili in Maps. Verificare il TFT a moto ferma."
+        "ru" -> "• После повторного подключения BLE MotoLink пытается восстановить текущую навигацию Google Maps на дисплее без STOP/START.\n" +
+            "• Отправляются только актуальные указания с достоверным манёвром и расстоянием; устаревшие и неполные данные не используются.\n" +
+            "• Протокол BLE, зеркалирование Hotspot/QR и профили мотоциклов не изменены.\n\n" +
+            "Работа зависит от уведомлений Google Maps. Проверяйте дисплей на остановленном мотоцикле."
+        "zh" -> "• BLE 重新连接后，MotoLink 会尝试自动从 Google Maps 恢复当前导航，无需 STOP/START。\n" +
+            "• 仅在当前通知提供可靠的转向和距离时发送；缺失或过期数据不会使用。\n" +
+            "• BLE 协议、Hotspot/QR 镜像及摩托车配置保持不变。\n\n" +
+            "效果取决于 Google Maps 通知；请停车后检查显示屏。"
+        else -> "• After BLE reconnection, MotoLink attempts to restore the current Google Maps navigation on the TFT without STOP/START.\n" +
+            "• Only a live instruction with a reliable maneuver and real distance is sent; stale or missing data are rejected.\n" +
+            "• BLE protocol, Hotspot/QR mirroring and bike profiles are unchanged.\n\n" +
+            "Results depend on Google Maps notifications. Check the TFT while stopped."
+    }
+
     fun releaseNotes18(): String = when (language()) {
         "it" -> "• Ripristino Wi-Fi Trofeo 500 nelle Impostazioni, con conferma SÌ/NO e un solo AVVIA.\n" +
             "• Diagnosi Bluetooth Classic, SDP, BLE/GATT senza scritture e scansione Wi-Fi del telefono.\n" +
@@ -173,6 +215,54 @@ object MotoLinkLocale {
     }
 
     private val EN = mapOf(
+        "RIPRISTINO WI-FI" to "WI-FI RECOVERY",
+        "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto." to "The PHONE creates the hotspot and the MOTORCYCLE connects to it. Keep the hotspot on. START checks Bluetooth and Wi-Fi without changing passwords or sending write commands to the motorcycle.",
+        "Accendi il Bluetooth del telefono e premi di nuovo AVVIA." to "Turn on Bluetooth on your phone and press START again.",
+        "Autorizza Dispositivi nelle vicinanze per eseguire la diagnostica." to "Allow Nearby devices permission to run diagnostics.",
+        "Ricerca avviata…" to "Scanning started…",
+        "Permesso negato: abilita Dispositivi nelle vicinanze dalle impostazioni Android e riprova." to "Permission denied: enable Nearby devices in Android Settings and try again.",
+        "Bluetooth non disponibile" to "Bluetooth unavailable",
+        "Attiva Bluetooth" to "Enable Bluetooth",
+        "Permessi Bluetooth mancanti" to "Bluetooth permissions missing",
+        "Scansione BLE non avviata" to "BLE scan failed to start",
+        "Nessun dispositivo VOGE disponibile" to "No VOGE device available",
+        "Wi-Fi non disponibile; verifica manualmente il TFT." to "Wi-Fi unavailable; check the TFT manually.",
+        "Ripristino Wi-Fi · Trofeo 500" to "Wi-Fi recovery · Trofeo 500",
+        "Usa questa funzione soltanto se la moto non si collega all'hotspot del telefono. I controlli Bluetooth e Wi-Fi possono influire temporaneamente sulle connessioni. Esegui il recupero a moto ferma. Continuare?" to "Use this only if the motorcycle cannot connect to your phone hotspot. Bluetooth and Wi-Fi checks may briefly affect connections. Run recovery while parked. Continue?",
+        "Hotspot, QrCode oppure Bluetooth BLE." to "Hotspot, QR code or Bluetooth BLE.",
+        "Adattamento attivo" to "Adjustment active",
+        "Su questa versione Android la Modalità tasca non richiede la schermata ‘Mostra sopra altre app’." to "Pocket mode does not require Display over other apps on this Android version.",
+        "Non riesco ad aprire automaticamente ‘Mostra sopra altre app’. Apri Impostazioni Android > App > Accesso speciale > Mostra sopra altre app e seleziona MotoLink." to "Cannot open Display over other apps automatically. Go to Android Settings > Apps > Special access > Display over other apps and select MotoLink.",
+        "Collega prima la moto" to "Connect the motorcycle first",
+        "CFMOTO non collegata" to "CFMOTO not connected",
+        "WLAN Direct non collegata" to "WLAN Direct not connected",
+        "Permesso WLAN Direct necessario" to "WLAN Direct permission required",
+        "Connessione alla moto necessaria" to "Motorcycle connection required",
+        "SOSTITUISCI PREFERITA" to "REPLACE FAVORITE",
+        "Scegli quale app vuoi cambiare" to "Choose the app to replace",
+        "RIMUOVI PREFERITA" to "REMOVE FAVORITE",
+        "Scegli quale app vuoi rimuovere" to "Choose the app to remove",
+        "App già presente" to "App already added",
+        "App non disponibile" to "App unavailable",
+        "Pairing QR" to "QR pairing",
+        "Ferma prima il mirroring con STOP, poi configura una nuova moto." to "Stop mirroring with STOP before configuring a new motorcycle.",
+        "MotoLink non è riuscita a salvare il profilo QR sul dispositivo." to "MotoLink could not save the QR profile on this device.",
+        "Profilo moto" to "Motorcycle profile",
+        "Nome moto obbligatorio" to "Motorcycle name required",
+        "Nome rete / SSID (es. CFMOTO-XXXXXX)" to "Network name / SSID (e.g. CFMOTO-XXXXXX)",
+        "Password Wi‑Fi (se presente)" to "Wi-Fi password (if provided)",
+        "Wi‑Fi moto manuale" to "Manual motorcycle Wi-Fi",
+        "Usa questa opzione quando il TFT mostra SSID/password ma il QR non li contiene." to "Use this when the TFT shows an SSID/password but the QR code does not contain them.",
+        "Rimuovere la moto?" to "Remove motorcycle?",
+        "Elimina il profilo QR salvato. Il mirroring EasyConn automatico continuerà a funzionare come nelle versioni precedenti." to "Delete the saved QR profile. Automatic EasyConn mirroring will continue working as before.",
+        "Controlli completati" to "Checks completed",
+        "La diagnostica è terminata. Controlla se il simbolo Wi-Fi è tornato sul TFT e se la moto si collega davvero all'hotspot. Il ripristino non è confermato automaticamente." to "Diagnostics complete. Check whether the Wi-Fi symbol returned on the TFT and the motorcycle really connects to the hotspot. Recovery is not confirmed automatically.",
+        "Pronto. Premi AVVIA per iniziare." to "Ready. Press START to begin.",
+        "Rete pronta" to "Network ready",
+        "Ripristino Wi-Fi" to "Wi-Fi recovery",
+        "Trofeo 500 · ripristino manuale hotspot" to "Trofeo 500 · manual hotspot recovery",
+        "IMPOSTAZIONI · Ripristino Wi-Fi" to "SETTINGS · Wi-Fi recovery",
+        "Fai una donazione con il pulsante PayPal" to "Donate using the PayPal button",
         "Pronto" to "Ready",
         "Sistema pronto" to "System ready",
         "Premi START per connettere" to "Press START to connect",
@@ -426,6 +516,54 @@ object MotoLinkLocale {
     )
 
     private val RU = mapOf(
+        "RIPRISTINO WI-FI" to "ВОССТАНОВЛЕНИЕ WI-FI",
+        "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto." to "ТЕЛЕФОН создаёт точку доступа, а МОТОЦИКЛ к ней подключается. Оставьте точку доступа включённой. Кнопка START проверяет Bluetooth и Wi-Fi, не меняя пароль и не отправляя команды записи на мотоцикл.",
+        "Accendi il Bluetooth del telefono e premi di nuovo AVVIA." to "Включите Bluetooth на телефоне и снова нажмите START.",
+        "Autorizza Dispositivi nelle vicinanze per eseguire la diagnostica." to "Разрешите доступ к устройствам поблизости для диагностики.",
+        "Ricerca avviata…" to "Поиск начат…",
+        "Permesso negato: abilita Dispositivi nelle vicinanze dalle impostazioni Android e riprova." to "В доступе отказано: разрешите устройства поблизости в настройках Android и повторите попытку.",
+        "Bluetooth non disponibile" to "Bluetooth недоступен",
+        "Attiva Bluetooth" to "Включите Bluetooth",
+        "Permessi Bluetooth mancanti" to "Нет разрешений Bluetooth",
+        "Scansione BLE non avviata" to "Не удалось начать сканирование BLE",
+        "Nessun dispositivo VOGE disponibile" to "Устройство VOGE не найдено",
+        "Wi-Fi non disponibile; verifica manualmente il TFT." to "Wi-Fi недоступен; проверьте дисплей вручную.",
+        "Ripristino Wi-Fi · Trofeo 500" to "Восстановление Wi-Fi · Trofeo 500",
+        "Usa questa funzione soltanto se la moto non si collega all'hotspot del telefono. I controlli Bluetooth e Wi-Fi possono influire temporaneamente sulle connessioni. Esegui il recupero a moto ferma. Continuare?" to "Используйте только если мотоцикл не подключается к точке доступа телефона. Проверки Bluetooth и Wi-Fi могут временно повлиять на соединения. Выполняйте диагностику на стоянке. Продолжить?",
+        "Hotspot, QrCode oppure Bluetooth BLE." to "Точка доступа, QR-код или Bluetooth BLE.",
+        "Adattamento attivo" to "Настройка активна",
+        "Su questa versione Android la Modalità tasca non richiede la schermata ‘Mostra sopra altre app’." to "На этой версии Android режим кармана не требует разрешения «Поверх других приложений».",
+        "Non riesco ad aprire automaticamente ‘Mostra sopra altre app’. Apri Impostazioni Android > App > Accesso speciale > Mostra sopra altre app e seleziona MotoLink." to "Не удалось автоматически открыть разрешение поверх других приложений. Перейдите в Настройки Android > Приложения > Специальный доступ > Поверх других приложений и выберите MotoLink.",
+        "Collega prima la moto" to "Сначала подключите мотоцикл",
+        "CFMOTO non collegata" to "CFMOTO не подключена",
+        "WLAN Direct non collegata" to "WLAN Direct не подключён",
+        "Permesso WLAN Direct necessario" to "Требуется разрешение WLAN Direct",
+        "Connessione alla moto necessaria" to "Требуется подключение к мотоциклу",
+        "SOSTITUISCI PREFERITA" to "ЗАМЕНИТЬ ИЗБРАННОЕ",
+        "Scegli quale app vuoi cambiare" to "Выберите приложение для замены",
+        "RIMUOVI PREFERITA" to "УДАЛИТЬ ИЗБРАННОЕ",
+        "Scegli quale app vuoi rimuovere" to "Выберите приложение для удаления",
+        "App già presente" to "Приложение уже добавлено",
+        "App non disponibile" to "Приложение недоступно",
+        "Pairing QR" to "Сопряжение по QR",
+        "Ferma prima il mirroring con STOP, poi configura una nuova moto." to "Сначала остановите трансляцию кнопкой STOP, затем настройте новый мотоцикл.",
+        "MotoLink non è riuscita a salvare il profilo QR sul dispositivo." to "MotoLink не удалось сохранить QR-профиль на устройстве.",
+        "Profilo moto" to "Профиль мотоцикла",
+        "Nome moto obbligatorio" to "Укажите название мотоцикла",
+        "Nome rete / SSID (es. CFMOTO-XXXXXX)" to "Имя сети / SSID (напр. CFMOTO-XXXXXX)",
+        "Password Wi‑Fi (se presente)" to "Пароль Wi-Fi (если есть)",
+        "Wi‑Fi moto manuale" to "Ручная настройка Wi-Fi мотоцикла",
+        "Usa questa opzione quando il TFT mostra SSID/password ma il QR non li contiene." to "Используйте, если дисплей показывает SSID и пароль, но их нет в QR-коде.",
+        "Rimuovere la moto?" to "Удалить мотоцикл?",
+        "Elimina il profilo QR salvato. Il mirroring EasyConn automatico continuerà a funzionare come nelle versioni precedenti." to "Удалить сохранённый QR-профиль. Автоматическое зеркалирование EasyConn продолжит работать как прежде.",
+        "Controlli completati" to "Проверки завершены",
+        "La diagnostica è terminata. Controlla se il simbolo Wi-Fi è tornato sul TFT e se la moto si collega davvero all'hotspot. Il ripristino non è confermato automaticamente." to "Диагностика завершена. Убедитесь, что на дисплее появился значок Wi-Fi и мотоцикл действительно подключается к точке доступа. Восстановление не подтверждается автоматически.",
+        "Pronto. Premi AVVIA per iniziare." to "Готово. Нажмите START для начала.",
+        "Rete pronta" to "Сеть готова",
+        "Ripristino Wi-Fi" to "Восстановление Wi-Fi",
+        "Trofeo 500 · ripristino manuale hotspot" to "Trofeo 500 · ручное восстановление точки доступа",
+        "IMPOSTAZIONI · Ripristino Wi-Fi" to "НАСТРОЙКИ · Восстановление Wi-Fi",
+        "Fai una donazione con il pulsante PayPal" to "Поддержать через кнопку PayPal",
         "Pronto" to "Готово",
         "Sistema pronto" to "Система готова",
         "Premi START per connettere" to "Нажмите START для подключения",
@@ -662,6 +800,54 @@ object MotoLinkLocale {
     )
 
     private val ZH = mapOf(
+        "RIPRISTINO WI-FI" to "恢复 WI-FI",
+        "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto." to "手机开启热点，摩托车连接该热点。请保持热点开启。点击 START 将检测蓝牙和 Wi-Fi，不更改密码，也不向摩托车发送写入命令。",
+        "Accendi il Bluetooth del telefono e premi di nuovo AVVIA." to "开启手机蓝牙，然后再次按 START。",
+        "Autorizza Dispositivi nelle vicinanze per eseguire la diagnostica." to "授予附近设备权限以运行诊断。",
+        "Ricerca avviata…" to "已开始扫描…",
+        "Permesso negato: abilita Dispositivi nelle vicinanze dalle impostazioni Android e riprova." to "权限被拒绝：请在 Android 设置中开启附近设备权限后重试。",
+        "Bluetooth non disponibile" to "蓝牙不可用",
+        "Attiva Bluetooth" to "开启蓝牙",
+        "Permessi Bluetooth mancanti" to "缺少蓝牙权限",
+        "Scansione BLE non avviata" to "无法启动 BLE 扫描",
+        "Nessun dispositivo VOGE disponibile" to "未发现可用的 VOGE 设备",
+        "Wi-Fi non disponibile; verifica manualmente il TFT." to "Wi-Fi 不可用；请手动检查仪表屏。",
+        "Ripristino Wi-Fi · Trofeo 500" to "恢复 Wi-Fi · Trofeo 500",
+        "Usa questa funzione soltanto se la moto non si collega all'hotspot del telefono. I controlli Bluetooth e Wi-Fi possono influire temporaneamente sulle connessioni. Esegui il recupero a moto ferma. Continuare?" to "仅当摩托车无法连接手机热点时使用。蓝牙和 Wi-Fi 检查可能暂时影响连接。请停车后操作。是否继续？",
+        "Hotspot, QrCode oppure Bluetooth BLE." to "热点、二维码或蓝牙 BLE。",
+        "Adattamento attivo" to "适配已开启",
+        "Su questa versione Android la Modalità tasca non richiede la schermata ‘Mostra sopra altre app’." to "在此 Android 版本上，口袋模式无需“显示在其他应用上层”权限。",
+        "Non riesco ad aprire automaticamente ‘Mostra sopra altre app’. Apri Impostazioni Android > App > Accesso speciale > Mostra sopra altre app e seleziona MotoLink." to "无法自动打开“显示在其他应用上层”。请前往 Android 设置 > 应用 > 特殊应用权限 > 显示在其他应用上层，然后选择 MotoLink。",
+        "Collega prima la moto" to "请先连接摩托车",
+        "CFMOTO non collegata" to "CFMOTO 未连接",
+        "WLAN Direct non collegata" to "WLAN Direct 未连接",
+        "Permesso WLAN Direct necessario" to "需要 WLAN Direct 权限",
+        "Connessione alla moto necessaria" to "需要连接摩托车",
+        "SOSTITUISCI PREFERITA" to "替换收藏",
+        "Scegli quale app vuoi cambiare" to "选择要替换的应用",
+        "RIMUOVI PREFERITA" to "移除收藏",
+        "Scegli quale app vuoi rimuovere" to "选择要移除的应用",
+        "App già presente" to "应用已添加",
+        "App non disponibile" to "应用不可用",
+        "Pairing QR" to "二维码配对",
+        "Ferma prima il mirroring con STOP, poi configura una nuova moto." to "请先按 STOP 停止投屏，再配置新摩托车。",
+        "MotoLink non è riuscita a salvare il profilo QR sul dispositivo." to "MotoLink 无法在设备上保存二维码配置。",
+        "Profilo moto" to "摩托车配置",
+        "Nome moto obbligatorio" to "必须填写摩托车名称",
+        "Nome rete / SSID (es. CFMOTO-XXXXXX)" to "网络名称 / SSID（例如 CFMOTO-XXXXXX）",
+        "Password Wi‑Fi (se presente)" to "Wi-Fi 密码（如有）",
+        "Wi‑Fi moto manuale" to "手动设置摩托车 Wi-Fi",
+        "Usa questa opzione quando il TFT mostra SSID/password ma il QR non li contiene." to "当仪表屏显示 SSID/密码，但二维码中不包含这些信息时使用。",
+        "Rimuovere la moto?" to "移除摩托车？",
+        "Elimina il profilo QR salvato. Il mirroring EasyConn automatico continuerà a funzionare come nelle versioni precedenti." to "删除已保存的二维码配置。EasyConn 自动投屏将继续像以前一样工作。",
+        "Controlli completati" to "检查完成",
+        "La diagnostica è terminata. Controlla se il simbolo Wi-Fi è tornato sul TFT e se la moto si collega davvero all'hotspot. Il ripristino non è confermato automaticamente." to "诊断完成。请确认仪表屏重新出现 Wi-Fi 图标，并且摩托车确实连接到了热点。恢复结果无法自动确认。",
+        "Pronto. Premi AVVIA per iniziare." to "就绪。按 START 开始。",
+        "Rete pronta" to "网络已就绪",
+        "Ripristino Wi-Fi" to "恢复 Wi-Fi",
+        "Trofeo 500 · ripristino manuale hotspot" to "Trofeo 500 · 手动恢复热点",
+        "IMPOSTAZIONI · Ripristino Wi-Fi" to "设置 · 恢复 Wi-Fi",
+        "Fai una donazione con il pulsante PayPal" to "使用 PayPal 按钮捐赠",
         "Pronto" to "就绪",
         "Sistema pronto" to "系统已就绪",
         "Premi START per connettere" to "按 START 连接",
