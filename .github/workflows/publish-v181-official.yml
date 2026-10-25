@@ -54,6 +54,34 @@ jobs:
           set -euo pipefail
           chmod +x gradlew
           ./gradlew :app:assembleRelease --stacktrace
+      - name: Prepare unsigned aligned official APK for offline original-key signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0"
+          INPUT=app/build/outputs/apk/release/app-release-unsigned.apk
+          if [ ! -f "$INPUT" ]; then INPUT=app/build/outputs/apk/release/app-release.apk; fi
+          test -f "$INPUT"
+          "$BT/zipalign" -f -p 4 "$INPUT" MotoLink1.8.1_unsigned_aligned.apk
+          "$BT/zipalign" -c -p 4 MotoLink1.8.1_unsigned_aligned.apk
+          "$BT/aapt" dump badging MotoLink1.8.1_unsigned_aligned.apk | tee UNSIGNED_BADGING.txt
+          grep -Fq "package: name='it.motolink.app'" UNSIGNED_BADGING.txt
+          grep -Fq "versionCode='35'" UNSIGNED_BADGING.txt
+          grep -Fq "versionName='1.8.1'" UNSIGNED_BADGING.txt
+          test -r "$BT/lib/apksigner.jar"
+          cp "$BT/lib/apksigner.jar" apksigner.jar
+          sha256sum MotoLink1.8.1_unsigned_aligned.apk apksigner.jar | tee UNSIGNED_SHA256.txt
+      - name: Upload unsigned official candidate and signer for secure offline signature
+        uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_1_UNSIGNED_ALIGNED_OFFLINE_SIGN
+          path: |
+            MotoLink1.8.1_unsigned_aligned.apk
+            apksigner.jar
+            UNSIGNED_BADGING.txt
+            UNSIGNED_SHA256.txt
+          if-no-files-found: error
+          retention-days: 7
       - name: Sign with original MotoLink release keystore
         env:
           MOTOLINK_KEYSTORE_B64: ${{ secrets.MOTOLINK_KEYSTORE_B64 }}
