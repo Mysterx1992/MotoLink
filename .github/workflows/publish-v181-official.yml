@@ -7,6 +7,7 @@ on:
     paths:
       - "app/src/main/java/it/motolink/app/MainActivity.kt"
       - "app/src/main/java/it/motolink/app/V16Navigation.kt"
+      - "app/src/main/java/it/motolink/app/MotoLinkLocale.kt"
       - "app/build.gradle.kts"
       - "scripts/check_ble_navigation_resync.py"
       - "tools/v18_ble_regression.py"
@@ -44,6 +45,8 @@ jobs:
           grep -Fq 'versionName = "1.8.1"' app/build.gradle.kts
           ! grep -Eq 'applicationIdSuffix\s*=' app/build.gradle.kts
           python3 scripts/check_ble_navigation_resync.py
+          grep -Fq 'message = MotoLinkLocale.releaseNotes181()' app/src/main/java/it/motolink/app/MainActivity.kt
+          grep -Fq 'fun releaseNotes181()' app/src/main/java/it/motolink/app/MotoLinkLocale.kt
           python3 tools/v18_ble_regression.py
       - name: Assemble official release unsigned
         shell: bash
