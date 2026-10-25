@@ -3734,18 +3734,21 @@ class MainActivity : Activity() {
 
     private fun setHeaderStatus(title: String, subtitle: String, colorHex: String) {
         if (!::dashboard.isInitialized) return
+        // Preserve canonical status tokens for isConnectedStatus(), background
+        // selection and callbacks. The dashboard localizes only when rendering.
         dashboard.updateHeader(
-            MotoLinkLocale.t(this, title),
-            MotoLinkLocale.t(this, subtitle),
+            title,
+            subtitle,
             color(colorHex)
         )
     }
 
     private fun setState(title: String, subtitle: String, dotColor: String, right: String) {
         if (!::dashboard.isInitialized) return
+        // Same rule for status subtitle: avoid storing already translated state.
         dashboard.updateState(
-            MotoLinkLocale.t(this, title),
-            MotoLinkLocale.t(this, subtitle),
+            title,
+            subtitle,
             color(dotColor),
             right
         )
