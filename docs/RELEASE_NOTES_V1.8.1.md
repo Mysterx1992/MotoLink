@@ -1,7 +1,6 @@
 # MotoLink V1.8.1 — BLE Navigation Resync
 
-> **Stato su GitHub al 25/10/2026:** questo documento descrive l'APK V1.8.1 già compilato e firmato con il certificato ufficiale, ma l'asset non è ancora presente nella sezione Release pubblica. Il download da GitHub resta quello della V1.8 finché il file firmato non viene effettivamente caricato. La correzione BLE non ha ancora un collaudo fisico di riaccensione TFT.
-
+> **Release GitHub V1.8.1 pubblicata il 25 ottobre 2026.** [Scarica MotoLink1.8.1.apk direttamente](https://github.com/Mysterx1992/MotoLink/releases/download/v1.8.1/MotoLink1.8.1.apk). La V1.8.1 mantiene il package ufficiale e aggiorna la V1.8 senza disinstallazione. Collaudo BLE sul TFT ancora richiesto.
 
 Versione Android ufficiale incrementale: `it.motolink.app`, `versionCode 35`, `versionName 1.8.1`.
 
