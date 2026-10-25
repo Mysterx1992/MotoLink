@@ -3594,7 +3594,7 @@ class MainActivity : Activity() {
         NeonDialogs.showInfo(
             activity = this,
             title = "MotoLink $displayVersion",
-            message = MotoLinkLocale.releaseNotes18()
+            message = MotoLinkLocale.releaseNotes181()
         )
     }
 
