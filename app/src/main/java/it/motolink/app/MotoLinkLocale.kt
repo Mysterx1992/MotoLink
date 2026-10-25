@@ -192,6 +192,12 @@ object MotoLinkLocale {
     }
 
     private val EN = mapOf(
+        "Pronto. Premi AVVIA per iniziare." to "Ready. Press START to begin.",
+        "Rete pronta" to "Network ready",
+        "Ripristino Wi-Fi" to "Wi-Fi recovery",
+        "Trofeo 500 · ripristino manuale hotspot" to "Trofeo 500 · manual hotspot recovery",
+        "IMPOSTAZIONI · Ripristino Wi-Fi" to "SETTINGS · Wi-Fi recovery",
+        "Fai una donazione con il pulsante PayPal" to "Donate using the PayPal button",
         "Pronto" to "Ready",
         "Sistema pronto" to "System ready",
         "Premi START per connettere" to "Press START to connect",
@@ -445,6 +451,12 @@ object MotoLinkLocale {
     )
 
     private val RU = mapOf(
+        "Pronto. Premi AVVIA per iniziare." to "Готово. Нажмите START для начала.",
+        "Rete pronta" to "Сеть готова",
+        "Ripristino Wi-Fi" to "Восстановление Wi-Fi",
+        "Trofeo 500 · ripristino manuale hotspot" to "Trofeo 500 · ручное восстановление точки доступа",
+        "IMPOSTAZIONI · Ripristino Wi-Fi" to "НАСТРОЙКИ · Восстановление Wi-Fi",
+        "Fai una donazione con il pulsante PayPal" to "Поддержать через кнопку PayPal",
         "Pronto" to "Готово",
         "Sistema pronto" to "Система готова",
         "Premi START per connettere" to "Нажмите START для подключения",
@@ -681,6 +693,12 @@ object MotoLinkLocale {
     )
 
     private val ZH = mapOf(
+        "Pronto. Premi AVVIA per iniziare." to "就绪。按 START 开始。",
+        "Rete pronta" to "网络已就绪",
+        "Ripristino Wi-Fi" to "恢复 Wi-Fi",
+        "Trofeo 500 · ripristino manuale hotspot" to "Trofeo 500 · 手动恢复热点",
+        "IMPOSTAZIONI · Ripristino Wi-Fi" to "设置 · 恢复 Wi-Fi",
+        "Fai una donazione con il pulsante PayPal" to "使用 PayPal 按钮捐赠",
         "Pronto" to "就绪",
         "Sistema pronto" to "系统已就绪",
         "Premi START per connettere" to "按 START 连接",
