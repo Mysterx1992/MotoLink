@@ -7,6 +7,7 @@ on:
       - ".github/workflows/build-v182-localized.yml"
       - "app/**"
       - "scripts/check_locale_v182.py"
+      - "tools/v18_ble_regression.py"
   workflow_dispatch:
 permissions:
   contents: read
