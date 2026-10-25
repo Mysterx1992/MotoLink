@@ -215,6 +215,16 @@ object MotoLinkLocale {
     }
 
     private val EN = mapOf(
+        "Questo profilo Hotspot non contiene SSID/password. Collega prima il telefono alla rete Wi-Fi della moto, poi torna in MotoLink e premi START. Per CFMOTO usa preferibilmente QR CODE: MotoLink proverà automaticamente WLAN Direct/P2P e il fallback Wi-Fi/EasyConn." to "This Hotspot profile has no SSID/password. Connect your phone to the motorcycle Wi-Fi, return to MotoLink and press START. For CFMOTO, prefer QR CODE: MotoLink will try WLAN Direct/P2P, then Wi-Fi/EasyConn fallback.",
+        "MotoLink non è riuscita ad agganciare la CFMOTO. Lascia aperta sul TFT la schermata Connessione telefono/QR e riprova." to "MotoLink could not connect to CFMOTO. Keep the Phone connection/QR screen open on the TFT and retry.",
+        "Apri sul TFT la schermata di connessione telefono/QR e riprova. MotoLink cerca solo il dispositivo indicato dal QR. Se un’altra app di mirroring è attiva, chiudila completamente o forza l’arresto prima di riprovare." to "Open the Phone connection/QR screen on the TFT and retry. MotoLink scans only for the device from the QR. Close or force-stop other active mirroring apps before retrying.",
+        "Per collegarsi direttamente alla moto via WLAN Direct, MotoLink deve poter usare Dispositivi Wi-Fi nelle vicinanze. Premi START di nuovo e concedi il permesso Android." to "To connect via WLAN Direct, MotoLink needs Nearby Wi-Fi devices permission. Press START again and grant Android permission.",
+        "Crea un profilo locale per la moto. Il nome è obbligatorio; scegli connessione e modello. START userà la connessione salvata nel profilo." to "Create a local motorcycle profile. Enter a name, choose connection type and model. START will use this profile's saved connection.",
+        "Il nome della moto è obbligatorio. Connessione e modello sono modificabili; per usare la foto della tua moto scegli FOTO / ALTRO. Le regolazioni di Adattamento restano associate a questo profilo anche se lo rinomini." to "Motorcycle name is required. Connection and model can be edited; choose PHOTO / OTHER to use your own motorcycle photo. Display adjustments remain linked to this profile after renaming.",
+        "Il permesso Bluetooth è necessario per collegare direttamente il display della moto." to "Bluetooth permission is needed to connect to the motorcycle display.",
+        "Interrompi il mirroring con STOP prima di utilizzare Ripristino Wi-Fi." to "Stop mirroring with STOP before using Wi-Fi recovery.",
+        "CHIUDI" to "CLOSE",
+        "AVVIA" to "START",
         "RIPRISTINO WI-FI" to "WI-FI RECOVERY",
         "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto." to "The PHONE creates the hotspot and the MOTORCYCLE connects to it. Keep the hotspot on. START checks Bluetooth and Wi-Fi without changing passwords or sending write commands to the motorcycle.",
         "Accendi il Bluetooth del telefono e premi di nuovo AVVIA." to "Turn on Bluetooth on your phone and press START again.",
@@ -516,6 +526,16 @@ object MotoLinkLocale {
     )
 
     private val RU = mapOf(
+        "Questo profilo Hotspot non contiene SSID/password. Collega prima il telefono alla rete Wi-Fi della moto, poi torna in MotoLink e premi START. Per CFMOTO usa preferibilmente QR CODE: MotoLink proverà automaticamente WLAN Direct/P2P e il fallback Wi-Fi/EasyConn." to "В профиле Hotspot нет SSID или пароля. Сначала подключите телефон к Wi-Fi мотоцикла, вернитесь в MotoLink и нажмите START. Для CFMOTO используйте QR-код: MotoLink попробует WLAN Direct/P2P, затем Wi-Fi/EasyConn.",
+        "MotoLink non è riuscita ad agganciare la CFMOTO. Lascia aperta sul TFT la schermata Connessione telefono/QR e riprova." to "MotoLink не удалось подключиться к CFMOTO. Оставьте экран подключения телефона/QR на дисплее и повторите попытку.",
+        "Apri sul TFT la schermata di connessione telefono/QR e riprova. MotoLink cerca solo il dispositivo indicato dal QR. Se un’altra app di mirroring è attiva, chiudila completamente o forza l’arresto prima di riprovare." to "Откройте экран подключения телефона/QR на дисплее и повторите попытку. MotoLink ищет только устройство из QR-кода. Закройте другие приложения трансляции перед повтором.",
+        "Per collegarsi direttamente alla moto via WLAN Direct, MotoLink deve poter usare Dispositivi Wi-Fi nelle vicinanze. Premi START di nuovo e concedi il permesso Android." to "Для WLAN Direct MotoLink требуется разрешение на устройства Wi-Fi поблизости. Повторно нажмите START и предоставьте разрешение Android.",
+        "Crea un profilo locale per la moto. Il nome è obbligatorio; scegli connessione e modello. START userà la connessione salvata nel profilo." to "Создайте локальный профиль мотоцикла: введите имя, выберите тип соединения и модель. Кнопка START использует сохранённое подключение.",
+        "Il nome della moto è obbligatorio. Connessione e modello sono modificabili; per usare la foto della tua moto scegli FOTO / ALTRO. Le regolazioni di Adattamento restano associate a questo profilo anche se lo rinomini." to "Требуется имя мотоцикла. Соединение и модель можно изменить; для собственной фотографии выберите ФОТО / ДРУГОЕ. Настройки экрана сохранятся в профиле после переименования.",
+        "Il permesso Bluetooth è necessario per collegare direttamente il display della moto." to "Для прямого подключения к дисплею мотоцикла необходимо разрешение Bluetooth.",
+        "Interrompi il mirroring con STOP prima di utilizzare Ripristino Wi-Fi." to "Перед восстановлением Wi-Fi остановите трансляцию кнопкой STOP.",
+        "CHIUDI" to "ЗАКРЫТЬ",
+        "AVVIA" to "НАЧАТЬ",
         "RIPRISTINO WI-FI" to "ВОССТАНОВЛЕНИЕ WI-FI",
         "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto." to "ТЕЛЕФОН создаёт точку доступа, а МОТОЦИКЛ к ней подключается. Оставьте точку доступа включённой. Кнопка START проверяет Bluetooth и Wi-Fi, не меняя пароль и не отправляя команды записи на мотоцикл.",
         "Accendi il Bluetooth del telefono e premi di nuovo AVVIA." to "Включите Bluetooth на телефоне и снова нажмите START.",
@@ -800,6 +820,16 @@ object MotoLinkLocale {
     )
 
     private val ZH = mapOf(
+        "Questo profilo Hotspot non contiene SSID/password. Collega prima il telefono alla rete Wi-Fi della moto, poi torna in MotoLink e premi START. Per CFMOTO usa preferibilmente QR CODE: MotoLink proverà automaticamente WLAN Direct/P2P e il fallback Wi-Fi/EasyConn." to "此热点配置未包含 SSID/密码。请先将手机连接到摩托车 Wi-Fi，然后返回 MotoLink 按 START。CFMOTO 建议使用二维码：MotoLink 将尝试 WLAN Direct/P2P，然后回退至 Wi-Fi/EasyConn。",
+        "MotoLink non è riuscita ad agganciare la CFMOTO. Lascia aperta sul TFT la schermata Connessione telefono/QR e riprova." to "MotoLink 无法连接到 CFMOTO。请保持仪表屏上的手机连接/二维码页面打开并重试。",
+        "Apri sul TFT la schermata di connessione telefono/QR e riprova. MotoLink cerca solo il dispositivo indicato dal QR. Se un’altra app di mirroring è attiva, chiudila completamente o forza l’arresto prima di riprovare." to "请打开仪表屏上的手机连接/二维码页面后重试。MotoLink 只查找二维码对应的设备。如其他投屏应用正在运行，请完全退出或强制停止后再试。",
+        "Per collegarsi direttamente alla moto via WLAN Direct, MotoLink deve poter usare Dispositivi Wi-Fi nelle vicinanze. Premi START di nuovo e concedi il permesso Android." to "通过 WLAN Direct 直连摩托车需要附近 Wi-Fi 设备权限。请再次按 START 并授予 Android 权限。",
+        "Crea un profilo locale per la moto. Il nome è obbligatorio; scegli connessione e modello. START userà la connessione salvata nel profilo." to "创建本地摩托车配置。必须填写名称，并选择连接方式和车型。START 将使用保存的连接设置。",
+        "Il nome della moto è obbligatorio. Connessione e modello sono modificabili; per usare la foto della tua moto scegli FOTO / ALTRO. Le regolazioni di Adattamento restano associate a questo profilo anche se lo rinomini." to "必须填写摩托车名称。连接方式和车型可编辑；要使用自己的摩托车照片，请选择“照片/其他”。即使重命名，此配置的显示适配设置仍会保留。",
+        "Il permesso Bluetooth è necessario per collegare direttamente il display della moto." to "直连摩托车仪表屏需要蓝牙权限。",
+        "Interrompi il mirroring con STOP prima di utilizzare Ripristino Wi-Fi." to "使用 Wi-Fi 恢复前，请按 STOP 停止投屏。",
+        "CHIUDI" to "关闭",
+        "AVVIA" to "开始",
         "RIPRISTINO WI-FI" to "恢复 WI-FI",
         "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto." to "手机开启热点，摩托车连接该热点。请保持热点开启。点击 START 将检测蓝牙和 Wi-Fi，不更改密码，也不向摩托车发送写入命令。",
         "Accendi il Bluetooth del telefono e premi di nuovo AVVIA." to "开启手机蓝牙，然后再次按 START。",
