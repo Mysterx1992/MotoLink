@@ -1429,6 +1429,16 @@ class MainActivity : Activity() {
                         mapsLaunchRequested = true
                         ensureMapsNotificationAccessThenLaunch()
                     }
+                    // Initial READY and automatic GATT reattach both need a fresh
+                    // Maps snapshot. Do not relaunch Maps or reuse a cached maneuver.
+                    // The notification listener enforces real-distance, freshness and
+                    // maneuver gates; this does not alter the BLE wire protocol.
+                    mainHandler.postDelayed({
+                        if (runSelection == RunSelection.START && VogeBleNavigationManager.isReady) {
+                            val queued = MapsNavigationListenerService.resyncOnBleReady()
+                            AppLog.add("BLE NAV RESYNC V1: GATT READY -> active Maps snapshot queued=$queued")
+                        }
+                    }, 350L)
                 }
             }
 
