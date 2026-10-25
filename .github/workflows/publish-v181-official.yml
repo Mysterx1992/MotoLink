@@ -9,6 +9,7 @@ on:
       - "app/src/main/java/it/motolink/app/V16Navigation.kt"
       - "app/build.gradle.kts"
       - "scripts/check_ble_navigation_resync.py"
+      - "tools/v18_ble_regression.py"
       - ".github/workflows/publish-v181-official.yml"
   workflow_dispatch:
 permissions:
