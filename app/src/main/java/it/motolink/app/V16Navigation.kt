@@ -264,23 +264,25 @@ object VogeBleNavigationManager {
 
     fun stop() = stopInternal(notify = true)
 
-    fun sendNavigation(model: TurnByTurnInstruction) {
+    // True means the five-frame navigation group was accepted into the BLE queue,
+    // not that the TFT has rendered it. Used by the recovery resync audit.
+    fun sendNavigation(model: TurnByTurnInstruction): Boolean {
         if (!synchronized(this) { transportVerified }) {
             AppLog.add("BLE NAV V1.6: istruzione reale disponibile ma canale TFT non ancora verificato")
-            return
+            return false
         }
         if (!model.hasRealDistance || model.maneuver == NavManeuver.UNKNOWN) {
             AppLog.add("BLE NAV V1.6 GATE: istruzione non inviata; distanza reale/manovra affidabile assente")
-            return
+            return false
         }
         val frames = runCatching { VogeNavPacketEncoder.navigationFrames(model) }.getOrElse {
             AppLog.add("BLE NAV V1.6 GATE: encoder rifiuta modello ${it.javaClass.simpleName}")
-            return
+            return false
         }
         synchronized(this) {
             if (txChar == null || gatt == null) {
                 AppLog.add("BLE NAV V1.6: istruzione reale disponibile ma TFT BLE non pronto")
-                return
+                return false
             }
             val active = activeNavGroup
             val keep = if (active == null) emptyList() else
@@ -295,6 +297,7 @@ object VogeBleNavigationManager {
         }
         AppLog.add("BLE NAV V1.6: TBT reale accodato maneuver=${model.maneuver} distance=${model.distanceMeters}m frames=5")
         main.post(::sendNext)
+        return true
     }
 
     private val heartbeat = object : Runnable {
@@ -1477,7 +1480,21 @@ object GoogleMapsSourceAdapter {
 }
 
 class MapsNavigationListenerService : NotificationListenerService() {
-    companion object { private const val MAPS_PACKAGE = "com.google.android.apps.maps" }
+    companion object {
+        private const val MAPS_PACKAGE = "com.google.android.apps.maps"
+        // A NotificationListenerService is system-bound: never start it with an Intent.
+        // This process-local reference is populated only while Android has bound it.
+        @Volatile private var connectedListener: MapsNavigationListenerService? = null
+
+        fun resyncOnBleReady(): Boolean {
+            val listener = connectedListener
+            if (listener == null) {
+                AppLog.add("MAPS NAV BLE RESYNC: listener notifiche non connesso; attendo evento Maps")
+                return false
+            }
+            return listener.replayCurrentNavigation()
+        }
+    }
     private var lastFingerprint: String? = null
     private var lastRouteRemainDistanceMeters: Int? = null
     private var lastRouteRemainTimeSeconds: Int? = null
@@ -1491,8 +1508,22 @@ class MapsNavigationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        connectedListener = this
         AppLog.add("MAPS NAV V1.7: accesso notifiche connesso")
-        runCatching { activeNotifications?.filter { it.packageName == MAPS_PACKAGE }?.forEach(::handle) }
+        runCatching { activeNotifications?.filter { it.packageName == MAPS_PACKAGE }?.forEach { handle(it) } }
+        // If the listener was rebound while BLE was already ready, replay the
+        // current live notification once through the same validation gates.
+        if (VogeBleNavigationManager.isReady) replayCurrentNavigation()
+    }
+
+    override fun onListenerDisconnected() {
+        if (connectedListener === this) connectedListener = null
+        super.onListenerDisconnected()
+    }
+
+    override fun onDestroy() {
+        if (connectedListener === this) connectedListener = null
+        super.onDestroy()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -1501,7 +1532,49 @@ class MapsNavigationListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn?.packageName == MAPS_PACKAGE) AppLog.add("MAPS NAV V1.7: navigazione/notifica Maps rimossa")
+        if (sbn?.packageName == MAPS_PACKAGE) {
+            AppLog.add("MAPS NAV V1.7: navigazione/notifica Maps rimossa")
+            // Do not retain state from an ended navigation route.
+            if (sbn.notification?.category == Notification.CATEGORY_NAVIGATION) {
+                lastFingerprint = null
+                lastRouteRemainDistanceMeters = null
+                lastRouteRemainTimeSeconds = null
+            }
+        }
+    }
+
+    // Resync reads the *current* Android notification, not a previously cached
+    // maneuver or distance from before the ignition cycle. Only active, ongoing
+    // Google Maps navigation notifications may be replayed.
+    private fun replayCurrentNavigation(): Boolean {
+        if (!VogeBleNavigationManager.isReady) {
+            AppLog.add("MAPS NAV BLE RESYNC: GATT non READY; nessuna istruzione inviata")
+            return false
+        }
+        val live = runCatching {
+            activeNotifications
+                ?.filter { it.packageName == MAPS_PACKAGE &&
+                    it.isOngoing &&
+                    it.notification?.category == Notification.CATEGORY_NAVIGATION }
+                ?.maxByOrNull { it.postTime }
+        }.getOrElse {
+            AppLog.add("MAPS NAV BLE RESYNC: impossibile leggere notifiche attive; attendo evento Maps")
+            return false
+        }
+        if (live == null) {
+            AppLog.add("MAPS NAV BLE RESYNC: nessuna navigazione Maps attiva; nessun replay")
+            return false
+        }
+        // Reject an excessively old notification: its distance may refer to
+        // the previous ignition cycle. A live Maps update can still send later.
+        val snapshotAgeMs = (System.currentTimeMillis() - live.postTime).coerceAtLeast(0L)
+        if (snapshotAgeMs > 120_000L) {
+            AppLog.add("MAPS NAV BLE RESYNC: notifica troppo vecchia ageMs=$snapshotAgeMs; attendo dati nuovi")
+            return false
+        }
+        val queued = handle(live, forceBleResync = true)
+        AppLog.add("MAPS NAV BLE RESYNC: active_notification_age_ms=$snapshotAgeMs queued=$queued")
+        return queued
     }
 
     // Observes ALL Google Maps notifications, including those rejected by the
@@ -1526,10 +1599,10 @@ class MapsNavigationListenerService : NotificationListenerService() {
         AppLog.add("MAPS NAV V1.7 NOTIFICATION META: " + meta)
     }
 
-    private fun handle(sbn: StatusBarNotification) {
-        val n = sbn.notification ?: return
+    private fun handle(sbn: StatusBarNotification, forceBleResync: Boolean = false): Boolean {
+        val n = sbn.notification ?: return false
         logNotificationMetadata(sbn, n)
-        val parsed = GoogleMapsSourceAdapter.parse(this, n, sbn.id, sbn.isOngoing) ?: return
+        val parsed = GoogleMapsSourceAdapter.parse(this, n, sbn.id, sbn.isOngoing) ?: return false
         parsed.routeRemainDistanceMeters?.takeIf { it > 0 }?.let { lastRouteRemainDistanceMeters = it }
         parsed.routeRemainTimeSeconds?.takeIf { it > 0 }?.let { lastRouteRemainTimeSeconds = it }
         val model = parsed.copy(
@@ -1537,21 +1610,21 @@ class MapsNavigationListenerService : NotificationListenerService() {
             routeRemainTimeSeconds = parsed.routeRemainTimeSeconds ?: lastRouteRemainTimeSeconds,
         )
         val fingerprint = "${model.rawInstruction}|${model.maneuver}|${model.distanceMeters}|${model.routeRemainDistanceMeters}|${model.routeRemainTimeSeconds}|${model.arrivalHour}:${model.arrivalMinute}"
-        if (fingerprint == lastFingerprint) return
+        if (fingerprint == lastFingerprint && !forceBleResync) return false
         lastFingerprint = fingerprint
         if (!model.hasRealDistance) {
             AppLog.add("MAPS NAV V1.7 GATE: istruzione ricevuta ma distanza reale alla manovra non esposta; TFT non aggiornato")
-            return
+            return false
         }
         if (model.distanceMeters == 0) {
             AppLog.add("MAPS NAV V1.7 ZERO TRANSITION GUARD: distance=0 soppressa; attendo la prossima istruzione positiva per evitare stale 0 sul TFT")
-            return
+            return false
         }
         if (model.maneuver == NavManeuver.UNKNOWN) {
             AppLog.add("MAPS NAV V1.7 GATE: distanza reale presente ma manovra non classificabile; TFT non aggiornato")
-            return
+            return false
         }
         AppLog.add("MAPS NAV V1.7: TBT reale accettato source=${model.source} maneuver=${model.maneuver} distance=${model.distanceMeters}m routeRemain=${model.routeRemainDistanceMeters ?: -1}m routeTime=${model.routeRemainTimeSeconds ?: -1}s roadFlag=${model.roadFlag} annular=${model.annularDegrees} dir=${model.directionOverride ?: -1}")
-        VogeBleNavigationManager.sendNavigation(model)
+        return VogeBleNavigationManager.sendNavigation(model)
     }
 }
