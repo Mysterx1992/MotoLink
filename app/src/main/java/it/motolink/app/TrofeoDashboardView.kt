@@ -647,8 +647,10 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
             else -> stateTitle
         }
         val tv = TextView(context).apply {
-            val s = SpannableString("Stato: $value")
-            val start = "Stato: ".length
+            val prefix = MotoLinkLocale.t(context, "Stato: ")
+            val localizedValue = MotoLinkLocale.t(context, value)
+            val s = SpannableString(prefix + localizedValue)
+            val start = prefix.length
             s.setSpan(ForegroundColorSpan(GREEN), start, s.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             text = s
             setTextSize(TypedValue.COMPLEX_UNIT_PX, fontPx(27f))
@@ -695,8 +697,9 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
         }
         row.addView(pillIcon, LinearLayout.LayoutParams(pxX(104f), pxH(84f)))
         val tv = TextView(context).apply {
-            val shownValue = value.take(48)
-            val full = "$prefix  ${shownValue}"
+            val shownValue = MotoLinkLocale.t(context, value).take(48)
+            val localizedPrefix = MotoLinkLocale.t(context, prefix)
+            val full = "$localizedPrefix  ${shownValue}"
             val s = SpannableString(full)
             val at = full.indexOf(shownValue)
             if (at >= 0) s.setSpan(android.text.style.StyleSpan(Typeface.BOLD), at, full.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -1739,7 +1742,7 @@ class TrofeoDashboardView(context: Context) : FrameLayout(context) {
     }
 
     private fun sectionTitle(value: String): TextView = TextView(context).apply {
-        text = value
+        text = MotoLinkLocale.t(context, value)
         setTextColor(Color.WHITE)
         setTextSize(TypedValue.COMPLEX_UNIT_PX, fontPx(92f))
         typeface = Typeface.create("sans-serif", Typeface.BOLD_ITALIC)
