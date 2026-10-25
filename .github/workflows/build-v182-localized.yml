@@ -1,0 +1,74 @@
+name: Build MotoLink V1.8.2 localized official unsigned candidate
+on:
+  push:
+    branches:
+      - release/v182-locale-ble-20261025
+    paths:
+      - ".github/workflows/build-v182-localized.yml"
+      - "app/**"
+      - "scripts/check_locale_v182.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android SDK 36
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "platform-tools" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify official identity, BLE and translations
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'applicationId = "it.motolink.app"' app/build.gradle.kts
+          grep -Fq 'versionCode = 36' app/build.gradle.kts
+          grep -Fq 'versionName = "1.8.2"' app/build.gradle.kts
+          ! grep -Eq 'applicationIdSuffix\s*=' app/build.gradle.kts
+          grep -Fq 'resyncOnBleReady()' app/src/main/java/it/motolink/app/V16Navigation.kt
+          python3 scripts/check_locale_v182.py
+          python3 scripts/check_ble_navigation_resync.py
+          python3 tools/v18_ble_regression.py
+      - name: Build release unsigned
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --stacktrace
+      - name: Zipalign and verify unsigned official candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0"
+          IN=app/build/outputs/apk/release/app-release-unsigned.apk
+          if [ ! -f "$IN" ]; then IN=app/build/outputs/apk/release/app-release.apk; fi
+          "$BT/zipalign" -f -p 4 "$IN" MotoLink1.8.2_unsigned_aligned.apk
+          "$BT/zipalign" -c -p 4 MotoLink1.8.2_unsigned_aligned.apk
+          "$BT/aapt" dump badging MotoLink1.8.2_unsigned_aligned.apk | tee BADGING_V182.txt
+          grep -Fq "package: name='it.motolink.app'" BADGING_V182.txt
+          grep -Fq "versionCode='36'" BADGING_V182.txt
+          grep -Fq "versionName='1.8.2'" BADGING_V182.txt
+          cp "$BT/lib/apksigner.jar" apksigner.jar
+          sha256sum MotoLink1.8.2_unsigned_aligned.apk apksigner.jar > UNSIGNED_SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotoLink_V1_8_2_OFFICIAL_UNSIGNED_ALIGNED
+          path: |
+            MotoLink1.8.2_unsigned_aligned.apk
+            apksigner.jar
+            BADGING_V182.txt
+            UNSIGNED_SHA256.txt
+          if-no-files-found: error
+          retention-days: 30
