@@ -23,25 +23,25 @@ object MotoLinkLocale {
     }
 
     fun releaseNotes182(): String = when (language()) {
-        "it" -> "• Corretta la traduzione delle etichette HOME, inclusi PRONTO, STATO, COLLEGATO A e NESSUN COLLEGAMENTO.\\n" +
-            "• Tradotti in inglese, russo e cinese i titoli, gli stati e i controlli di ripristino Wi-Fi, Garage, QR e Preferite.\\n" +
-            "• Stato della connessione mantenuto internamente invariato: i testi vengono tradotti solo sullo schermo.\\n" +
-            "• Riconnessione automatica BLE e risincronizzazione Google Maps introdotte in 1.8.1 conservate.\\n\\n" +
+        "it" -> "• Corretta la traduzione delle etichette HOME, inclusi PRONTO, STATO, COLLEGATO A e NESSUN COLLEGAMENTO.\n" +
+            "• Tradotti in inglese, russo e cinese i titoli, gli stati e i controlli di ripristino Wi-Fi, Garage, QR e Preferite.\n" +
+            "• Stato della connessione mantenuto internamente invariato: i testi vengono tradotti solo sullo schermo.\n" +
+            "• Riconnessione automatica BLE e risincronizzazione Google Maps introdotte in 1.8.1 conservate.\n\n" +
             "Per le lingue non supportate è previsto l'inglese. Verificare i collegamenti a moto ferma."
-        "ru" -> "• Исправлен перевод статусов HOME, включая ГОТОВО, СТАТУС, ПОДКЛЮЧЕНО К и НЕТ ПОДКЛЮЧЕНИЯ.\\n" +
-            "• Локализованы экраны Wi-Fi, гаража, QR и избранных приложений.\\n" +
-            "• Внутренний статус соединения теперь остаётся неизменным: перевод выполняется только при отображении.\\n" +
-            "• Автоматическое переподключение BLE и синхронизация Google Maps из версии 1.8.1 сохранены.\\n\\n" +
+        "ru" -> "• Исправлен перевод статусов HOME, включая ГОТОВО, СТАТУС, ПОДКЛЮЧЕНО К и НЕТ ПОДКЛЮЧЕНИЯ.\n" +
+            "• Локализованы экраны Wi-Fi, гаража, QR и избранных приложений.\n" +
+            "• Внутренний статус соединения теперь остаётся неизменным: перевод выполняется только при отображении.\n" +
+            "• Автоматическое переподключение BLE и синхронизация Google Maps из версии 1.8.1 сохранены.\n\n" +
             "Для других языков используется английский. Проверяйте соединение на остановленном мотоцикле."
-        "zh" -> "• 修复首页状态、就绪、连接对象和未连接提示的翻译。\\n" +
-            "• 补充 Wi-Fi 恢复、车库、二维码和收藏应用页面的本地化。\\n" +
-            "• 连接状态在内部保持原始值，仅在屏幕显示时进行翻译。\\n" +
-            "• 保留 1.8.1 的 BLE 自动重连和 Google Maps 导航同步功能。\\n\\n" +
+        "zh" -> "• 修复首页状态、就绪、连接对象和未连接提示的翻译。\n" +
+            "• 补充 Wi-Fi 恢复、车库、二维码和收藏应用页面的本地化。\n" +
+            "• 连接状态在内部保持原始值，仅在屏幕显示时进行翻译。\n" +
+            "• 保留 1.8.1 的 BLE 自动重连和 Google Maps 导航同步功能。\n\n" +
             "不支持的语言默认使用英语。请停车后检查连接。"
-        else -> "• Fixed translations for HOME status, READY, STATUS, CONNECTED TO and NO CONNECTION.\\n" +
-            "• Localized additional Wi-Fi recovery, Garage, QR and favorite-app screens.\\n" +
-            "• Internal connection status remains stable; translation occurs only when displayed.\\n" +
-            "• Automatic BLE reconnection and Google Maps synchronization from 1.8.1 are preserved.\\n\\n" +
+        else -> "• Fixed translations for HOME status, READY, STATUS, CONNECTED TO and NO CONNECTION.\n" +
+            "• Localized additional Wi-Fi recovery, Garage, QR and favorite-app screens.\n" +
+            "• Internal connection status remains stable; translation occurs only when displayed.\n" +
+            "• Automatic BLE reconnection and Google Maps synchronization from 1.8.1 are preserved.\n\n" +
             "Unsupported languages fall back to English. Test connections while parked."
     }
 
