@@ -51,7 +51,7 @@ La **V1.8.1** aggiunge il ripristino della navigazione **Google Maps sul TFT dop
 
 **Identità APK V1.8.1:** `it.motolink.app` · `versionCode 35` · `versionName 1.8.1`. L'APK è stato compilato, firmato con il certificato ufficiale V1.8 e **pubblicato su GitHub Release v1.8.1**. Il collaudo fisico di riaccensione del TFT con questa correzione resta da completare.
 
-> **Download diretto disponibile:** il pulsante verde **SCARICA MOTOLINK V1.8.1** scarica l'APK ufficiale, firmato con lo stesso certificato della V1.8. **Non disinstallare la V1.8:** installa la V1.8.1 sopra quella esistente per conservare profili e dati. SHA-256 dell'APK: `1d01d0886e13f44538d20c8cbbab9c86efe0cf722effa48dc9de6f64b5677b30`.
+> **Storico V1.8.1:** release precedente disponibile nella sezione [Release GitHub V1.8.1](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8.1). Il pulsante verde in alto scarica ora la **V1.8.2**.
 
 **Dettagli:** [Note tecniche V1.8.1](docs/RELEASE_NOTES_V1.8.1.md) · [Correzione ufficiale e verifiche su GitHub](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8.1).
 
@@ -79,7 +79,7 @@ La V1.8 introduce un **recupero Wi-Fi guidato per VOGE Trofeo 500** e rende più
 
 [Consulta la release V1.8.2 e i file SHA-256](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8.2) · [Versione precedente V1.8](https://github.com/Mysterx1992/MotoLink/releases/tag/v1.8)
 
-> Il file `MotoLink1.8.1.apk` è **già disponibile come asset pubblico GitHub**, versione 35, stesso package e firma della V1.8. La distribuzione è confermata da GitHub Actions con verifica byte-per-byte e SHA-256.
+> **Versione corrente V1.8.2:** il download diretto qui sopra punta all'APK firmato e verificato. La precedente V1.8.1 rimane nello storico delle Release.
 
 **Ultima release pubblicata qui:** MotoLink V1.8.2 · `versionCode 36` · `versionName 1.8.2`  
 **Package:** `it.motolink.app`  
