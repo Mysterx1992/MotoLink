@@ -1879,7 +1879,7 @@ class MainActivity : Activity() {
                     AppLog.add("TROFEO WIFI RECOVERY: permessi Bluetooth autorizzati")
                     startTrofeoWifiRecoveryOrRequestPermissions()
                 } else {
-                    wifiRecoveryState?.text = "Permesso negato: abilita Dispositivi nelle vicinanze dalle impostazioni Android e riprova."
+                    wifiRecoveryState?.text = MotoLinkLocale.t(this, "Permesso negato: abilita Dispositivi nelle vicinanze dalle impostazioni Android e riprova.")
                     NeonDialogs.showInfo(this, "Permesso necessario",
                         "Per cercare la Trofeo 500 MotoLink ha bisogno del permesso Dispositivi nelle vicinanze. Puoi concederlo dalle impostazioni dell'app.")
                 }
@@ -2756,7 +2756,7 @@ class MainActivity : Activity() {
             setPadding(dp(19), dp(20), dp(19), dp(19))
         }
         val heading = TextView(this).apply {
-            text = "RIPRISTINO WI-FI"
+            text = MotoLinkLocale.t(this@MainActivity, "RIPRISTINO WI-FI")
             setTextColor(Color.WHITE)
             textSize = 21f
             typeface = Typeface.DEFAULT_BOLD
@@ -2768,13 +2768,13 @@ class MainActivity : Activity() {
             setPadding(0, dp(6), 0, dp(12))
         }
         val instruction = TextView(this).apply {
-            text = "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto."
+            text = MotoLinkLocale.t(this@MainActivity, "Il TELEFONO crea l'hotspot e la MOTO vi si collega. Tieni acceso l'hotspot. AVVIA esegue la ricerca Bluetooth e la verifica Wi-Fi senza cambiare password o inviare comandi di scrittura alla moto.")
             setTextColor(Color.parseColor("#BECBC3"))
             textSize = 14.5f
             setPadding(0, 0, 0, dp(12))
         }
         val state = TextView(this).apply {
-            text = "Pronto. Premi AVVIA per iniziare."
+            text = MotoLinkLocale.t(this@MainActivity, "Pronto. Premi AVVIA per iniziare.")
             setTextColor(Color.WHITE)
             textSize = 15f
             background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
@@ -2786,7 +2786,7 @@ class MainActivity : Activity() {
             setPadding(0, dp(18), 0, 0)
         }
         fun action(label: String, primary: Boolean): TextView = TextView(this).apply {
-            text = label
+            text = MotoLinkLocale.t(this@MainActivity, label)
             gravity = Gravity.CENTER
             setTextColor(if (primary) Color.BLACK else Color.WHITE)
             textSize = 16f
@@ -2827,7 +2827,7 @@ class MainActivity : Activity() {
         if (wifiRecoveryDialog?.isShowing != true || wifiRecoveryLab != null) return
         val adapter = getSystemService(android.bluetooth.BluetoothManager::class.java)?.adapter
         if (adapter?.isEnabled != true) {
-            wifiRecoveryState?.text = "Accendi il Bluetooth del telefono e premi di nuovo AVVIA."
+            wifiRecoveryState?.text = MotoLinkLocale.t(this, "Accendi il Bluetooth del telefono e premi di nuovo AVVIA.")
             return
         }
         val needed = if (Build.VERSION.SDK_INT >= 31) {
@@ -2837,20 +2837,20 @@ class MainActivity : Activity() {
             checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
         }
         if (missing.isNotEmpty()) {
-            wifiRecoveryState?.text = "Autorizza Dispositivi nelle vicinanze per eseguire la diagnostica."
+            wifiRecoveryState?.text = MotoLinkLocale.t(this, "Autorizza Dispositivi nelle vicinanze per eseguire la diagnostica.")
             wifiRecoveryPermissionPending = true
             requestPermissions(missing.toTypedArray(), REQ_TROFEO_RECOVERY_BLUETOOTH)
             return
         }
         wifiRecoveryGo?.apply { isEnabled = false; alpha = 0.55f }
-        wifiRecoveryState?.text = "Ricerca avviata…"
+        wifiRecoveryState?.text = MotoLinkLocale.t(this, "Ricerca avviata…")
         val worker = TrofeoWifiRecovery(this, "") { message, finished ->
             runOnUiThread {
                 if (wifiRecoveryDialog?.isShowing != true) return@runOnUiThread
-                wifiRecoveryState?.text = message
+                wifiRecoveryState?.text = MotoLinkLocale.t(this, message)
                 if (finished) {
                     wifiRecoveryLab = null
-                    wifiRecoveryGo?.apply { isEnabled = true; alpha = 1f; text = "RIPROVA" }
+                    wifiRecoveryGo?.apply { isEnabled = true; alpha = 1f; text = MotoLinkLocale.t(this@MainActivity, "RIPROVA") }
                     NeonDialogs.showInfo(
                         this,
                         "Controlli completati",
@@ -3083,7 +3083,7 @@ class MainActivity : Activity() {
             bottomMargin = (10 * resources.displayMetrics.density).toInt()
         }
         val name = EditText(this).apply {
-            hint = "Nome moto obbligatorio"
+            hint = MotoLinkLocale.t(this@MainActivity, "Nome moto obbligatorio")
             inputType = InputType.TYPE_CLASS_TEXT
             isSingleLine = true
             setTextColor(Color.WHITE)
@@ -3092,7 +3092,7 @@ class MainActivity : Activity() {
             background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
         }
         val ssid = EditText(this).apply {
-            hint = "Nome rete / SSID (es. CFMOTO-XXXXXX)"
+            hint = MotoLinkLocale.t(this@MainActivity, "Nome rete / SSID (es. CFMOTO-XXXXXX)")
             inputType = InputType.TYPE_CLASS_TEXT
             isSingleLine = true
             setTextColor(Color.WHITE)
@@ -3101,7 +3101,7 @@ class MainActivity : Activity() {
             background = NeonDialogs.rounded("#07120B", "#2A7A28", 1, 16, this@MainActivity)
         }
         val password = EditText(this).apply {
-            hint = "Password Wi‑Fi (se presente)"
+            hint = MotoLinkLocale.t(this@MainActivity, "Password Wi‑Fi (se presente)")
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             isSingleLine = true
             setTextColor(Color.WHITE)
@@ -3594,7 +3594,7 @@ class MainActivity : Activity() {
         NeonDialogs.showInfo(
             activity = this,
             title = "MotoLink $displayVersion",
-            message = MotoLinkLocale.releaseNotes181()
+            message = MotoLinkLocale.releaseNotes182()
         )
     }
 
@@ -3734,18 +3734,21 @@ class MainActivity : Activity() {
 
     private fun setHeaderStatus(title: String, subtitle: String, colorHex: String) {
         if (!::dashboard.isInitialized) return
+        // Preserve canonical status tokens for isConnectedStatus(), background
+        // selection and callbacks. The dashboard localizes only when rendering.
         dashboard.updateHeader(
-            MotoLinkLocale.t(this, title),
-            MotoLinkLocale.t(this, subtitle),
+            title,
+            subtitle,
             color(colorHex)
         )
     }
 
     private fun setState(title: String, subtitle: String, dotColor: String, right: String) {
         if (!::dashboard.isInitialized) return
+        // Same rule for status subtitle: avoid storing already translated state.
         dashboard.updateState(
-            MotoLinkLocale.t(this, title),
-            MotoLinkLocale.t(this, subtitle),
+            title,
+            subtitle,
             color(dotColor),
             right
         )
