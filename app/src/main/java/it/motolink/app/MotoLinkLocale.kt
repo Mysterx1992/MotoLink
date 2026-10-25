@@ -22,6 +22,25 @@ object MotoLinkLocale {
         return locale.language.lowercase(Locale.ROOT)
     }
 
+    fun releaseNotes181(): String = when (language()) {
+        "it" -> "• Dopo una riconnessione Bluetooth BLE, MotoLink prova a ripristinare automaticamente la navigazione Google Maps sul TFT senza premere STOP/START.\n" +
+            "• Utilizza solo l'indicazione attiva con manovra e distanza reali. I dati assenti o non aggiornati vengono ignorati per sicurezza.\n" +
+            "• Protocollo BLE, mirroring Hotspot/QR e profili moto invariati.\n\n" +
+            "Il risultato dipende dalle notifiche disponibili in Maps. Verificare il TFT a moto ferma."
+        "ru" -> "• После повторного подключения BLE MotoLink пытается восстановить текущую навигацию Google Maps на дисплее без STOP/START.\n" +
+            "• Отправляются только актуальные указания с достоверным манёвром и расстоянием; устаревшие и неполные данные не используются.\n" +
+            "• Протокол BLE, зеркалирование Hotspot/QR и профили мотоциклов не изменены.\n\n" +
+            "Работа зависит от уведомлений Google Maps. Проверяйте дисплей на остановленном мотоцикле."
+        "zh" -> "• BLE 重新连接后，MotoLink 会尝试自动从 Google Maps 恢复当前导航，无需 STOP/START。\n" +
+            "• 仅在当前通知提供可靠的转向和距离时发送；缺失或过期数据不会使用。\n" +
+            "• BLE 协议、Hotspot/QR 镜像及摩托车配置保持不变。\n\n" +
+            "效果取决于 Google Maps 通知；请停车后检查显示屏。"
+        else -> "• After BLE reconnection, MotoLink attempts to restore the current Google Maps navigation on the TFT without STOP/START.\n" +
+            "• Only a live instruction with a reliable maneuver and real distance is sent; stale or missing data are rejected.\n" +
+            "• BLE protocol, Hotspot/QR mirroring and bike profiles are unchanged.\n\n" +
+            "Results depend on Google Maps notifications. Check the TFT while stopped."
+    }
+
     fun releaseNotes18(): String = when (language()) {
         "it" -> "• Ripristino Wi-Fi Trofeo 500 nelle Impostazioni, con conferma SÌ/NO e un solo AVVIA.\n" +
             "• Diagnosi Bluetooth Classic, SDP, BLE/GATT senza scritture e scansione Wi-Fi del telefono.\n" +
