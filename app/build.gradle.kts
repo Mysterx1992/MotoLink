@@ -18,12 +18,12 @@ android {
     }
 
     buildTypes {
-        // Only the draft combined-validation branch produces this isolated APK.
+        // This BLE navigation resync branch produces an isolated test APK.
         // It installs next to the official signed MotoLink V1.8 without
         // replacing it or deleting its existing app data.
         debug {
-            applicationIdSuffix = ".preplaytest2"
-            versionNameSuffix = "-preplay-test2"
+            applicationIdSuffix = ".bletest"
+            versionNameSuffix = "-ble-nav-resync-test"
         }
         release {
             isMinifyEnabled = false
