@@ -1510,10 +1510,13 @@ class MapsNavigationListenerService : NotificationListenerService() {
         super.onListenerConnected()
         connectedListener = this
         AppLog.add("MAPS NAV V1.7: accesso notifiche connesso")
-        runCatching { activeNotifications?.filter { it.packageName == MAPS_PACKAGE }?.forEach { handle(it) } }
-        // If the listener was rebound while BLE was already ready, replay the
-        // current live notification once through the same validation gates.
-        if (VogeBleNavigationManager.isReady) replayCurrentNavigation()
+        // Only one initial snapshot: if BLE is ready, explicitly resync the
+        // live notification; otherwise parse normally for the next Maps event.
+        if (VogeBleNavigationManager.isReady) {
+            replayCurrentNavigation()
+        } else {
+            runCatching { activeNotifications?.filter { it.packageName == MAPS_PACKAGE }?.forEach { handle(it) } }
+        }
     }
 
     override fun onListenerDisconnected() {
