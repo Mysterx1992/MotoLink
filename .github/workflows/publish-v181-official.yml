@@ -116,7 +116,7 @@ jobs:
           set -euo pipefail
           BT="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/36.0.0"
           "$BT/apksigner" verify --verbose --print-certs MotoLink1.8.1.apk | tee SIGNATURE_VERIFY.txt
-          grep -Fq 'Verified using v2 scheme (APK Signature Scheme v2): true' SIGNATURE_VERIFY.txt
+          # Original V1.8 uses verified APK Signature Scheme v3; v2 is not required for minSdk 29.
           grep -Fq 'Verified using v3 scheme (APK Signature Scheme v3): true' SIGNATURE_VERIFY.txt
           grep -Fiq '9ae7bb26293441eb1bcea894774088a762e8eaecbf2a60297efadc20fc2a2100' SIGNATURE_VERIFY.txt
           "$BT/aapt" dump badging MotoLink1.8.1.apk | tee APK_BADGING.txt
