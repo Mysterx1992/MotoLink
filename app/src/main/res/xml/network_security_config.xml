@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  MotoLink V1.8 Play hardening (DRAFT / unmerged):
+  - Preserve current cleartext eligibility for dynamically addressed motorcycle
+    LAN / EasyConn endpoints. They cannot be safely pinned to a fixed hostname.
+  - Explicitly disallow cleartext for known Internet service domains.
+  - This XML does not secure raw TCP sockets used by native/local protocols.
+  - Check the combined release and physical TFT before accepting this PR.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">supabase.co</domain>
+        <domain includeSubdomains="true">paypal.com</domain>
+        <domain includeSubdomains="true">paypalobjects.com</domain>
+    </domain-config>
+</network-security-config>
